@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-edx_event_bus_kafka
-===================
+edX Event Bus - Kafka
+=====================
 
 Kafka implementation for Open edX event bus.
 

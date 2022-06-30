@@ -1,26 +1,37 @@
-edx_event_bus_kafka
-=============================
+edX Event Bus - Kafka
+=====================
+
+Kafka implementation for Open edX event bus.
 
 |pypi-badge| |ci-badge| |codecov-badge| |doc-badge| |pyversions-badge|
 |license-badge|
 
-The ``README.rst`` file should start with a brief description of the repository,
-which sets it in the context of other repositories under the ``edx``
-organization. It should make clear where this fits in to the overall edX
-codebase.
-
-Kafka implementation for Open edX event bus.
-
 Overview (please modify)
 ------------------------
+This package implements an event bus for Open EdX using Kafka.
 
-The ``README.rst`` file should then provide an overview of the code in this
-repository, including the main components and useful entry points for starting
-to understand the code in more detail.
+The event bus acts as a broker between services publishing events and other services that consume these events.
+Implementing the event bus will allow for asynchronous messaging across services which greatly improves efficiency as we don't have to wait for scheduled batch synchronizations.
+Additionally, since the services all speak to the event bus, they are independent of one another and can still function if one service crashes.
+
+This package contains both the publishing code, which processes events into messages to send to the broker, and the consumer code,
+which polls the broker using a `while True` loop in order to turn messages back into event data to be emitted.
+The actual Kafka host will be configurable.
+
+The goal for event-bus-kafka is to eventually have a flexible event bus that can be easily brought into other apps and repositories to produce and consume arbitrary topics.
+Ideally, the event bus itself will also be an abstraction behind which platform maintainers can use non-Kafka implementations (Redis, Pulsar, etc.).
+The documentation/ADRs may also be moved to more appropriate places as the process matures.
+
+There are a hefty number of "# TODO (EventBus)" annotations left in to help guide further development.
+While still under development, this app will be subject to frequent and rapid changes.
+Outside of testing this app, it is best to leave the KAFKA_CONSUMERS_ENABLED setting off.
+
+The repository works together with the openedx/openedx-events repository to make the fully functional event bus.
 
 Documentation
 -------------
 
+OEP-52 documentation: https://open-edx-proposals.readthedocs.io/en/latest/architectural-decisions/oep-0052-arch-event-bus-architecture.html
 (TODO: `Set up documentation <https://openedx.atlassian.net/wiki/spaces/DOC/pages/21627535/Publish+Documentation+on+Read+the+Docs>`_)
 
 Development Workflow
