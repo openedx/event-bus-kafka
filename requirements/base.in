@@ -2,4 +2,6 @@
 -c constraints.txt
 
 Django             # Web application framework
+confluent_kafka
+openedx-events
 

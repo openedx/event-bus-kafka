@@ -6,11 +6,28 @@
 #
 asgiref==3.5.2
     # via django
-django==3.2.13
+attrs==21.4.0
+    # via openedx-events
+confluent-kafka==1.9.0
+    # via -r requirements/base.in
+django==3.2.14
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
+    #   openedx-events
+edx-opaque-keys[django]==2.3.0
+    # via openedx-events
+fastavro==1.5.2
+    # via openedx-events
+openedx-events==0.10.0
+    # via -r requirements/base.in
+pbr==5.9.0
+    # via stevedore
+pymongo==3.12.3
+    # via edx-opaque-keys
 pytz==2022.1
     # via django
 sqlparse==0.4.2
     # via django
+stevedore==4.0.0
+    # via edx-opaque-keys
