@@ -1,98 +1,135 @@
-from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
+"""
+Produce Kafka events from signals.
+"""
+
+import json
+import logging
+from functools import lru_cache
+
+from confluent_kafka import SerializingProducer
+from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from django.conf import settings
-from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka import KafkaError, KafkaException, SerializingProducer
+from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
+
+logger = logging.getLogger(__name__)
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
 EVENT_TYPE_HEADER_KEY = "ce_type"
 
-def magic(schema, event_key_field):
+
+def extract_event_key(event_data, event_key_field):
+    """
+    From an event object, extract a Kafka event key (not yet serialized).
+    """
     field_path = event_key_field.split(".")
-    current_data = schema.init_data
+    current_data = event_data
     for bit in field_path:
-        current_data = current_data.fields.get(bit, None)
+        if isinstance(current_data, dict):
+            if bit not in current_data:
+                raise Exception(
+                    f"Could not extract key from event; lookup in {event_key_field} "
+                    f"failed at {bit!r} in dictionary"
+                )
+            current_data = current_data[bit]
+        else:
+            if not hasattr(current_data, bit):
+                raise Exception(
+                    f"Could not extract key from event; lookup in {event_key_field} "
+                    f"failed at {bit!r} in object"
+                )
+            current_data = getattr(current_data, bit)
+    return current_data
 
-    return None
 
-def magic_inner(schema, field):
-    if schema.name == field:
-        return schema
-    for thing in schema.fields:
-
-
-
-
-
-
-def send_to_event_bus(signal, topic, event_key_field, **kwargs):
+def descend_avro_schema(serializer_schema, field_path):
     """
-    Send a signal event to the event bus under the specified topic
+    Extract a subfield within an Avro schema, recursively.
 
-    Arguments
+        serializer_schema: An Avro schema (nested dictionaries)
+        field_path: List of strings matching the 'name' of subfields
 
-        signal: The original signal that sent the event
-        topic: The event bus topic for the event
-        event_key_field: The name of the signal data field to use as the event key
-        kwargs: The event data emitted by the signal
+    TODO: Move to openedx_events.event_bus.avro.serializer?
     """
-    producer = ProducerFactory.get_or_create_producer_for_signal(signal)
-    event_key = magic(signal, event_key_field)
-    producer.produce(topic, key=event_key, value=kwargs,
-                     on_delivery=verify_event,
-                     headers={EVENT_TYPE_HEADER_KEY: signal.event_type})
+    subschema = serializer_schema
+    for bit in field_path:
+        # Either descend into .fields (for dictionaries) or .type.fields (for classes)
+        if 'fields' not in subschema:
+            # Descend through .type wrapper first
+            if 'type' not in subschema:
+                raise Exception(
+                    f"Could not extract schema for key; lookup in {field_path!r} failed at {bit!r}"
+                    " -- schema at this point contained neither 'type' nor 'field' key"
+                )
+            subschema = subschema['type']
+        field_list = subschema['fields']
+        matching = [field for field in field_list if field['name'] == bit]
+        if len(matching):
+            subschema = matching[0]
+        else:
+            raise Exception(
+                f"Could not extract schema for key; lookup in {field_path!r} failed at {bit!r}"
+                " -- field not found")
+    return subschema
 
-class ProducerFactory:
-    event_type_to_producer = {}
 
-    @staticmethod
-    def create_event_data_serializer(signal):
-        schema_registry_config = {
-            'url': getattr(settings, 'SCHEMA_REGISTRY_URL', ''),
-            'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
-                                    f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
-        }
-        serializer = AvroSignalSerializer(signal)
+def extract_key_schema(signal_serializer, event_key_field):
+    """
+    From a signal's serializer, extract just the part of the Avro schema that will be used for the Kafka event key.
+
+    Returns the (sub-)schema as a string.
+    """
+    subschema = descend_avro_schema(signal_serializer.schema, event_key_field.split("."))
+    # Same as used by AvroSignalSerializer#schema_string in openedx-events
+    return json.dumps(subschema, sort_keys=True)
 
 
-        def inner_to_dict(event_data, ctx=None):  # pylint: disable=unused-argument
-            return serializer.to_dict(event_data)
+@lru_cache
+def get_producer_for_signal(signal, event_key_field):
+    """
+    Create the producer for a signal and a key field path.
+    """
+    schema_registry_config = {
+        'url': getattr(settings, 'SCHEMA_REGISTRY_URL', ''),
+        'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
+                                f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
+    }
+    schema_registry_client = SchemaRegistryClient(schema_registry_config)
+    signal_serializer = AvroSignalSerializer(signal)
 
-        schema_registry_client = SchemaRegistryClient(schema_registry_config)
-        return AvroSerializer(schema_str=serializer.schema_string(),
-                              schema_registry_client=schema_registry_client,
-                              to_dict=inner_to_dict)
+    def inner_to_dict(event_data, ctx=None):  # pylint: disable=unused-argument
+        """Tells Avro how to turn objects into dictionaries."""
+        return signal_serializer.to_dict(event_data)
 
-    @staticmethod
-    def create_event_key_serializer(signal, event_key_field):
-        return None
+    # Serializers for key and value components of Kafka event
+    key_serializer = AvroSerializer(
+        schema_str=extract_key_schema(signal_serializer, event_key_field),
+        schema_registry_client=schema_registry_client,
+        to_dict=inner_to_dict,
+    )
+    value_serializer = AvroSerializer(
+        schema_str=signal_serializer.schema_string(),
+        schema_registry_client=schema_registry_client,
+        to_dict=inner_to_dict,
+    )
 
-    @classmethod
-    def get_or_create_producer_for_signal(cls, signal, event_key_field):
-        existing = cls.event_type_to_producer.get(signal.event_type, None)
-        if existing:
-            return existing
-        data_serializer = cls.create_event_data_serializer(signal)
-        key_serializer = cls.create_event_key_serializer(signal, event_key_field)
+    producer_settings = {
+        'bootstrap.servers': getattr(settings, 'KAFKA_BOOTSTRAP_SERVER', None),
+        'key.serializer': key_serializer,
+        'value.serializer': value_serializer,
+    }
 
-        producer_settings = {
-            'bootstrap.servers': getattr(settings, 'KAFKA_BOOTSTRAP_SERVER', None),
-            'key.serializer': key_serializer,
-            'value.serializer': data_serializer,
-        }
+    if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
+        producer_settings.update({
+            'sasl.mechanism': 'PLAIN',
+            'security.protocol': 'SASL_SSL',
+            'sasl.username': getattr(settings, 'KAFKA_API_KEY', ''),
+            'sasl.password': getattr(settings, 'KAFKA_API_SECRET', ''),
+        })
 
-        if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
-            producer_settings.update({
-                'sasl.mechanism': 'PLAIN',
-                'security.protocol': 'SASL_SSL',
-                'sasl.username': getattr(settings, 'KAFKA_API_KEY', ''),
-                'sasl.password': getattr(settings, 'KAFKA_API_SECRET', ''),
-            })
+    return SerializingProducer(producer_settings)
 
-        new_producer = SerializingProducer(producer_settings)
-        cls._type_to_producer[signal.event_type] = new_producer
-        return new_producer
 
 def verify_event(err, evt):  # pragma: no cover
     """
@@ -102,8 +139,27 @@ def verify_event(err, evt):  # pragma: no cover
     :param evt: Event that was delivered
     """
     if err is not None:
-        logger.warning(f"Event delivery failed: {err}")
+        logger.warning(f"Event delivery failed: {err!r}")
     else:
         # Don't log msg.value() because it may contain userids and/or emails
-        logger.info(f"Event delivered to {evt.topic()}: key(bytes) - {evt.key()}; "
-                    f"partition - {evt.partition()}")
+        logger.info(f"Event delivered to topic {evt.topic()}; key={evt.key()}; "
+                    f"partition={evt.partition()}")
+
+
+def send_to_event_bus(signal, topic, event_key_field, event_data):
+    """
+    Send a signal event to the event bus under the specified topic.
+
+    Arguments
+
+        signal: The original OpenEdxPublicSignal the event was sent to
+        topic: The event bus topic for the event
+        event_key_field: The name of the signal data field to use as the event key
+          (dot-separated path of dictionary key/attribute names)
+        event_data: The data sent to the signal
+    """
+    producer = get_producer_for_signal(signal, event_key_field)
+    event_key = extract_event_key(event_data, event_key_field)
+    producer.produce(topic, key=event_key, value=event_data,
+                     on_delivery=verify_event,
+                     headers={EVENT_TYPE_HEADER_KEY: signal.event_type})
