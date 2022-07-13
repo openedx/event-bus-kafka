@@ -66,8 +66,9 @@ test: clean ## run tests in the current virtualenv
 diff_cover: test ## find diff lines that need test coverage
 	diff-cover coverage.xml
 
-test-all: quality pii_check ## run tests on every supported Python/Django combination
+test-all: clean quality pii_check ## run tests on every supported Python/Django combination
 	tox -e docs
+	rm -rf build # artifact produced by docs run, interferes with pytest
 	tox
 
 validate: quality pii_check test ## run tests and quality checks

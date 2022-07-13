@@ -18,6 +18,10 @@ attrs==21.4.0
     #   -r requirements/quality.txt
     #   openedx-events
     #   pytest
+avro==1.10.0
+    # via
+    #   -r requirements/quality.txt
+    #   confluent-kafka
 bleach==5.0.1
     # via
     #   -r requirements/quality.txt
@@ -64,7 +68,7 @@ commonmark==0.9.1
     # via
     #   -r requirements/quality.txt
     #   rich
-confluent-kafka==1.9.0
+confluent-kafka[avro,schema-registry]==1.9.0
     # via -r requirements/quality.txt
 coverage[toml]==6.4.2
     # via
@@ -107,6 +111,7 @@ edx-opaque-keys[django]==2.3.0
 fastavro==1.5.2
     # via
     #   -r requirements/quality.txt
+    #   confluent-kafka
     #   openedx-events
 filelock==3.7.1
     # via
@@ -279,6 +284,7 @@ requests==2.28.1
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   codecov
+    #   confluent-kafka
     #   requests-toolbelt
     #   twine
 requests-toolbelt==0.9.1
