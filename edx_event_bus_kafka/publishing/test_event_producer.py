@@ -6,6 +6,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import openedx_events.learning.signals
+import pytest
 from django.test import override_settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.learning.data import UserData, UserPersonalData
@@ -28,7 +29,25 @@ class TestEventProducer(TestCase):
                 )
             )
         }
+
         assert ep.extract_event_key(event_data, 'user.pii.username') == 'foobob'
+        with pytest.raises(Exception,
+                           match="Could not extract key from event; lookup in xxx failed at 'xxx' in dictionary"):
+            ep.extract_event_key(event_data, 'xxx')
+        with pytest.raises(Exception,
+                           match="Could not extract key from event; lookup in user.xxx failed at 'xxx' in object"):
+            ep.extract_event_key(event_data, 'user.xxx')
+
+    def test_descend_avro_schema(self):
+        signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
+        schema = AvroSignalSerializer(signal).schema
+
+        assert ep.descend_avro_schema(schema, ['user', 'pii', 'username']) == {"name": "username", "type": "string"}
+
+        with pytest.raises(Exception) as excinfo:
+            ep.descend_avro_schema(schema, ['user', 'xxx'])
+        assert excinfo.value.args == ("Error traversing Avro schema along path ['user', 'xxx']; failed at 'xxx'.",)
+        assert isinstance(excinfo.value.__cause__, IndexError)
 
     def test_extract_key_schema(self):
         signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
@@ -39,6 +58,11 @@ class TestEventProducer(TestCase):
         signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
         with override_settings(
                 SCHEMA_REGISTRY_URL='http://localhost:12345',
+                SCHEMA_REGISTRY_API_KEY='some_key',
+                SCHEMA_REGISTRY_API_SECRET='some_secret',
+                KAFKA_BOOTSTRAP_SERVER='http://localhost:54321',
+                KAFKA_API_KEY='some_other_key',
+                KAFKA_API_SECRET='some_other_secret',
         ):
             producer_first = ep.get_producer_for_signal(signal, 'user.id')
             producer_second = ep.get_producer_for_signal(signal, 'user.id')

@@ -54,23 +54,19 @@ def descend_avro_schema(serializer_schema, field_path):
     """
     subschema = serializer_schema
     for bit in field_path:
-        # Either descend into .fields (for dictionaries) or .type.fields (for classes)
-        if 'fields' not in subschema:
-            # Descend through .type wrapper first
-            if 'type' not in subschema:
-                raise Exception(
-                    f"Could not extract schema for key; lookup in {field_path!r} failed at {bit!r}"
-                    " -- schema at this point contained neither 'type' nor 'field' key"
-                )
-            subschema = subschema['type']
-        field_list = subschema['fields']
-        matching = [field for field in field_list if field['name'] == bit]
-        if len(matching):
+        try:
+            # Either descend into .fields (for dictionaries) or .type.fields (for classes).
+            if 'fields' not in subschema:
+                # Descend through .type wrapper first
+                subschema = subschema['type']
+            field_list = subschema['fields']
+
+            matching = [field for field in field_list if field['name'] == bit]
             subschema = matching[0]
-        else:
+        except BaseException as e:
             raise Exception(
-                f"Could not extract schema for key; lookup in {field_path!r} failed at {bit!r}"
-                " -- field not found")
+                f"Error traversing Avro schema along path {field_path!r}; failed at {bit!r}."
+            ) from e
     return subschema
 
 
@@ -131,7 +127,7 @@ def get_producer_for_signal(signal, event_key_field):
     return SerializingProducer(producer_settings)
 
 
-def verify_event(err, evt):  # pragma: no cover
+def verify_event(err, evt):
     """
     Simple callback method for debugging event production
 
