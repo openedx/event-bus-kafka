@@ -150,13 +150,11 @@ def send_to_event_bus(signal, topic, event_key_field, event_data):
     """
     Send a signal event to the event bus under the specified topic.
 
-    Arguments
-
-        signal: The original OpenEdxPublicSignal the event was sent to
-        topic: The event bus topic for the event
-        event_key_field: The name of the signal data field to use as the event key
-          (dot-separated path of dictionary key/attribute names)
-        event_data: The data sent to the signal
+    :param signal: The original OpenEdxPublicSignal the event was sent to
+    :param topic: The event bus topic for the event
+    :param event_key_field: The name of the signal data field to use as the
+       event key (dot-separated path of dictionary key/attribute names)
+    :param event_data: The data sent to the signal
     """
     producer = get_producer_for_signal(signal, event_key_field)
     event_key = extract_event_key(event_data, event_key_field)
