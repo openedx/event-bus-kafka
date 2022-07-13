@@ -21,6 +21,8 @@ bleach==5.0.1
     # via readme-renderer
 certifi==2022.6.15
     # via requests
+cffi==1.15.1
+    # via cryptography
 charset-normalizer==2.1.0
     # via requests
 click==8.1.3
@@ -43,6 +45,8 @@ coverage[toml]==6.4.2
     # via
     #   -r requirements/test.txt
     #   pytest-cov
+cryptography==37.0.4
+    # via secretstorage
 dill==0.3.5.1
     # via pylint
 django==3.2.14
@@ -76,6 +80,10 @@ isort==5.10.1
     # via
     #   -r requirements/quality.in
     #   pylint
+jeepney==0.8.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==3.1.2
     # via
     #   -r requirements/test.txt
@@ -114,6 +122,8 @@ py==1.11.0
     #   pytest
 pycodestyle==2.8.0
     # via -r requirements/quality.in
+pycparser==2.21
+    # via cffi
 pydocstyle==6.1.1
     # via -r requirements/quality.in
 pygments==2.12.0
@@ -175,6 +185,8 @@ rfc3986==2.0.0
     # via twine
 rich==12.5.1
     # via twine
+secretstorage==3.3.2
+    # via keyring
 six==1.16.0
     # via
     #   bleach
