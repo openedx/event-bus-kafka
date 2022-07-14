@@ -120,8 +120,8 @@ def get_producer_for_signal(signal, event_key_field):
         producer_settings.update({
             'sasl.mechanism': 'PLAIN',
             'security.protocol': 'SASL_SSL',
-            'sasl.username': getattr(settings, 'KAFKA_API_KEY', ''),
-            'sasl.password': getattr(settings, 'KAFKA_API_SECRET', ''),
+            'sasl.username': getattr(settings, 'KAFKA_API_KEY'),
+            'sasl.password': getattr(settings, 'KAFKA_API_SECRET'),
         })
 
     return SerializingProducer(producer_settings)
@@ -157,3 +157,4 @@ def send_to_event_bus(signal, topic, event_key_field, event_data):
     producer.produce(topic, key=event_key, value=event_data,
                      on_delivery=verify_event,
                      headers={EVENT_TYPE_HEADER_KEY: signal.event_type})
+    producer.poll()  # wait indefinitely for the above event to either be delivered or fail

@@ -61,6 +61,7 @@ class TestEventProducer(TestCase):
                 SCHEMA_REGISTRY_API_KEY='some_key',
                 SCHEMA_REGISTRY_API_SECRET='some_secret',
                 KAFKA_BOOTSTRAP_SERVER='http://localhost:54321',
+                # include these just to maximize code coverage
                 KAFKA_API_KEY='some_other_key',
                 KAFKA_API_SECRET='some_other_secret',
         ):
