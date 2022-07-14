@@ -14,6 +14,7 @@ Contents:
    :maxdepth: 2
 
    readme
+   how_tos/manual_testing
    getting_started
    testing
    internationalization

@@ -120,8 +120,8 @@ def get_producer_for_signal(signal, event_key_field):
         producer_settings.update({
             'sasl.mechanism': 'PLAIN',
             'security.protocol': 'SASL_SSL',
-            'sasl.username': getattr(settings, 'KAFKA_API_KEY'),
-            'sasl.password': getattr(settings, 'KAFKA_API_SECRET'),
+            'sasl.username': settings.KAFKA_API_KEY,
+            'sasl.password': settings.KAFKA_API_SECRET,
         })
 
     return SerializingProducer(producer_settings)
