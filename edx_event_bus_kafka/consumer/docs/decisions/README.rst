@@ -1,0 +1,1 @@
+This set of Provisional ADRs/decisions are all related to Kafka, and not necessarily just the Kafka Consumer. These ADRs will be moved to more appropriate permanent homes in the future. As work on the Kafka event bus progresses and solidifies, more appropriate (and potentially new) repositories should be available to house these decisions.
