@@ -33,21 +33,21 @@ def extract_event_key(event_data: dict, event_key_field: str) -> Any:
     """
     field_path = event_key_field.split(".")
     current_data = event_data
-    for bit in field_path:
+    for field_name in field_path:
         if isinstance(current_data, dict):
-            if bit not in current_data:
+            if field_name not in current_data:
                 raise Exception(
                     f"Could not extract key from event; lookup in {event_key_field} "
-                    f"failed at {bit!r} in dictionary"
+                    f"failed at {field_name!r} in dictionary"
                 )
-            current_data = current_data[bit]
+            current_data = current_data[field_name]
         else:
-            if not hasattr(current_data, bit):
+            if not hasattr(current_data, field_name):
                 raise Exception(
                     f"Could not extract key from event; lookup in {event_key_field} "
-                    f"failed at {bit!r} in object"
+                    f"failed at {field_name!r} in object"
                 )
-            current_data = getattr(current_data, bit)
+            current_data = getattr(current_data, field_name)
     return current_data
 
 
@@ -65,7 +65,7 @@ def descend_avro_schema(serializer_schema: dict, field_path: List[str]) -> dict:
     TODO: Move to openedx_events.event_bus.avro.serializer?
     """
     subschema = serializer_schema
-    for bit in field_path:
+    for field_name in field_path:
         try:
             # Either descend into .fields (for dictionaries) or .type.fields (for classes).
             if 'fields' not in subschema:
@@ -73,11 +73,11 @@ def descend_avro_schema(serializer_schema: dict, field_path: List[str]) -> dict:
                 subschema = subschema['type']
             field_list = subschema['fields']
 
-            matching = [field for field in field_list if field['name'] == bit]
+            matching = [field for field in field_list if field['name'] == field_name]
             subschema = matching[0]
         except BaseException as e:
             raise Exception(
-                f"Error traversing Avro schema along path {field_path!r}; failed at {bit!r}."
+                f"Error traversing Avro schema along path {field_path!r}; failed at {field_name!r}."
             ) from e
     return subschema
 
