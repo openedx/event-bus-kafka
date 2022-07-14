@@ -5,6 +5,7 @@ Produce Kafka events from signals.
 import json
 import logging
 from functools import lru_cache
+from typing import Any, List
 
 from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
@@ -19,9 +20,16 @@ logger = logging.getLogger(__name__)
 EVENT_TYPE_HEADER_KEY = "ce_type"
 
 
-def extract_event_key(event_data, event_key_field):
+def extract_event_key(event_data: dict, event_key_field: str) -> Any:
     """
     From an event object, extract a Kafka event key (not yet serialized).
+
+    Arguments:
+        event_data: The event data sent to a signal (the kwargs dictionary)
+        event_key_field: Period-delimited string naming the dictionary keys to descend to find the event key data
+
+    Returns:
+        Key data, which might be an integer, string, dictionary, etc.
     """
     field_path = event_key_field.split(".")
     current_data = event_data
@@ -43,12 +51,16 @@ def extract_event_key(event_data, event_key_field):
     return current_data
 
 
-def descend_avro_schema(serializer_schema, field_path):
+def descend_avro_schema(serializer_schema: dict, field_path: List[str]) -> dict:
     """
     Extract a subfield within an Avro schema, recursively.
 
+    Arguments:
         serializer_schema: An Avro schema (nested dictionaries)
-        field_path: List of strings matching the 'name' of subfields
+        field_path: List of strings matching the 'name' of successively deeper subfields
+
+    Returns:
+        Schema for some field
 
     TODO: Move to openedx_events.event_bus.avro.serializer?
     """
@@ -70,11 +82,16 @@ def descend_avro_schema(serializer_schema, field_path):
     return subschema
 
 
-def extract_key_schema(signal_serializer, event_key_field):
+def extract_key_schema(signal_serializer: AvroSignalSerializer, event_key_field: str) -> str:
     """
     From a signal's serializer, extract just the part of the Avro schema that will be used for the Kafka event key.
 
-    Returns the (sub-)schema as a string.
+    Arguments:
+        signal_serializer: The signal serializer to extract a sub-schema from
+        event_key_field: Period-delimited string naming the field 'name' keys to descend to find the key schema
+
+    Returns:
+        The key's schema, as a string.
     """
     subschema = descend_avro_schema(signal_serializer.schema, event_key_field.split("."))
     # Same as used by AvroSignalSerializer#schema_string in openedx-events
