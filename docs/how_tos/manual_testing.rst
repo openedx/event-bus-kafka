@@ -24,7 +24,11 @@ The producer can be tested manually against a Kafka running in devstack.
         }
 
         print(f"Sending event with random user ID {id}.")
-        ep.send_to_event_bus(signal, 'user_stuff', 'user.id', event_data)
+        with override_settings(
+                SCHEMA_REGISTRY_URL='http://edx.devstack.schema-registry:8081',
+                KAFKA_BOOTSTRAP_SERVERS='edx.devstack.kafka:29092',
+        ):
+            ep.send_to_event_bus(signal, 'user_stuff', 'user.id', event_data)
 
 #. Make or refresh a copy of this repo where it can be seen from inside devstack: ``rsync -sax -delete ./ ../src/event-bus-kafka/``
 #. In devstack, start Kafka and the control webapp: ``make dev.up.kafka-control-center`` and watch ``make dev.logs.kafka-control-center`` until server is up and happy (may take a few minutes; watch for ``INFO Kafka startTimeMs``)
