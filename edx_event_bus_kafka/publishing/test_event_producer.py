@@ -69,16 +69,16 @@ class TestEventProducer(TestCase):
             ep.get_producer_for_signal(signal, 'user.id')
 
     @patch('edx_event_bus_kafka.publishing.event_producer.logger')
-    def test_verify_event(self, mock_logger):
+    def test_on_event_deliver(self, mock_logger):
         fake_event = MagicMock()
         fake_event.topic.return_value = 'some_topic'
         fake_event.key.return_value = 'some_key'
         fake_event.partition.return_value = 'some_partition'
 
-        ep.verify_event(Exception("problem!"), fake_event)
+        ep.on_event_deliver(Exception("problem!"), fake_event)
         mock_logger.warning.assert_called_once_with("Event delivery failed: Exception('problem!')")
 
-        ep.verify_event(None, fake_event)
+        ep.on_event_deliver(None, fake_event)
         mock_logger.info.assert_called_once_with(
             'Event delivered to topic some_topic; key=some_key; partition=some_partition'
         )
@@ -103,6 +103,6 @@ class TestEventProducer(TestCase):
 
         mock_producer.produce.assert_called_once_with(
             'user_stuff', key=123, value=event_data,
-            on_delivery=ep.verify_event,
+            on_delivery=ep.on_event_deliver,
             headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
         )

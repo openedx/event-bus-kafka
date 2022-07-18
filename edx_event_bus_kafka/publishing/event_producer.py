@@ -181,12 +181,13 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -
     return SerializingProducer(producer_settings)
 
 
-def verify_event(err, evt):
+def on_event_deliver(err, evt):
     """
     Simple callback method for debugging event production
 
-    :param err: Error if event production failed
-    :param evt: Event that was delivered
+    Arguments:
+        err: Error if event production failed
+        evt: Event that was delivered (or failed to be delivered)
     """
     if err is not None:
         logger.warning(f"Event delivery failed: {err!r}")
@@ -215,6 +216,6 @@ def send_to_event_bus(signal: OpenEdxPublicSignal, topic: str, event_key_field: 
 
     event_key = extract_event_key(event_data, event_key_field)
     producer.produce(topic, key=event_key, value=event_data,
-                     on_delivery=verify_event,
+                     on_delivery=on_event_deliver,
                      headers={EVENT_TYPE_HEADER_KEY: signal.event_type})
     producer.poll()  # wait indefinitely for the above event to either be delivered or fail
