@@ -211,7 +211,7 @@ def send_to_event_bus(signal: OpenEdxPublicSignal, topic: str, event_key_field: 
         event_data: The event data (kwargs) sent to the signal
     """
     producer = get_producer_for_signal(signal, event_key_field)
-    if producer is None:  # SerializingProducer has False truthiness when len() == 0...
+    if producer is None:  # Note: SerializingProducer has False truthiness when len() == 0
         return None
 
     event_key = extract_event_key(event_data, event_key_field)
