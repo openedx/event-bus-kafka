@@ -4,14 +4,16 @@ Produce Kafka events from signals.
 
 import json
 import logging
+import warnings
 from functools import lru_cache
-from typing import Any, List
+from typing import Any, List, Optional
 
 from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from django.conf import settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
+from openedx_events.tooling import OpenEdxPublicSignal
 
 logger = logging.getLogger(__name__)
 
@@ -99,17 +101,52 @@ def extract_key_schema(signal_serializer: AvroSignalSerializer, event_key_field:
 
 
 @lru_cache
-def get_producer_for_signal(signal, event_key_field):
+def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
+    """
+    Get the serializer for a signal.
+
+    This is just defined to allow caching of serializers.
+    """
+    return AvroSignalSerializer(signal)
+
+
+# TODO: Cache this, but in a way that still allows changes to settings
+# via remote-config (and in particular does not result in mixed
+# cache/uncached configuration).
+def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -> Optional[SerializingProducer]:
     """
     Create the producer for a signal and a key field path.
+
+    If essential settings are missing or invalid, warn and return None.
     """
-    schema_registry_config = {
-        'url': getattr(settings, 'SCHEMA_REGISTRY_URL', ''),
-        'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
-                                f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
-    }
+    if schema_registry_url := getattr(settings, 'SCHEMA_REGISTRY_URL', None):
+        schema_registry_config = {
+            'url': schema_registry_url,
+            'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
+                                    f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
+        }
+    else:
+        warnings.warn("Cannot configure event-bus-kafka: Missing setting SCHEMA_REGISTRY_URL")
+        return None
+
+    if bootstrap_servers := getattr(settings, 'KAFKA_BOOTSTRAP_SERVERS', None):
+        producer_settings = {
+            'bootstrap.servers': bootstrap_servers,
+        }
+    else:
+        warnings.warn("Cannot configure event-bus-kafka: Missing setting KAFKA_BOOTSTRAP_SERVERS")
+        return None
+
+    if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
+        producer_settings.update({
+            'sasl.mechanism': 'PLAIN',
+            'security.protocol': 'SASL_SSL',
+            'sasl.username': settings.KAFKA_API_KEY,
+            'sasl.password': settings.KAFKA_API_SECRET,
+        })
+
     schema_registry_client = SchemaRegistryClient(schema_registry_config)
-    signal_serializer = AvroSignalSerializer(signal)
+    signal_serializer = get_serializer(signal)
 
     def inner_to_dict(event_data, ctx=None):  # pylint: disable=unused-argument
         """Tells Avro how to turn objects into dictionaries."""
@@ -127,19 +164,10 @@ def get_producer_for_signal(signal, event_key_field):
         to_dict=inner_to_dict,
     )
 
-    producer_settings = {
-        'bootstrap.servers': getattr(settings, 'KAFKA_BOOTSTRAP_SERVER', None),
+    producer_settings.update({
         'key.serializer': key_serializer,
         'value.serializer': value_serializer,
-    }
-
-    if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
-        producer_settings.update({
-            'sasl.mechanism': 'PLAIN',
-            'security.protocol': 'SASL_SSL',
-            'sasl.username': settings.KAFKA_API_KEY,
-            'sasl.password': settings.KAFKA_API_SECRET,
-        })
+    })
 
     return SerializingProducer(producer_settings)
 
@@ -163,6 +191,8 @@ def send_to_event_bus(signal, topic, event_key_field, event_data):
     """
     Send a signal event to the event bus under the specified topic.
 
+    If the Kafka settings are missing or invalid, fail with just a warning.
+
     :param signal: The original OpenEdxPublicSignal the event was sent to
     :param topic: The event bus topic for the event
     :param event_key_field: The name of the signal data field to use as the
@@ -170,6 +200,9 @@ def send_to_event_bus(signal, topic, event_key_field, event_data):
     :param event_data: The data sent to the signal
     """
     producer = get_producer_for_signal(signal, event_key_field)
+    if not producer:
+        return
+
     event_key = extract_event_key(event_data, event_key_field)
     producer.produce(topic, key=event_key, value=event_data,
                      on_delivery=verify_event,

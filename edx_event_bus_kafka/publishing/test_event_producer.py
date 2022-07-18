@@ -60,17 +60,13 @@ class TestEventProducer(TestCase):
                 SCHEMA_REGISTRY_URL='http://localhost:12345',
                 SCHEMA_REGISTRY_API_KEY='some_key',
                 SCHEMA_REGISTRY_API_SECRET='some_secret',
-                KAFKA_BOOTSTRAP_SERVER='http://localhost:54321',
+                KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
                 # include these just to maximize code coverage
                 KAFKA_API_KEY='some_other_key',
                 KAFKA_API_SECRET='some_other_secret',
         ):
-            producer_first = ep.get_producer_for_signal(signal, 'user.id')
-            producer_second = ep.get_producer_for_signal(signal, 'user.id')
-            # There's not a lot we can test here, but we can at least
-            # check that construction succeeds and that caching is
-            # happening.
-            assert producer_first is producer_second
+            # Just testing that creation succeeds
+            ep.get_producer_for_signal(signal, 'user.id')
 
     @patch('edx_event_bus_kafka.publishing.event_producer.logger')
     def test_verify_event(self, mock_logger):
