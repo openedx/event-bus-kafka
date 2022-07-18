@@ -2,11 +2,13 @@
 Test the event producer code.
 """
 
+import warnings
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import openedx_events.learning.signals
 import pytest
+from confluent_kafka import SerializingProducer
 from django.test import override_settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.learning.data import UserData, UserPersonalData
@@ -56,6 +58,15 @@ class TestEventProducer(TestCase):
 
     def test_get_producer_for_signal(self):
         signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
+
+        # With missing essential settings, just warn and return None
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter('always')
+            assert ep.get_producer_for_signal(signal, 'user.id') is None
+            assert len(caught_warnings) == 1
+            assert str(caught_warnings[0].message).startswith("Cannot configure event-bus-kafka: Missing setting ")
+
+        # Creation succeeds when all settings are present
         with override_settings(
                 SCHEMA_REGISTRY_URL='http://localhost:12345',
                 SCHEMA_REGISTRY_API_KEY='some_key',
@@ -65,8 +76,7 @@ class TestEventProducer(TestCase):
                 KAFKA_API_KEY='some_other_key',
                 KAFKA_API_SECRET='some_other_secret',
         ):
-            # Just testing that creation succeeds
-            ep.get_producer_for_signal(signal, 'user.id')
+            assert isinstance(ep.get_producer_for_signal(signal, 'user.id'), SerializingProducer)
 
     @patch('edx_event_bus_kafka.publishing.event_producer.logger')
     def test_on_event_deliver(self, mock_logger):
