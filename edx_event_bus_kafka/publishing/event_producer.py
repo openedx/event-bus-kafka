@@ -1,5 +1,7 @@
 """
 Produce Kafka events from signals.
+
+Main function is ``send_to_event_bus``.
 """
 
 import json
@@ -27,8 +29,9 @@ def extract_event_key(event_data: dict, event_key_field: str) -> Any:
     From an event object, extract a Kafka event key (not yet serialized).
 
     Arguments:
-        event_data: The event data sent to a signal (the kwargs dictionary)
-        event_key_field: Period-delimited string naming the dictionary keys to descend to find the event key data
+        event_data: The event data (kwargs) sent to the signal
+        event_key_field: Path to the event data field to use as the event key (period-delimited
+          string naming the dictionary keys to descend)
 
     Returns:
         Key data, which might be an integer, string, dictionary, etc.
@@ -90,7 +93,8 @@ def extract_key_schema(signal_serializer: AvroSignalSerializer, event_key_field:
 
     Arguments:
         signal_serializer: The signal serializer to extract a sub-schema from
-        event_key_field: Period-delimited string naming the field 'name' keys to descend to find the key schema
+        event_key_field: Path to the event data field to use as the event key (period-delimited
+          string naming the dictionary keys to descend)
 
     Returns:
         The key's schema, as a string.
@@ -118,6 +122,11 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -
     Create the producer for a signal and a key field path.
 
     If essential settings are missing or invalid, warn and return None.
+
+    Arguments:
+        signal: The OpenEdxPublicSignal to make a producer for
+        event_key_field: Path to the event data field to use as the event key (period-delimited
+          string naming the dictionary keys to descend)
     """
     if schema_registry_url := getattr(settings, 'SCHEMA_REGISTRY_URL', None):
         schema_registry_config = {
@@ -187,17 +196,18 @@ def verify_event(err, evt):
                     f"partition={evt.partition()}")
 
 
-def send_to_event_bus(signal, topic, event_key_field, event_data):
+def send_to_event_bus(signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict) -> None:
     """
     Send a signal event to the event bus under the specified topic.
 
-    If the Kafka settings are missing or invalid, fail with just a warning.
+    If the Kafka settings are missing or invalid, return with a warning.
 
-    :param signal: The original OpenEdxPublicSignal the event was sent to
-    :param topic: The event bus topic for the event
-    :param event_key_field: The name of the signal data field to use as the
-       event key (dot-separated path of dictionary key/attribute names)
-    :param event_data: The data sent to the signal
+    Arguments:
+        signal: The original OpenEdxPublicSignal the event was sent to
+        topic: The event bus topic for the event
+        event_key_field: Path to the event data field to use as the event key (period-delimited
+          string naming the dictionary keys to descend)
+        event_data: The event data (kwargs) sent to the signal
     """
     producer = get_producer_for_signal(signal, event_key_field)
     if not producer:
