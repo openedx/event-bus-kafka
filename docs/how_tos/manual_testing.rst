@@ -5,9 +5,8 @@ The producer can be tested manually against a Kafka running in devstack.
 
 #. Create a "unit test" in one of the test files that will actually call Kafka. For example, this could be added to the end of ``edx_event_bus_kafka/publishing/test_event_producer.py``::
 
-    import random
-
     def test_actually_send_to_event_bus():
+        import random
         signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
         # Make events distinguishable
         id = random.randrange(1000)
