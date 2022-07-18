@@ -1,5 +1,6 @@
 # Core requirements for using this application
 -c constraints.txt
 
-Django             # Web application framework
-
+Django                                  # Web application framework
+confluent_kafka[avro,schema-registry]   # Kafka client
+openedx-events                          # Events API
