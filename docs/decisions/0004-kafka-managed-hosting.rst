@@ -1,5 +1,5 @@
-Kafka Managed Hosting
-=====================
+4. Kafka Managed Hosting
+========================
 
 Status
 ------

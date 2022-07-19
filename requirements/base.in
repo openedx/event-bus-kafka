@@ -4,3 +4,5 @@
 Django                                  # Web application framework
 confluent_kafka[avro,schema-registry]   # Kafka client
 openedx-events                          # Events API
+edx_django_utils
+edx_toggles

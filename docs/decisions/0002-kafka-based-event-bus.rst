@@ -1,6 +1,5 @@
-=====================
-Kafka-Based Event Bus
-=====================
+2. Kafka-Based Event Bus
+========================
 
 Status
 ------

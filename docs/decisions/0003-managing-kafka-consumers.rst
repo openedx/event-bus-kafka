@@ -1,5 +1,5 @@
-Managing Kafka Consumers
-========================
+3. Managing Kafka Consumers
+===========================
 
 Status
 ------
