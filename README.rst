@@ -6,8 +6,8 @@ Kafka implementation for Open edX event bus.
 |pypi-badge| |ci-badge| |codecov-badge| |doc-badge| |pyversions-badge|
 |license-badge|
 
-Overview (please modify)
-------------------------
+Overview
+--------
 This package implements an event bus for Open EdX using Kafka.
 
 The event bus acts as a broker between services publishing events and other services that consume these events.
@@ -27,6 +27,8 @@ While still under development, this app will be subject to frequent and rapid ch
 Outside of testing this app, it is best to leave the KAFKA_CONSUMERS_ENABLED setting off.
 
 The repository works together with the openedx/openedx-events repository to make the fully functional event bus.
+
+For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 
 Documentation
 -------------
