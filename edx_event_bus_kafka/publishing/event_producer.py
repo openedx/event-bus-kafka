@@ -191,6 +191,9 @@ def on_event_deliver(err, evt):
     Arguments:
         err: Error if event production failed
         evt: Event that was delivered (or failed to be delivered)
+
+    Note: This is meant to be temporary until we implement
+      more rigorous error handling.
     """
     if err is not None:
         logger.warning(f"Event delivery failed: {err!r}")
@@ -221,4 +224,6 @@ def send_to_event_bus(signal: OpenEdxPublicSignal, topic: str, event_key_field: 
     producer.produce(topic, key=event_key, value=event_data,
                      on_delivery=on_event_deliver,
                      headers={EVENT_TYPE_HEADER_KEY: signal.event_type})
+    # TODO (EventBus): Investigate poll() vs. flush(), and other related settings:
+    #   See https://github.com/openedx/event-bus-kafka/issues/10
     producer.poll()  # wait indefinitely for the above event to either be delivered or fail
