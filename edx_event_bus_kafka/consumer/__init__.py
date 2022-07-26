@@ -1,0 +1,3 @@
+"""
+Kafka consumer application.
+"""
