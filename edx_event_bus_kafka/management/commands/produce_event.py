@@ -59,6 +59,7 @@ class Command(BaseCommand):
                 topic=options['topic'][0],
                 event_key_field=options['key_field'][0],
                 event_data=json.loads(options['data'][0]),
+                sync=True,  # otherwise command may exit before delivery is complete
             )
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error producing Kafka event")
