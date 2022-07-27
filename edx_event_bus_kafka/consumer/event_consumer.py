@@ -7,7 +7,6 @@ import logging
 from confluent_kafka import DeserializingConsumer, KafkaError
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
-from confluent_kafka.serialization import StringDeserializer
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.dispatch import receiver
@@ -35,121 +34,137 @@ CONSUMER_POLL_TIMEOUT = getattr(settings, 'CONSUMER_POLL_TIMEOUT', 1.0)
 EVENT_TYPE_HEADER = "ce_type"
 
 
-def create_consumer(group_id) -> DeserializingConsumer:
+class KafkaEventConsumer:
     """
-    Create a consumer for SESSION_LOGIN_COMPLETED events.
+    Construct consumer for the given topic, group, and signal. The consumer can then
+    emit events from the event bus using the configured signal.
 
-    Note: Still needs to be expanded to cover arbitrary events.
-
-    Arguments:
-        group_id: id of the consumer group this consumer will be part of
+    Can also consume messages indefinitely off the queue.
     """
 
-    # TODO (EventBus): Deduplicate settings/client construction against producer code.
-    KAFKA_SCHEMA_REGISTRY_CONFIG = {
-        'url': settings.SCHEMA_REGISTRY_URL,
-        'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
-                                f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
-    }
+    def __init__(self, topic, group_id, signal):
+        self.topic = topic
+        self.group_id = group_id
+        self.signal = signal
+        self.consumer = self._create_consumer()
 
-    schema_registry_client = SchemaRegistryClient(KAFKA_SCHEMA_REGISTRY_CONFIG)
+    def _create_consumer(self) -> DeserializingConsumer:
+        """
+        Create a DeserializingConsumer for events of the given signal instance.
+        """
 
-    # TODO (EventBus):
-    # 1. Reevaluate if all consumers should listen for the earliest unprocessed offset (auto.offset.reset)
-    # 2. Ensure the signal used in the signal_deserializer is the same one sent over in the message header
+        # TODO (EventBus): Deduplicate settings/client construction against producer code.
+        KAFKA_SCHEMA_REGISTRY_CONFIG = {
+            'url': settings.SCHEMA_REGISTRY_URL,
+            'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
+                                    f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
+        }
 
-    signal_deserializer = AvroSignalDeserializer(SESSION_LOGIN_COMPLETED)
-
-    def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
-        return signal_deserializer.from_dict(event_data_dict)
-
-    consumer_config = {
-        'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
-        'group.id': group_id,
-        'key.deserializer': StringDeserializer('utf-8'),
-        'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
-                                               schema_registry_client=schema_registry_client,
-                                               from_dict=inner_from_dict),
-        'auto.offset.reset': 'earliest'
-    }
-
-    if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
-        consumer_config.update({
-            'sasl.mechanism': 'PLAIN',
-            'security.protocol': 'SASL_SSL',
-            'sasl.username': settings.KAFKA_API_KEY,
-            'sasl.password': settings.KAFKA_API_SECRET,
-        })
-
-    return DeserializingConsumer(consumer_config)
-
-
-def emit_signals_from_message(msg):
-    """
-    Determine the correct signal and send the event from the message.
-
-    Arguments:
-        msg (Message): Consumed message.
-    """
-    headers = msg.headers() or []  # treat None as []
-
-    # TODO (EventBus): iterate on error handling for missing or multiple event_type headers
-    #  (headers() is actually a list of (key, value) tuples rather than a dictionary)
-    event_types = [value for key, value in headers if key == EVENT_TYPE_HEADER]
-    if len(event_types) == 0:
-        logger.error(f"Missing {EVENT_TYPE_HEADER} header on message, cannot determine signal")
-        return
-    if len(event_types) > 1:
-        logger.error(f"Multiple {EVENT_TYPE_HEADER} headers found on message, cannot determine signal")
-        return
-
-    event_type = event_types[0]
-
-    # TODO (EventBus): Figure out who is doing the encoding and get the
-    #  right one instead of just guessing utf-8
-    event_type_str = event_type.decode("utf-8")
-    try:
-        signal = OpenEdxPublicSignal.get_signal_by_type(event_type_str)
-        signal.send_event(**msg.value())
-    except KeyError:
-        logger.exception(f"Signal not found: {event_type_str}")
-
-
-def process_single_message(msg):
-    """
-    Emit signal with message data
-    """
-    if msg.error():
-        # TODO (EventBus): iterate on error handling with retry and dead-letter queue topics
-        if msg.error().code() == KafkaError._PARTITION_EOF:  # pylint: disable=protected-access
-            # End of partition event
-            logger.info(f"{msg.topic()} [{msg.partition()}] reached end at offset {msg.offset}")
-        else:
-            logger.exception(msg.error())
-    else:
-        emit_signals_from_message(msg)
-
-
-def consume_indefinitely(topic, group_id):
-    """
-    Consume events from a topic in an infinite loop.
-    """
-    consumer = create_consumer(group_id)
-
-    try:
-        consumer.subscribe([topic])
+        schema_registry_client = SchemaRegistryClient(KAFKA_SCHEMA_REGISTRY_CONFIG)
 
         # TODO (EventBus):
-        # 1. Is there an elegant way to exit the loop?
-        # 2. Determine if there are other errors that shouldn't kill the entire loop
-        while True:
-            msg = consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
-            if msg is not None:
-                process_single_message(msg)
-    finally:
-        # Close down consumer to commit final offsets.
-        consumer.close()
-        logger.info("Committing final offsets")
+        # 1. Reevaluate if all consumers should listen for the earliest unprocessed offset (auto.offset.reset)
+        # 2. Ensure the signal used in the signal_deserializer is the same one sent over in the message header
+
+        signal_deserializer = AvroSignalDeserializer(self.signal)
+
+        def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
+            return signal_deserializer.from_dict(event_data_dict)
+
+        # We do not deserialize the key because we don't need it for anything yet.
+        # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
+        consumer_config = {
+            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
+            'group.id': self.group_id,
+            'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
+                                                   schema_registry_client=schema_registry_client,
+                                                   from_dict=inner_from_dict),
+            'auto.offset.reset': 'earliest'
+        }
+
+        if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
+            consumer_config.update({
+                'sasl.mechanism': 'PLAIN',
+                'security.protocol': 'SASL_SSL',
+                'sasl.username': settings.KAFKA_API_KEY,
+                'sasl.password': settings.KAFKA_API_SECRET,
+            })
+
+        return DeserializingConsumer(consumer_config)
+
+    def consume_indefinitely(self):
+        """
+        Consume events from a topic in an infinite loop.
+        """
+
+        try:
+            self.consumer.subscribe([self.topic])
+
+            # TODO (EventBus):
+            # 1. Is there an elegant way to exit the loop?
+            # 2. Determine if there are other errors that shouldn't kill the entire loop
+            while True:
+                msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
+                if msg is not None:
+                    self.process_single_message(msg)
+        finally:
+            # Close down consumer to commit final offsets.
+            self.consumer.close()
+            logger.info("Committing final offsets")
+
+    def process_single_message(self, msg):
+        """
+        Emit signal with message data
+        """
+        if msg.error():
+            # TODO (EventBus): iterate on error handling with retry and dead-letter queue topics
+            if msg.error().code() == KafkaError._PARTITION_EOF:  # pylint: disable=protected-access
+                # End of partition event
+                logger.info(f"{msg.topic()} [{msg.partition()}] reached end at offset {msg.offset}")
+            else:
+                logger.exception(msg.error())
+        else:
+            self.emit_signals_from_message(msg)
+
+    def emit_signals_from_message(self, msg):
+        """
+        Determine the correct signal and send the event from the message.
+
+        Arguments:
+            msg (Message): Consumed message.
+        """
+        headers = msg.headers() or []  # treat None as []
+
+        # TODO (EventBus): iterate on error handling for missing or multiple event_type headers
+        #  (headers() is actually a list of (key, value) tuples rather than a dictionary)
+        event_types = [value for key, value in headers if key == EVENT_TYPE_HEADER]
+        if len(event_types) == 0:
+            logger.error(f"Missing {EVENT_TYPE_HEADER} header on message, cannot determine signal")
+            return
+        if len(event_types) > 1:
+            logger.error(f"Multiple {EVENT_TYPE_HEADER} headers found on message, cannot determine signal")
+            return
+
+        event_type = event_types[0]
+
+        # TODO (EventBus): Figure out who is doing the encoding and get the
+        #  right one instead of just guessing utf-8
+        event_type_str = event_type.decode("utf-8")
+        try:
+
+            # If we get a message with the wrong signal encoding, we do not want to send it along.
+            # TODO (EventBus): Handle this particular sad path more gracefully.
+            if event_type_str != self.signal.event_type:
+                logger.error(
+                    f"Signal types do not match. Expected {self.signal.event_type}."
+                    f"Received message of type {event_type_str}."
+                )
+                return
+
+            signal = OpenEdxPublicSignal.get_signal_by_type(event_type_str)
+            signal.send_event(**msg.value())
+        except KeyError:
+            logger.exception(f"Signal not found: {event_type_str}")
 
 
 class ConsumeEventsCommand(BaseCommand):
@@ -183,16 +198,25 @@ class ConsumeEventsCommand(BaseCommand):
             required=True,
             help='Consumer group id'
         )
+        parser.add_argument(
+            '-s', '--signal',
+            nargs=1,
+            required=True,
+            help='Type of signal to emit from consumed messages.'
+        )
 
     def handle(self, *args, **options):
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
             logger.error("Kafka consumers not enabled")
             return
         try:
-            consume_indefinitely(
+            signal = OpenEdxPublicSignal.get_signal_by_type(options['signal'][0])
+            event_consumer = KafkaEventConsumer(
                 topic=options['topic'][0],
                 group_id=options['group_id'][0],
+                signal=signal,
             )
+            event_consumer.consume_indefinitely()
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")
 
