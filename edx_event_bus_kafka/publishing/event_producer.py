@@ -204,13 +204,15 @@ def on_event_deliver(err, evt):
 
 
 def send_to_event_bus(
-        signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
-        sync: bool = False,
+        *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
+        sync: bool,
 ) -> None:
     """
     Send a signal event to the event bus under the specified topic.
 
     If the Kafka settings are missing or invalid, return with a warning.
+
+    See openedx_events.event_bus.EventBus.send for details.
 
     Arguments:
         signal: The original OpenEdxPublicSignal the event was sent to
