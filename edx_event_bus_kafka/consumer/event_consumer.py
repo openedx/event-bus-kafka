@@ -130,7 +130,7 @@ def process_single_message(msg):
         emit_signals_from_message(msg)
 
 
-def consume_indefinitely(topic, group_id):
+def consume_indefinitely(*, topic, group_id):
     """
     Consume events from a topic in an infinite loop.
     """
