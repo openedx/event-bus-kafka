@@ -13,7 +13,7 @@ from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.tooling import OpenEdxPublicSignal
 
-import edx_event_bus_kafka.consumer.event_consumer as ec
+from edx_event_bus_kafka.consumer.event_consumer import KafkaEventConsumer
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
 
@@ -65,30 +65,32 @@ class TestEmitSignals(TestCase):
                 )
             )
         }
+        signal_type = b'org.openedx.learning.auth.session.login.completed.v1'
         self.normal_message = FakeMessage(
             topic='user_stuff',
             headers=[
-                ['ce_type', b'org.openedx.learning.auth.session.login.completed.v1']
+                ['ce_type', signal_type]
             ],
             key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
             value=self.normal_event_data,
             error=None,
         )
+        self.mock_signal = Mock(event_type=signal_type)
+        self.event_consumer = KafkaEventConsumer('test_topic', 'test_group_id', self.mock_signal)
 
     def test_emit(self):
-        mock_signal = Mock()
-        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', return_value=mock_signal) as mock_lookup:
-            ec.emit_signals_from_message(self.normal_message)
+        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', return_value=self.mock_signal) as mock_lookup:
+            self.event_consumer.emit_signals_from_message(self.normal_message)
 
         mock_lookup.assert_called_once_with('org.openedx.learning.auth.session.login.completed.v1')
-        mock_signal.send_event.assert_called_once_with(**self.normal_event_data)
+        self.mock_signal.send_event.assert_called_once_with(**self.normal_event_data)
 
     def test_no_type(self):
         msg = copy.copy(self.normal_message)
         msg._headers = []
 
         with patch.object(OpenEdxPublicSignal, 'get_signal_by_type') as mock_lookup:
-            ec.emit_signals_from_message(msg)
+            self.event_consumer.emit_signals_from_message(msg)
 
         mock_lookup.assert_not_called()
 
@@ -100,7 +102,19 @@ class TestEmitSignals(TestCase):
 
         with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', side_effect=KeyError('not found')) as mock_lookup:
             # Should just suppress exception and log
-            ec.emit_signals_from_message(msg)
+            self.event_consumer.emit_signals_from_message(msg)
+
+        mock_lookup.assert_called_once_with('xxxx')
+
+    def test_match_types_only(self):
+        msg = copy.copy(self.normal_message)
+        msg._headers = [
+            ['ce_type', b'xxxx']
+        ]
+        new_mock_signal = Mock(event_type=b'xxxx')
+        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', new_mock_signal) as mock_lookup:
+            # Should just suppress exception and log
+            self.event_consumer.emit_signals_from_message(msg)
 
         mock_lookup.assert_called_once_with('xxxx')
 
@@ -111,7 +125,7 @@ class TestCommand(TestCase):
     """
 
     @override_settings(KAFKA_CONSUMERS_ENABLED=False)
-    @patch('edx_event_bus_kafka.consumer.event_consumer.create_consumer')
+    @patch('edx_event_bus_kafka.consumer.event_consumer.KafkaEventConsumer.create_consumer')
     def test_kafka_consumers_disabled(self, mock_create_consumer):
-        call_command(Command(), topic='test', group_id='test')
+        call_command(Command(), topic='test', group_id='test', signal='')
         assert not mock_create_consumer.called
