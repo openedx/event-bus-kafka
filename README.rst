@@ -89,7 +89,7 @@ Every time you develop something in this repo
 Installation
 ------------
 
-This library is not intended to be a direct dependency of any service. Instead, it will likely be installed by some private mechanism. Unless the platform gains new processes for installing private dependencies, upgrades will need to be manually managed via a pin. 
+This library is not intended to be a direct dependency of any service. Instead, it will likely be installed by some private mechanism. Unless the platform gains new processes for installing private dependencies, upgrades will need to be manually managed via a pin.
 
 License
 -------
