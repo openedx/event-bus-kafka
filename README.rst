@@ -86,6 +86,11 @@ Every time you develop something in this repo
 
   # Open a PR and ask for review.
 
+Installation
+------------
+
+This library is not intended to be a direct dependency of any service. Instead, it will likely be installed by some private mechanism. Unless the platform gains new processes for installing private dependencies, upgrades will need to be manually managed via a pin. 
+
 License
 -------
 
