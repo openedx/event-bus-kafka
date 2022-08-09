@@ -74,10 +74,10 @@ class TestEventProducer(TestCase):
         """Creation succeeds when all settings are present."""
         signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
         with override_settings(
-                SCHEMA_REGISTRY_URL='http://localhost:12345',
-                SCHEMA_REGISTRY_API_KEY='some_key',
-                SCHEMA_REGISTRY_API_SECRET='some_secret',
-                KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
                 # include these just to maximize code coverage
                 KAFKA_API_KEY='some_other_key',
                 KAFKA_API_SECRET='some_other_secret',
