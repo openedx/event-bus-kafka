@@ -44,7 +44,7 @@ One Time Setup
 .. code-block::
 
   # Clone the repository
-  git clone git@github.com:edx/event-bus-kafka.git
+  git clone git@github.com:openedx/event-bus-kafka.git
   cd event-bus-kafka
 
   # Set up a virtualenv using virtualenvwrapper with the same name as the repo and activate it
@@ -131,26 +131,26 @@ For more information about these options, see the `Getting Help`_ page.
 .. _community Slack workspace: https://openedx.slack.com/
 .. _Getting Help: https://openedx.org/getting-help
 
-.. |pypi-badge| image:: https://img.shields.io/pypi/v/event-bus-kafka.svg
-    :target: https://pypi.python.org/pypi/event-bus-kafka/
+.. |pypi-badge| image:: https://img.shields.io/pypi/v/edx-event-bus-kafka.svg
+    :target: https://pypi.python.org/pypi/edx-event-bus-kafka/
     :alt: PyPI
 
-.. |ci-badge| image:: https://github.com/edx/event-bus-kafka/workflows/Python%20CI/badge.svg?branch=main
-    :target: https://github.com/edx/event-bus-kafka/actions
+.. |ci-badge| image:: https://github.com/openedx/event-bus-kafka/workflows/Python%20CI/badge.svg?branch=main
+    :target: https://github.com/openedx/event-bus-kafka/actions
     :alt: CI
 
-.. |codecov-badge| image:: https://codecov.io/github/edx/event-bus-kafka/coverage.svg?branch=main
-    :target: https://codecov.io/github/edx/event-bus-kafka?branch=main
+.. |codecov-badge| image:: https://codecov.io/github/openedx/event-bus-kafka/coverage.svg?branch=main
+    :target: https://codecov.io/github/openedx/event-bus-kafka?branch=main
     :alt: Codecov
 
-.. |doc-badge| image:: https://readthedocs.org/projects/event-bus-kafka/badge/?version=latest
-    :target: https://event-bus-kafka.readthedocs.io/en/latest/
+.. |doc-badge| image:: https://readthedocs.org/projects/edx-event-bus-kafka/badge/?version=latest
+    :target: https://edx-event-bus-kafka.readthedocs.io/en/latest/
     :alt: Documentation
 
-.. |pyversions-badge| image:: https://img.shields.io/pypi/pyversions/event-bus-kafka.svg
-    :target: https://pypi.python.org/pypi/event-bus-kafka/
+.. |pyversions-badge| image:: https://img.shields.io/pypi/pyversions/edx-event-bus-kafka.svg
+    :target: https://pypi.python.org/pypi/edx-event-bus-kafka/
     :alt: Supported Python versions
 
-.. |license-badge| image:: https://img.shields.io/github/license/edx/event-bus-kafka.svg
-    :target: https://github.com/edx/event-bus-kafka/blob/main/LICENSE.txt
+.. |license-badge| image:: https://img.shields.io/github/license/openedx/event-bus-kafka.svg
+    :target: https://github.com/openedx/event-bus-kafka/blob/main/LICENSE.txt
     :alt: License
