@@ -19,6 +19,11 @@ import edx_event_bus_kafka.publishing.event_producer as ep
 class TestEventProducer(TestCase):
     """Test producer."""
 
+    def setUp(self):
+        super().setUp()
+        ep.get_producer_for_signal.cache_clear()
+        ep.get_serializer.cache_clear()
+
     def test_extract_event_key(self):
         event_data = {
             'user': UserData(
@@ -56,17 +61,18 @@ class TestEventProducer(TestCase):
         schema = ep.extract_key_schema(AvroSignalSerializer(signal), 'user.pii.username')
         assert schema == '{"name": "username", "type": "string"}'
 
-    def test_get_producer_for_signal(self):
+    def test_get_producer_for_signal_unconfigured(self):
+        """With missing essential settings, just warn and return None."""
         signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
-
-        # With missing essential settings, just warn and return None
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter('always')
             assert ep.get_producer_for_signal(signal, 'user.id') is None
             assert len(caught_warnings) == 1
             assert str(caught_warnings[0].message).startswith("Cannot configure event-bus-kafka: Missing setting ")
 
-        # Creation succeeds when all settings are present
+    def test_get_producer_for_signal_configured(self):
+        """Creation succeeds when all settings are present."""
+        signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
         with override_settings(
                 SCHEMA_REGISTRY_URL='http://localhost:12345',
                 SCHEMA_REGISTRY_API_KEY='some_key',
