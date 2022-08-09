@@ -115,6 +115,11 @@ def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
     return AvroSignalSerializer(signal)
 
 
+# Note: This caching is required, since otherwise the Producer will
+# fall out of scope and be garbage-collected, destroying the
+# outbound-message queue and threads. The use of this cache allows the
+# producers to be long-lived.
+@lru_cache
 def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -> Optional[SerializingProducer]:
     """
     Create the producer for a signal and a key field path.
