@@ -6,16 +6,15 @@ Main function is ``send_to_event_bus``.
 
 import json
 import logging
-import warnings
 from functools import lru_cache
 from typing import Any, List, Optional
 
 from confluent_kafka import SerializingProducer
-from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
-from django.conf import settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
+
+from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 
@@ -136,33 +135,14 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -
         remote-config (and in particular does not result in mixed cache/uncached configuration).
         This complexity is being deferred until this becomes a performance issue.
     """
-    if schema_registry_url := getattr(settings, 'SCHEMA_REGISTRY_URL', None):
-        schema_registry_config = {
-            'url': schema_registry_url,
-            'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
-                                    f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
-        }
-    else:
-        warnings.warn("Cannot configure event-bus-kafka: Missing setting SCHEMA_REGISTRY_URL")
+    schema_registry_client = create_schema_registry_client()
+    if schema_registry_client is None:
         return None
 
-    if bootstrap_servers := getattr(settings, 'KAFKA_BOOTSTRAP_SERVERS', None):
-        producer_settings = {
-            'bootstrap.servers': bootstrap_servers,
-        }
-    else:
-        warnings.warn("Cannot configure event-bus-kafka: Missing setting KAFKA_BOOTSTRAP_SERVERS")
+    producer_settings = load_common_settings()
+    if producer_settings is None:
         return None
 
-    if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
-        producer_settings.update({
-            'sasl.mechanism': 'PLAIN',
-            'security.protocol': 'SASL_SSL',
-            'sasl.username': settings.KAFKA_API_KEY,
-            'sasl.password': settings.KAFKA_API_SECRET,
-        })
-
-    schema_registry_client = SchemaRegistryClient(schema_registry_config)
     signal_serializer = get_serializer(signal)
 
     def inner_to_dict(event_data, ctx=None):  # pylint: disable=unused-argument

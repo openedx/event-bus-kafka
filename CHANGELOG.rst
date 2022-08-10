@@ -16,6 +16,15 @@ Unreleased
 
 *
 
+[0.3.0] - 2022-08-10
+~~~~~~~~~~~~~~~~~~~~
+
+Updated
+_______
+
+* Moved configuration onto separate file.
+* Updated configuration settings to have EVENT_BUS_KAFKA prefix.
+
 [0.2.0] - 2022-08-09
 ~~~~~~~~~~~~~~~~~~~~
 
