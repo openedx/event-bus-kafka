@@ -1,9 +1,8 @@
-========
 Consumer
-========
+########
 
 Purpose
--------
+*******
 
 This part of the library implements event bus consumer patterns using the Confluent Kafka API.
 
