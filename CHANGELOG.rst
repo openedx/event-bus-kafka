@@ -16,6 +16,18 @@ Unreleased
 
 *
 
+[0.4.0] - 2022-08-12
+~~~~~~~~~~~~~~~~~~~~
+
+Changed
+_______
+
+* Rename settings to have consistent prefix.
+
+  * ``KAFKA_CONSUMERS_ENABLED`` becomes ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED``
+  * ``CONSUMER_POLL_TIMEOUT`` becomes ``EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT``
+  * Updates to documentation and tests for various settings previously renamed
+
 [0.3.1] - 2022-08-11
 ~~~~~~~~~~~~~~~~~~~~
 
