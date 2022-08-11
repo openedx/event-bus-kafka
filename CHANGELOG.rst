@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.3.1] - 2022-08-11
+~~~~~~~~~~~~~~~~~~~~
+
+Updated
+_______
+
+* Refactored consumer to use common configuration.
+
 [0.3.0] - 2022-08-10
 ~~~~~~~~~~~~~~~~~~~~
 

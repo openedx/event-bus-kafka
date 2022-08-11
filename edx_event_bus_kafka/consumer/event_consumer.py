@@ -5,7 +5,6 @@ Core consumer and event-loop code.
 import logging
 
 from confluent_kafka import DeserializingConsumer, KafkaError
-from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -15,6 +14,8 @@ from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.learning.data import UserData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 from openedx_events.tooling import OpenEdxPublicSignal
+
+from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +54,7 @@ class KafkaEventConsumer:
         Create a DeserializingConsumer for events of the given signal instance.
         """
 
-        # TODO (EventBus): Deduplicate settings/client construction against producer code.
-        KAFKA_SCHEMA_REGISTRY_CONFIG = {
-            'url': settings.SCHEMA_REGISTRY_URL,
-            'basic.auth.user.info': f"{getattr(settings, 'SCHEMA_REGISTRY_API_KEY', '')}"
-                                    f":{getattr(settings, 'SCHEMA_REGISTRY_API_SECRET', '')}",
-        }
-
-        schema_registry_client = SchemaRegistryClient(KAFKA_SCHEMA_REGISTRY_CONFIG)
+        schema_registry_client = create_schema_registry_client()
 
         # TODO (EventBus):
         # 1. Reevaluate if all consumers should listen for the earliest unprocessed offset (auto.offset.reset)
@@ -71,24 +65,17 @@ class KafkaEventConsumer:
         def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
             return signal_deserializer.from_dict(event_data_dict)
 
+        consumer_config = load_common_settings()
+
         # We do not deserialize the key because we don't need it for anything yet.
         # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
-        consumer_config = {
-            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
+        consumer_config.update({
             'group.id': self.group_id,
             'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
                                                    schema_registry_client=schema_registry_client,
                                                    from_dict=inner_from_dict),
             'auto.offset.reset': 'earliest'
-        }
-
-        if getattr(settings, 'KAFKA_API_KEY', None) and getattr(settings, 'KAFKA_API_SECRET', None):
-            consumer_config.update({
-                'sasl.mechanism': 'PLAIN',
-                'security.protocol': 'SASL_SSL',
-                'sasl.username': settings.KAFKA_API_KEY,
-                'sasl.password': settings.KAFKA_API_SECRET,
-            })
+        })
 
         return DeserializingConsumer(consumer_config)
 

@@ -49,10 +49,10 @@ class FakeMessage:
 
 
 @override_settings(
-    SCHEMA_REGISTRY_URL='https://test-url',
-    KAFKA_BOOTSTRAP_SERVERS='bootstrap-servers',
-    KAFKA_API_KEY='test-key',
-    KAFKA_API_SECRET='test-secret',
+    EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='https://test-url',
+    EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='bootstrap-servers',
+    EVENT_BUS_KAFKA_API_KEY='test-key',
+    EVENT_BUS_KAFKA_API_SECRET='test-secret',
 )
 class TestEmitSignals(TestCase):
     """
