@@ -1,5 +1,5 @@
 edX Event Bus - Kafka
-=====================
+#####################
 
 Kafka implementation for Open edX event bus.
 
@@ -7,7 +7,7 @@ Kafka implementation for Open edX event bus.
 |license-badge|
 
 Overview
---------
+********
 This package implements an event bus for Open EdX using Kafka.
 
 The event bus acts as a broker between services publishing events and other services that consume these events.
@@ -31,16 +31,16 @@ The repository works together with the openedx/openedx-events repository to make
 For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 
 Documentation
--------------
+*************
 
 OEP-52 documentation: https://open-edx-proposals.readthedocs.io/en/latest/architectural-decisions/oep-0052-arch-event-bus-architecture.html
 (TODO: `Set up documentation <https://openedx.atlassian.net/wiki/spaces/DOC/pages/21627535/Publish+Documentation+on+Read+the+Docs>`_)
 
 Development Workflow
---------------------
+********************
 
 One Time Setup
-~~~~~~~~~~~~~~
+==============
 .. code-block::
 
   # Clone the repository
@@ -52,7 +52,7 @@ One Time Setup
 
 
 Every time you develop something in this repo
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=============================================
 .. code-block::
 
   # Activate the virtualenv
@@ -87,12 +87,12 @@ Every time you develop something in this repo
   # Open a PR and ask for review.
 
 Installation
-------------
+************
 
 This library is not intended to be a direct dependency of any service. Instead, it will likely be installed by some private mechanism. Unless the platform gains new processes for installing private dependencies, upgrades will need to be manually managed via a pin.
 
 License
--------
+*******
 
 The code in this repository is licensed under the AGPL 3.0 unless
 otherwise noted.
@@ -100,7 +100,7 @@ otherwise noted.
 Please see `LICENSE.txt <LICENSE.txt>`_ for details.
 
 How To Contribute
------------------
+*****************
 
 Contributions are very welcome.
 Please read `How To Contribute <https://github.com/edx/edx-platform/blob/master/CONTRIBUTING.rst>`_ for details.
@@ -114,12 +114,12 @@ The issue report template should be automatically applied if you are creating an
 can find it at `ISSUE_TEMPLATE.md <.github/ISSUE_TEMPLATE.md>`_.
 
 Reporting Security Issues
--------------------------
+*************************
 
 Please do not report security issues in public. Please email security@edx.org.
 
 Getting Help
-------------
+************
 
 If you're having trouble, we have discussion forums at https://discuss.openedx.org where you can connect with others in the community.
 
