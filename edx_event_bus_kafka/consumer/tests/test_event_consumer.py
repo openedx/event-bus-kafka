@@ -126,7 +126,7 @@ class TestCommand(TestCase):
     Tests for the consume_events management command
     """
 
-    @override_settings(KAFKA_CONSUMERS_ENABLED=False)
+    @override_settings(EVENT_BUS_KAFKA_CONSUMERS_ENABLED=False)
     @patch('edx_event_bus_kafka.consumer.event_consumer.KafkaEventConsumer._create_consumer')
     def test_kafka_consumers_disabled(self, mock_create_consumer):
         call_command(Command(), topic='test', group_id='test', signal='')

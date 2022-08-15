@@ -11,9 +11,9 @@ The producer can be tested manually against a Kafka running in devstack.
    - Add ``'edx_event_bus_kafka'`` to the ``INSTALLED_APPS`` list
    - Add the following::
 
-       KAFKA_CONSUMERS_ENABLED = True
-       KAFKA_BOOTSTRAP_SERVERS = "edx.devstack.kafka:29092"
-       SCHEMA_REGISTRY_URL = "http://edx.devstack.schema-registry:8081"
+       EVENT_BUS_KAFKA_CONSUMERS_ENABLED = True
+       EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS = "edx.devstack.kafka:29092"
+       EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL = "http://edx.devstack.schema-registry:8081"
 
 #. In devstack, run ``make devpi-up studio-up-without-deps-shell`` to bring up Studio with a shell.
 #. In the Studio shell, run ``pip install -e /edx/src/event-bus-kafka``

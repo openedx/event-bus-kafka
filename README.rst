@@ -24,7 +24,7 @@ The documentation/ADRs may also be moved to more appropriate places as the proce
 
 There are a hefty number of "# TODO (EventBus)" annotations left in to help guide further development.
 While still under development, this app will be subject to frequent and rapid changes.
-Outside of testing this app, it is best to leave the KAFKA_CONSUMERS_ENABLED setting off.
+Outside of testing this app, it is best to leave the ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` setting off.
 
 The repository works together with the openedx/openedx-events repository to make the fully functional event bus.
 

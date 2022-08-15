@@ -19,16 +19,16 @@ from edx_event_bus_kafka.config import create_schema_registry_client, load_commo
 
 logger = logging.getLogger(__name__)
 
-# .. toggle_name: KAFKA_CONSUMERS_ENABLED
+# .. toggle_name: EVENT_BUS_KAFKA_CONSUMERS_ENABLED
 # .. toggle_implementation: SettingToggle
 # .. toggle_default: False
 # .. toggle_description: Enables the ability to listen and process events from the Kafka event bus
 # .. toggle_use_cases: opt_in
 # .. toggle_creation_date: 2022-01-31
 # .. toggle_tickets: https://openedx.atlassian.net/browse/ARCHBOM-1992
-KAFKA_CONSUMERS_ENABLED = SettingToggle('KAFKA_CONSUMERS_ENABLED', default=False)
+KAFKA_CONSUMERS_ENABLED = SettingToggle('EVENT_BUS_KAFKA_CONSUMERS_ENABLED', default=False)
 
-CONSUMER_POLL_TIMEOUT = getattr(settings, 'CONSUMER_POLL_TIMEOUT', 1.0)
+CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT', 1.0)
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
@@ -156,7 +156,8 @@ class KafkaEventConsumer:
 
 class ConsumeEventsCommand(BaseCommand):
     """
-    Listen for events from the event bus and log them. Only run on servers where KAFKA_CONSUMERS_ENABLED is true
+    Listen for events from the event bus and log them. Only run on servers where
+    ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` is true.
     """
     help = """
     This starts a Kafka event consumer that listens to the specified topic and logs all messages it receives. Topic
