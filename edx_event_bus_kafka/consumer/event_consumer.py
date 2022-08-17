@@ -18,6 +18,7 @@ from edx_event_bus_kafka.config import create_schema_registry_client, load_commo
 logger = logging.getLogger(__name__)
 
 try:
+    import confluent_kafka
     from confluent_kafka import DeserializingConsumer, KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
 except ImportError:
@@ -48,7 +49,7 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
-        if confluent_kafka:  # pylint: disable=used-before-assignment
+        if confluent_kafka:
             self.topic = topic
             self.group_id = group_id
             self.signal = signal

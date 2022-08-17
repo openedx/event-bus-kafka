@@ -8,6 +8,7 @@ from typing import Optional
 from django.conf import settings
 
 try:
+    import confluent_kafka
     from confluent_kafka.schema_registry import SchemaRegistryClient
 except ImportError:
     confluent_kafka = None
