@@ -5,14 +5,22 @@ Configuration loading and validation.
 import warnings
 from typing import Optional
 
-from confluent_kafka.schema_registry import SchemaRegistryClient
 from django.conf import settings
+
+try:
+    from confluent_kafka.schema_registry import SchemaRegistryClient
+except ImportError:
+    confluent_kafka = None
 
 
 def create_schema_registry_client() -> Optional[SchemaRegistryClient]:
     """
     Create a schema registry client from common settings.
     """
+    if not confluent_kafka:  # pylint: disable=used-before-assignment
+        warnings.warn('Library confluent-kafka not available. Cannot create schema registry client.')
+        return None
+
     url = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL', None)
     if url is None:
         warnings.warn("Cannot configure event-bus-kafka: Missing setting EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL")

@@ -6,7 +6,6 @@ import copy
 from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
-from confluent_kafka.serialization import StringSerializer
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -15,6 +14,11 @@ from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.consumer.event_consumer import KafkaEventConsumer
 from edx_event_bus_kafka.management.commands.consume_events import Command
+
+try:
+    from confluent_kafka.serialization import StringSerializer
+except ImportExcept:
+    confluent_kafka = None
 
 
 class FakeMessage:

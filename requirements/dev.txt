@@ -13,7 +13,7 @@ astroid==2.11.7
     #   -r requirements/quality.txt
     #   pylint
     #   pylint-celery
-attrs==21.4.0
+attrs==22.1.0
     # via
     #   -r requirements/quality.txt
     #   openedx-events
@@ -70,9 +70,9 @@ commonmark==0.9.1
     # via
     #   -r requirements/quality.txt
     #   rich
-confluent-kafka[avro,schema-registry]==1.9.0
+confluent-kafka[avro,schema-registry]==1.9.2
     # via -r requirements/quality.txt
-coverage[toml]==6.4.2
+coverage[toml]==6.4.4
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -88,7 +88,7 @@ distlib==0.3.5
     # via
     #   -r requirements/ci.txt
     #   virtualenv
-django==3.2.14
+django==3.2.15
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/quality.txt
@@ -125,12 +125,12 @@ edx-opaque-keys[django]==2.3.0
     #   openedx-events
 edx-toggles==5.0.0
     # via -r requirements/quality.txt
-fastavro==1.5.3
+fastavro==1.6.0
     # via
     #   -r requirements/quality.txt
     #   confluent-kafka
     #   openedx-events
-filelock==3.7.1
+filelock==3.8.0
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -158,7 +158,7 @@ jinja2==3.1.2
     #   -r requirements/quality.txt
     #   code-annotations
     #   diff-cover
-keyring==23.7.0
+keyring==23.8.2
     # via
     #   -r requirements/quality.txt
     #   twine
@@ -174,11 +174,11 @@ mccabe==0.7.0
     # via
     #   -r requirements/quality.txt
     #   pylint
-newrelic==7.14.0.177
+newrelic==8.0.0.179
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
-openedx-events==0.10.0
+openedx-events==0.12.0
     # via -r requirements/quality.txt
 packaging==21.3
     # via
@@ -190,11 +190,11 @@ packaging==21.3
     #   tox
 path==16.4.0
     # via edx-i18n-tools
-pbr==5.9.0
+pbr==5.10.0
     # via
     #   -r requirements/quality.txt
     #   stevedore
-pep517==0.12.0
+pep517==0.13.0
     # via
     #   -r requirements/pip-tools.txt
     #   build
@@ -229,7 +229,7 @@ py==1.11.0
     #   -r requirements/quality.txt
     #   pytest
     #   tox
-pycodestyle==2.8.0
+pycodestyle==2.9.1
     # via -r requirements/quality.txt
 pycparser==2.21
     # via
@@ -237,7 +237,7 @@ pycparser==2.21
     #   cffi
 pydocstyle==6.1.1
     # via -r requirements/quality.txt
-pygments==2.12.0
+pygments==2.13.0
     # via
     #   -r requirements/quality.txt
     #   diff-cover
@@ -290,7 +290,7 @@ python-slugify==6.1.2
     # via
     #   -r requirements/quality.txt
     #   code-annotations
-pytz==2022.1
+pytz==2022.2.1
     # via
     #   -r requirements/quality.txt
     #   django
@@ -299,7 +299,7 @@ pyyaml==6.0
     #   -r requirements/quality.txt
     #   code-annotations
     #   edx-i18n-tools
-readme-renderer==35.0
+readme-renderer==36.0
     # via
     #   -r requirements/quality.txt
     #   twine
@@ -330,7 +330,6 @@ six==1.16.0
     #   bleach
     #   edx-lint
     #   tox
-    #   virtualenv
 snowballstemmer==2.2.0
     # via
     #   -r requirements/quality.txt
@@ -362,7 +361,7 @@ tomli==2.0.1
     #   pep517
     #   pylint
     #   pytest
-tomlkit==0.11.1
+tomlkit==0.11.4
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -380,13 +379,13 @@ typing-extensions==4.3.0
     #   astroid
     #   pylint
     #   rich
-urllib3==1.26.10
+urllib3==1.26.11
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   requests
     #   twine
-virtualenv==20.15.1
+virtualenv==20.16.3
     # via
     #   -r requirements/ci.txt
     #   tox

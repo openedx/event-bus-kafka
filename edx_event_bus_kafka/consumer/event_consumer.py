@@ -4,8 +4,6 @@ Core consumer and event-loop code.
 
 import logging
 
-from confluent_kafka import DeserializingConsumer, KafkaError
-from confluent_kafka.schema_registry.avro import AvroDeserializer
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.dispatch import receiver
@@ -18,6 +16,12 @@ from openedx_events.tooling import OpenEdxPublicSignal
 from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
+
+try:
+    from confluent_kafka import DeserializingConsumer, KafkaError
+    from confluent_kafka.schema_registry.avro import AvroDeserializer
+except ImportError:
+    confluent_kafka = None
 
 # .. toggle_name: EVENT_BUS_KAFKA_CONSUMERS_ENABLED
 # .. toggle_implementation: SettingToggle
@@ -44,10 +48,13 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
-        self.topic = topic
-        self.group_id = group_id
-        self.signal = signal
-        self.consumer = self._create_consumer()
+        if confluent_kafka:  # pylint: disable=used-before-assignment
+            self.topic = topic
+            self.group_id = group_id
+            self.signal = signal
+            self.consumer = self._create_consumer()
+        else:
+            raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
     def _create_consumer(self) -> DeserializingConsumer:
         """

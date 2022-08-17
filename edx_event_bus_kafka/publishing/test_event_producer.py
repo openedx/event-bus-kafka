@@ -8,12 +8,16 @@ from unittest.mock import MagicMock, patch
 
 import openedx_events.learning.signals
 import pytest
-from confluent_kafka import SerializingProducer
 from django.test import override_settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.learning.data import UserData, UserPersonalData
 
 import edx_event_bus_kafka.publishing.event_producer as ep
+
+try:
+    from confluent_kafka import SerializingProducer
+except ImportError:
+    confluent_kafka = None
 
 
 class TestEventProducer(TestCase):

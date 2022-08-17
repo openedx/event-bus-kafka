@@ -9,14 +9,18 @@ import logging
 from functools import lru_cache
 from typing import Any, List, Optional
 
-from confluent_kafka import SerializingProducer
-from confluent_kafka.schema_registry.avro import AvroSerializer
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
+
+try:
+    from confluent_kafka import SerializingProducer
+    from confluent_kafka.schema_registry.avro import AvroSerializer
+except ImportError:
+    confluent_kafka = None
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
@@ -135,6 +139,10 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -
         remote-config (and in particular does not result in mixed cache/uncached configuration).
         This complexity is being deferred until this becomes a performance issue.
     """
+    if not confluent_kafka:  # pylint: disable=used-before-assignment
+        logger.warning('Library confluent-kafka not available. Cannot create event consumer.')
+        return None
+
     schema_registry_client = create_schema_registry_client()
     if schema_registry_client is None:
         return None
