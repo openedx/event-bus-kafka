@@ -7,7 +7,7 @@ Main function is ``send_to_event_bus``.
 import json
 import logging
 from functools import lru_cache
-from typing import Any, List, Optional
+from typing import Any, List
 
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
