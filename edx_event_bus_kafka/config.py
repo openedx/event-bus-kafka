@@ -14,7 +14,8 @@ except ImportError:
     confluent_kafka = None
 
 
-def create_schema_registry_client() -> Optional[SchemaRegistryClient]:
+# return type (Optional[SchemaRegistryClient]) removed for better error messaging when confluent-kafka is not available
+def create_schema_registry_client():
     """
     Create a schema registry client from common settings.
     """

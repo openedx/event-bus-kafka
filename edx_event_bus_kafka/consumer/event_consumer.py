@@ -49,6 +49,7 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
+        print(f'confluent_kafka: {confluent_kafka}')
         if confluent_kafka:
             self.topic = topic
             self.group_id = group_id
@@ -57,7 +58,9 @@ class KafkaEventConsumer:
         else:
             raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
-    def _create_consumer(self) -> DeserializingConsumer:
+    # return type (Optional[DeserializingConsumer]) removed for better error messaging when confluent-kafka is not
+    # available
+    def _create_consumer(self):
         """
         Create a DeserializingConsumer for events of the given signal instance.
         """
