@@ -14,10 +14,13 @@ except ImportError:
     confluent_kafka = None
 
 
-# return type (Optional[SchemaRegistryClient]) removed for better error messaging when confluent-kafka is not available
 def create_schema_registry_client():
     """
     Create a schema registry client from common settings.
+
+    Returns
+        None if confluent_kafka library is not available or the settings are invalid.
+        SchemaRegistryClient if it is.
     """
     if not confluent_kafka:
         warnings.warn('Library confluent-kafka not available. Cannot create schema registry client.')

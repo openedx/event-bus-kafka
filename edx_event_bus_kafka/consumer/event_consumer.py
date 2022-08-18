@@ -49,19 +49,21 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
-        if confluent_kafka:
-            self.topic = topic
-            self.group_id = group_id
-            self.signal = signal
-            self.consumer = self._create_consumer()
-        else:
+        if confluent_kafka is None:
             raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
-    # return type (Optional[DeserializingConsumer]) removed for better error messaging when confluent-kafka is not
-    # available
+        self.topic = topic
+        self.group_id = group_id
+        self.signal = signal
+        self.consumer = self._create_consumer()
+
     def _create_consumer(self):
         """
         Create a DeserializingConsumer for events of the given signal instance.
+
+        Returns
+            None if confluent_kafka is not available.
+            DeserializingConsumer if it is.
         """
 
         schema_registry_client = create_schema_registry_client()

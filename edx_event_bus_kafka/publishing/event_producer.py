@@ -124,7 +124,6 @@ def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
 # outbound-message queue and threads. The use of this cache allows the
 # producers to be long-lived.
 
-# return type (Optional[SerializingProducer]) removed for better error messaging when confluent-kafka is not available
 @lru_cache
 def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
     """
@@ -136,6 +135,9 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
         signal: The OpenEdxPublicSignal to make a producer for
         event_key_field: Path to the event data field to use as the event key (period-delimited
           string naming the dictionary keys to descend)
+    Returns:
+        None if confluent_kafka is not defined or the settings are invalid.
+        SerializingProducer if it is.
 
     Performance note:
         This could be cached, but requires care such that it allows changes to settings via
