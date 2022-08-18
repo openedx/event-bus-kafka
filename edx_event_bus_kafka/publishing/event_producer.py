@@ -141,7 +141,7 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -
         This complexity is being deferred until this becomes a performance issue.
     """
     if not confluent_kafka:
-        logger.warning('Library confluent-kafka not available. Cannot create event consumer.')
+        logger.warning('Library confluent-kafka not available. Cannot create event producer.')
         return None
 
     schema_registry_client = create_schema_registry_client()
