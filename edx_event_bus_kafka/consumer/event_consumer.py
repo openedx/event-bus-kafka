@@ -175,6 +175,7 @@ class ConsumeEventsCommand(BaseCommand):
 
     example:
         python3 manage.py cms consume_events -t user-event-debug -g user-event-consumers
+            -s org.openedx.learning.auth.session.login.completed.v1
 
     # TODO (EventBus): Add pointer to relevant future docs around topics and consumer groups, and potentially
     update example topic and group names to follow any future naming conventions.
