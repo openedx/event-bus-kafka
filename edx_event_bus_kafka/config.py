@@ -19,7 +19,7 @@ def create_schema_registry_client():
     """
     Create a schema registry client from common settings.
     """
-    if not confluent_kafka:  # pylint: disable=used-before-assignment
+    if not confluent_kafka:
         warnings.warn('Library confluent-kafka not available. Cannot create schema registry client.')
         return None
 
