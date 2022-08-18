@@ -57,6 +57,7 @@ class KafkaEventConsumer:
         self.signal = signal
         self.consumer = self._create_consumer()
 
+    # return type (Optional[DeserializingConsumer]) removed from signature to avoid error on import
     def _create_consumer(self):
         """
         Create a DeserializingConsumer for events of the given signal instance.

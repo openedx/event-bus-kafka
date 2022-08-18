@@ -124,6 +124,8 @@ def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
 # outbound-message queue and threads. The use of this cache allows the
 # producers to be long-lived.
 
+# return type (Optional[SerializingProducer]) removed from signature to avoid error on import
+
 @lru_cache
 def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
     """

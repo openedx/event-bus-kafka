@@ -14,6 +14,7 @@ except ImportError:
     confluent_kafka = None
 
 
+# return type (Optional[SchemaRegistryClient]) removed from signature to avoid error on import
 def create_schema_registry_client():
     """
     Create a schema registry client from common settings.
