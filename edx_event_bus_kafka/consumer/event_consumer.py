@@ -49,7 +49,6 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
-        print(f'confluent_kafka: {confluent_kafka}')
         if confluent_kafka:
             self.topic = topic
             self.group_id = group_id
