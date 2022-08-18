@@ -25,18 +25,18 @@ Instead of requiring confluent-kafka directly in base.in, we will wrap all impor
 
 For example::
 
-try:
-    import confluent_kafka
-    from confluent_kafka import DeserializingConsumer
-except ImportError:
-    confluent_kafka = None
+    try:
+        import confluent_kafka
+        from confluent_kafka import DeserializingConsumer
+    except ImportError:
+        confluent_kafka = None
 
 Then, later on, before any usage of `DeserializingConsumer`::
 
-if not confluent_kafka:
-    warn("Confluent_kafka not installed")
-    return None
-...do things with DeserializingConsumer
+    if not confluent_kafka:
+        warn("Confluent_kafka not installed")
+        return None
+    ...do things with DeserializingConsumer
 
 Consequences
 ************
