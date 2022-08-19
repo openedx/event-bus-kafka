@@ -11,9 +11,9 @@ Context
 
 * `confluent-kafka`_ is a library written and maintained by Confluent, our managed instance provider (see :doc:`0004-kafka-managed-hosting`). The library abstracts out the work for sending and receiving events to and from the Kafka cluster and converting them into message objects.
 * confluent-kafka in turn is a wrapper around a C library called `librdkafka`_ (distributed as `librdkafka_dev`)
-* librdkafka-dev does not currently have a compiled binary available for Linux/aarch64, which is a common architecture for Open edX developers
+* librdkafka-dev does not currently have a compiled binary available for Linux/aarch64
 
-As a result of the points above, if a package includes a dependency on confluent-kafka, developers will not be able to install the package in Linux/aarch64 environments.
+As a result of the points above, if a package includes a dependency on confluent-kafka, installation will fail in Linux/aarch64 environments. This is a particular problem for developers who are using Tutor on an M1 Mac. Tutor is the standard distribution for Open edX developers and maintainers, so this is a significant issue for a large part of the community.
 
 .. _confluent-kafka: https://github.com/confluentinc/confluent-kafka-python
 .. _librdkafka: https://github.com/edenhill/librdkafka
