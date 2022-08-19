@@ -4,8 +4,6 @@ Core consumer and event-loop code.
 
 import logging
 
-from confluent_kafka import DeserializingConsumer, KafkaError
-from confluent_kafka.schema_registry.avro import AvroDeserializer
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.dispatch import receiver
@@ -18,6 +16,13 @@ from openedx_events.tooling import OpenEdxPublicSignal
 from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
+
+try:
+    import confluent_kafka
+    from confluent_kafka import DeserializingConsumer, KafkaError
+    from confluent_kafka.schema_registry.avro import AvroDeserializer
+except ImportError:
+    confluent_kafka = None
 
 # .. toggle_name: EVENT_BUS_KAFKA_CONSUMERS_ENABLED
 # .. toggle_implementation: SettingToggle
@@ -44,14 +49,22 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
+        if confluent_kafka is None:
+            raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
+
         self.topic = topic
         self.group_id = group_id
         self.signal = signal
         self.consumer = self._create_consumer()
 
-    def _create_consumer(self) -> DeserializingConsumer:
+    # return type (Optional[DeserializingConsumer]) removed from signature to avoid error on import
+    def _create_consumer(self):
         """
         Create a DeserializingConsumer for events of the given signal instance.
+
+        Returns
+            None if confluent_kafka is not available.
+            DeserializingConsumer if it is.
         """
 
         schema_registry_client = create_schema_registry_client()
@@ -165,6 +178,7 @@ class ConsumeEventsCommand(BaseCommand):
 
     example:
         python3 manage.py cms consume_events -t user-event-debug -g user-event-consumers
+            -s org.openedx.learning.auth.session.login.completed.v1
 
     # TODO (EventBus): Add pointer to relevant future docs around topics and consumer groups, and potentially
     update example topic and group names to follow any future naming conventions.

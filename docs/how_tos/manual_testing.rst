@@ -17,6 +17,7 @@ The producer can be tested manually against a Kafka running in devstack.
 
 #. In devstack, run ``make devpi-up studio-up-without-deps-shell`` to bring up Studio with a shell.
 #. In the Studio shell, run ``pip install -e /edx/src/event-bus-kafka``
+#. In the Studio shell, run ``pip install 'confluent_kafka[avro,schema-registry]'`` (necessary external dependency)
 #. Test the producer:
 
    - Run the example command listed in the ``edx_event_bus_kafka.management.commands.produce_event.Command`` docstring

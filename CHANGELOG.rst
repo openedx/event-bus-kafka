@@ -16,6 +16,18 @@ Unreleased
 
 *
 
+[0.4.1] - 2022-08-18
+********************
+
+Changed
+=======
+
+* Remove confluent-kafka as a formal dependency of the repository.
+
+  * Note: This library will not work without confluent-kafka.
+
+* Add an ADR to explain why this work was done.
+
 [0.4.0] - 2022-08-15
 ********************
 

@@ -19,8 +19,7 @@ class Command(BaseCommand):
     Produce a single test event.
     """
     help = """
-    This starts a Kafka event consumer that listens to the specified topic and logs all messages it receives. Topic
-    is required.
+    This starts a Kafka event consumer that produces a test event with the given data to the specified topic.
 
     example:
         python3 manage.py cms produce_event --signal openedx_events.learning.signals.SESSION_LOGIN_COMPLETED \

@@ -7,16 +7,21 @@ Main function is ``send_to_event_bus``.
 import json
 import logging
 from functools import lru_cache
-from typing import Any, List, Optional
+from typing import Any, List
 
-from confluent_kafka import SerializingProducer
-from confluent_kafka.schema_registry.avro import AvroSerializer
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
+
+try:
+    import confluent_kafka
+    from confluent_kafka import SerializingProducer
+    from confluent_kafka.schema_registry.avro import AvroSerializer
+except ImportError:
+    confluent_kafka = None
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
@@ -118,8 +123,11 @@ def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
 # fall out of scope and be garbage-collected, destroying the
 # outbound-message queue and threads. The use of this cache allows the
 # producers to be long-lived.
+
+# return type (Optional[SerializingProducer]) removed from signature to avoid error on import
+
 @lru_cache
-def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -> Optional[SerializingProducer]:
+def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
     """
     Create the producer for a signal and a key field path.
 
@@ -129,12 +137,19 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str) -
         signal: The OpenEdxPublicSignal to make a producer for
         event_key_field: Path to the event data field to use as the event key (period-delimited
           string naming the dictionary keys to descend)
+    Returns:
+        None if confluent_kafka is not defined or the settings are invalid.
+        SerializingProducer if it is.
 
     Performance note:
         This could be cached, but requires care such that it allows changes to settings via
         remote-config (and in particular does not result in mixed cache/uncached configuration).
         This complexity is being deferred until this becomes a performance issue.
     """
+    if not confluent_kafka:
+        logger.warning('Library confluent-kafka not available. Cannot create event producer.')
+        return None
+
     schema_registry_client = create_schema_registry_client()
     if schema_registry_client is None:
         return None
