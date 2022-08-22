@@ -44,6 +44,8 @@ def create_schema_registry_client():
 def load_common_settings() -> Optional[dict]:
     """
     Load common settings, a base for either producer or consumer configuration.
+
+    Warns and returns None if essential settings are missing.
     """
     bootstrap_servers = getattr(settings, 'EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS', None)
     if bootstrap_servers is None:
@@ -54,8 +56,8 @@ def load_common_settings() -> Optional[dict]:
         'bootstrap.servers': bootstrap_servers,
     }
 
-    key = getattr(base_settings, 'EVENT_BUS_KAFKA_API_KEY', None)
-    secret = getattr(base_settings, 'EVENT_BUS_KAFKA_API_SECRET', None)
+    key = getattr(settings, 'EVENT_BUS_KAFKA_API_KEY', None)
+    secret = getattr(settings, 'EVENT_BUS_KAFKA_API_SECRET', None)
 
     if key and secret:
         base_settings.update({
