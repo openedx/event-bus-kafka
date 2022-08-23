@@ -29,12 +29,12 @@ For example::
     try:
         import confluent_kafka
         from confluent_kafka import DeserializingConsumer
-    except ImportError:
+    except ImportError:  # pragma: no cover
         confluent_kafka = None
 
 Then, later on, before any usage of ``DeserializingConsumer``::
 
-    if not confluent_kafka:
+    if not confluent_kafka:  # pragma: no cover
         warn("Confluent_kafka not installed")
         return None
     ...do things with DeserializingConsumer
@@ -44,7 +44,7 @@ For test modules, we can do something simpler; we'll always run tests with ``con
     # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
     try:
         from confluent_kafka import DeserializingConsumer
-    except ImportError:
+    except ImportError:  # pragma: no cover
         pass
 
 Consequences

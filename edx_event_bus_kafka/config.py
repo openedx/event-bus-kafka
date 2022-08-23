@@ -11,7 +11,7 @@ from django.conf import settings
 try:
     import confluent_kafka
     from confluent_kafka.schema_registry import SchemaRegistryClient
-except ImportError:
+except ImportError:  # pragma: no cover
     confluent_kafka = None
 
 
@@ -24,7 +24,7 @@ def create_schema_registry_client():
         None if confluent_kafka library is not available or the settings are invalid.
         SchemaRegistryClient if it is.
     """
-    if not confluent_kafka:
+    if not confluent_kafka:  # pragma: no cover
         warnings.warn('Library confluent-kafka not available. Cannot create schema registry client.')
         return None
 

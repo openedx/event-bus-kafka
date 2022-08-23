@@ -18,8 +18,8 @@ from edx_event_bus_kafka.management.commands.consume_events import Command
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     from confluent_kafka.serialization import StringSerializer
-except ImportExcept:
-    pass  # pragma: no cover
+except ImportExcept:  # pragma: no cover
+    pass
 
 
 class FakeMessage:

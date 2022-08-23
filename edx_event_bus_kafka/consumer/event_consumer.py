@@ -22,7 +22,7 @@ try:
     import confluent_kafka
     from confluent_kafka import DeserializingConsumer, KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
-except ImportError:
+except ImportError:  # pragma: no cover
     confluent_kafka = None
 
 # .. toggle_name: EVENT_BUS_KAFKA_CONSUMERS_ENABLED
@@ -50,7 +50,7 @@ class KafkaEventConsumer:
     """
 
     def __init__(self, topic, group_id, signal):
-        if confluent_kafka is None:
+        if confluent_kafka is None:  # pragma: no cover
             raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
         self.topic = topic
