@@ -8,10 +8,11 @@ from django.test.utils import override_settings
 
 from edx_event_bus_kafka import config
 
+# See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     from confluent_kafka.schema_registry import SchemaRegistryClient
 except ImportError:  # pragma: no cover
-    SchemaRegistryClient = None  # pragma: no cover
+    pass
 
 
 class TestSchemaRegistryClient(TestCase):
