@@ -19,7 +19,7 @@ from edx_event_bus_kafka.management.commands.consume_events import Command
 try:
     from confluent_kafka.serialization import StringSerializer
 except ImportExcept:
-    pass
+    pass  # pragma: no cover
 
 
 class FakeMessage:

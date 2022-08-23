@@ -18,7 +18,7 @@ import edx_event_bus_kafka.publishing.event_producer as ep
 try:
     from confluent_kafka import SerializingProducer
 except ImportError:
-    pass
+    pass  # pragma: no cover
 
 
 class TestEventProducer(TestCase):
