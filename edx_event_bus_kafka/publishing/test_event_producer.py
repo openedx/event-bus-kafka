@@ -24,11 +24,6 @@ except ImportError:  # pragma: no cover
 class TestEventProducer(TestCase):
     """Test producer."""
 
-    def setUp(self):
-        super().setUp()
-        ep.get_producer_for_signal.cache_clear()
-        ep.get_serializer.cache_clear()
-
     def test_extract_event_key(self):
         event_data = {
             'user': UserData(

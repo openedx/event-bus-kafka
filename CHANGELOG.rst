@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.4.3] - 2022-08-24
+********************
+
+Fixed
+=====
+
+* Never evict producers from cache. There wasn't a real risk of this, but now we can rely on them being long-lived. Addresses remainder of `<https://github.com/openedx/event-bus-kafka/issues/16>`__.
+
 [0.4.2] - 2022-08-24
 ********************
 
