@@ -7,6 +7,7 @@ from typing import Optional
 
 from django.conf import settings
 
+# See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
     from confluent_kafka.schema_registry import SchemaRegistryClient

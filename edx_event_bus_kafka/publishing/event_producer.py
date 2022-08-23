@@ -16,6 +16,7 @@ from edx_event_bus_kafka.config import create_schema_registry_client, load_commo
 
 logger = logging.getLogger(__name__)
 
+# See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
     from confluent_kafka import SerializingProducer
