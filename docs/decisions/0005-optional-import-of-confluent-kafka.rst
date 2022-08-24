@@ -64,6 +64,6 @@ This would require developers to install ``edx-event-bus-kafka`` separately when
 
 We expect edx-event-bus-kafka to change more frequently than ``confluent-kafka``, which is why we are more willing to adopt the optional dependency strategy for the latter.
 
-* Keep both ``confluent-kafka`` and ``edx-event-bus-kafka`` as a required dependencies
+* Keep both ``confluent-kafka`` and ``edx-event-bus-kafka`` as required dependencies
 
 While not necessarily causing problems for edx.org, this would break many community-hosted Open edX instances as well as many development environments.
