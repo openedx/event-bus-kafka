@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.4.2] - 2022-08-24
+********************
+
+Fixed
+=====
+
+* Properly load auth settings for producer/consumer. (Auth settings were ignored since 0.3.1.)
+
 [0.4.1] - 2022-08-18
 ********************
 
