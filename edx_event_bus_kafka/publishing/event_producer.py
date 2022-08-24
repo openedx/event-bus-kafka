@@ -9,6 +9,8 @@ import logging
 from functools import lru_cache
 from typing import Any, List
 
+from django.dispatch import receiver
+from django.test.signals import setting_changed
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
@@ -115,7 +117,7 @@ def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
     """
     Get the serializer for a signal.
 
-    This is just defined to allow caching of serializers.
+    This is cached in order to save work re-transforming classes into Avro schemas.
     """
     return AvroSignalSerializer(signal)
 
@@ -124,10 +126,23 @@ def get_serializer(signal: OpenEdxPublicSignal) -> AvroSignalSerializer:
 # fall out of scope and be garbage-collected, destroying the
 # outbound-message queue and threads. The use of this cache allows the
 # producers to be long-lived.
+#
+# We are also likely to need to iterate through this cache at server
+# shutdown in order to flush each of the producers, which means the
+# cache needs to never evict. See https://github.com/openedx/event-bus-kafka/issues/11
+# for more details.
+#
+# (Why not change the code to use a single Producer rather than multiple
+# SerializerProducer? Because the code actually turns out to be significantly
+# uglier that way due to the number of separate values that need to be passed
+# around in bundles. There aren't clear "cut-off" points. Additionally, it
+# makes unit testing harder/uglier since now the mocks need to either deal with
+# serialized bytes or mock out the serializers. Getting this down to a single
+# Producer doesn't really seem worth the trouble.)
 
 # return type (Optional[SerializingProducer]) removed from signature to avoid error on import
 
-@lru_cache
+@lru_cache(maxsize=None)  # Never evict an entry -- it's a small set and we need to keep all of them.
 def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
     """
     Create the producer for a signal and a key field path.
@@ -141,11 +156,6 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
     Returns:
         None if confluent_kafka is not defined or the settings are invalid.
         SerializingProducer if it is.
-
-    Performance note:
-        This could be cached, but requires care such that it allows changes to settings via
-        remote-config (and in particular does not result in mixed cache/uncached configuration).
-        This complexity is being deferred until this becomes a performance issue.
     """
     if not confluent_kafka:  # pragma: no cover
         logger.warning('Library confluent-kafka not available. Cannot create event producer.')
@@ -245,3 +255,10 @@ def send_to_event_bus(
         #
         # Docs: https://github.com/edenhill/librdkafka/blob/4faeb8132521da70b6bcde14423a14eb7ed5c55e/src/rdkafka.h#L3079
         producer.poll(0)
+
+
+@receiver(setting_changed)
+def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
+    """Reset caches during testing when settings change."""
+    get_serializer.cache_clear()
+    get_producer_for_signal.cache_clear()
