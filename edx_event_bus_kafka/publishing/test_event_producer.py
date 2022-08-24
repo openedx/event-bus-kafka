@@ -14,10 +14,11 @@ from openedx_events.learning.data import UserData, UserPersonalData
 
 import edx_event_bus_kafka.publishing.event_producer as ep
 
+# See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     from confluent_kafka import SerializingProducer
-except ImportError:
-    confluent_kafka = None
+except ImportError:  # pragma: no cover
+    pass
 
 
 class TestEventProducer(TestCase):
