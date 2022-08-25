@@ -3,9 +3,12 @@ Configuration loading and validation.
 """
 
 import warnings
+from functools import lru_cache
 from typing import Optional
 
 from django.conf import settings
+from django.dispatch import receiver
+from django.test.signals import setting_changed
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -16,9 +19,12 @@ except ImportError:  # pragma: no cover
 
 
 # return type (Optional[SchemaRegistryClient]) removed from signature to avoid error on import
-def create_schema_registry_client():
+@lru_cache
+def get_schema_registry_client():
     """
     Create a schema registry client from common settings.
+
+    This is cached for convenience.
 
     Returns
         None if confluent_kafka library is not available or the settings are invalid.
@@ -69,3 +75,9 @@ def load_common_settings() -> Optional[dict]:
         })
 
     return base_settings
+
+
+@receiver(setting_changed)
+def _reset_state(sender, **kwargs):  # pylint: disable=unused-argument
+    """Reset caches during testing when settings change."""
+    get_schema_registry_client.cache_clear()

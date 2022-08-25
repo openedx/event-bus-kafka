@@ -13,7 +13,7 @@ from openedx_events.learning.data import UserData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
+from edx_event_bus_kafka.config import get_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class KafkaEventConsumer:
             DeserializingConsumer if it is.
         """
 
-        schema_registry_client = create_schema_registry_client()
+        schema_registry_client = get_schema_registry_client()
 
         # TODO (EventBus):
         # 1. Reevaluate if all consumers should listen for the earliest unprocessed offset (auto.offset.reset)

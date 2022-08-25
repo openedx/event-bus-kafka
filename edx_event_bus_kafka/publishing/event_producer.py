@@ -14,7 +14,7 @@ from django.test.signals import setting_changed
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from edx_event_bus_kafka.config import create_schema_registry_client, load_common_settings
+from edx_event_bus_kafka.config import get_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,7 @@ def get_producer_for_signal(signal: OpenEdxPublicSignal, event_key_field: str):
         logger.warning('Library confluent-kafka not available. Cannot create event producer.')
         return None
 
-    schema_registry_client = create_schema_registry_client()
+    schema_registry_client = get_schema_registry_client()
     if schema_registry_client is None:
         return None
 

@@ -17,11 +17,11 @@ except ImportError:  # pragma: no cover
 
 class TestSchemaRegistryClient(TestCase):
     def test_unconfigured(self):
-        assert config.create_schema_registry_client() is None
+        assert config.get_schema_registry_client() is None
 
     def test_configured(self):
         with override_settings(EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345'):
-            assert isinstance(config.create_schema_registry_client(), SchemaRegistryClient)
+            assert isinstance(config.get_schema_registry_client(), SchemaRegistryClient)
 
 
 class TestCommonSettings(TestCase):
