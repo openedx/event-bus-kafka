@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.4.4] - 2022-08-26
+********************
+
+Fixed
+=====
+
+* Fixed bug in test module for when confluent-kafka isn't present
+
 [0.4.3] - 2022-08-24
 ********************
 
