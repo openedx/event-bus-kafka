@@ -16,7 +16,7 @@ import edx_event_bus_kafka.publishing.event_producer as ep
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
-    from confluent_kafka import SerializingProducer
+    from confluent_kafka.schema_registry.avro import AvroSerializer
 except ImportError:  # pragma: no cover
     pass
 
@@ -62,18 +62,27 @@ class TestEventProducer(TestCase):
         schema = ep.extract_key_schema(AvroSignalSerializer(self.signal), 'user.pii.username')
         assert schema == '{"name": "username", "type": "string"}'
 
-    def test_get_producer_for_signal_unconfigured(self):
+    def test_serializers_configured(self):
+        with override_settings(EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345'):
+            key_ser, value_ser = ep.get_serializers(self.signal, 'user.id')
+            # We can't actually call them because they want to talk to the schema server.
+            assert isinstance(key_ser, AvroSerializer)
+            assert isinstance(value_ser, AvroSerializer)
+
+    def test_serializers_unconfigured(self):
+        with pytest.raises(Exception, match="missing library or settings"):
+            ep.get_serializers(self.signal, 'user.id')
+
+    def test_get_producer_unconfigured(self):
         """With missing essential settings, just warn and return None."""
-        signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter('always')
-            assert ep.get_producer_for_signal(signal, 'user.id') is None
+            assert ep.get_producer() is None
             assert len(caught_warnings) == 1
             assert str(caught_warnings[0].message).startswith("Cannot configure event-bus-kafka: Missing setting ")
 
-    def test_get_producer_for_signal_configured(self):
+    def test_get_producer_configured(self):
         """Creation succeeds when all settings are present."""
-        signal = openedx_events.learning.signals.SESSION_LOGIN_COMPLETED
         with override_settings(
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
@@ -83,7 +92,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
-            assert isinstance(ep.get_producer_for_signal(signal, 'user.id'), SerializingProducer)
+            assert isinstance(ep.get_producer(), ep.EventProducerKafka)
 
     @patch('edx_event_bus_kafka.publishing.event_producer.logger')
     def test_on_event_deliver(self, mock_logger):
@@ -100,13 +109,31 @@ class TestEventProducer(TestCase):
             'Event delivered to topic some_topic; key=some_key; partition=some_partition'
         )
 
-    def test_send_to_event_bus(self):
-        mock_producer = MagicMock()
-        with patch('edx_event_bus_kafka.publishing.event_producer.get_producer_for_signal', return_value=mock_producer):
-            ep.send_to_event_bus(self.signal, 'user_stuff', 'user.id', self.event_data)
+    # Mock out the serializers for this one so we don't have to deal
+    # with expected Avro bytes -- and they can't call their schema server.
+    @patch(
+        'edx_event_bus_kafka.publishing.event_producer.get_serializers', autospec=True,
+        return_value=(
+            lambda _key, _ctx: b'key-bytes-here',
+            lambda _value, _ctx: b'value-bytes-here',
+        )
+    )
+    def test_send_to_event_bus(self, mock_get_serializers):
+        with override_settings(
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+        ):
+            producer_api = ep.get_producer()
+            with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
+                producer_api.send(
+                    signal=self.signal, topic='user_stuff',
+                    event_key_field='user.id', event_data=self.event_data
+                )
+
+        mock_get_serializers.assert_called_once_with(self.signal, 'user.id')
 
         mock_producer.produce.assert_called_once_with(
-            'user_stuff', key=123, value=self.event_data,
+            'user_stuff', key=b'key-bytes-here', value=b'value-bytes-here',
             on_delivery=ep.on_event_deliver,
             headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
         )

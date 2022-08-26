@@ -1,5 +1,7 @@
 """
 Configuration loading and validation.
+
+This module is for internal use only.
 """
 
 import warnings

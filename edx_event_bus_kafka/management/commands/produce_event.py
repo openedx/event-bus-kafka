@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand
 from django.utils.module_loading import import_string
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from edx_event_bus_kafka.publishing.event_producer import send_to_event_bus
+from edx_event_bus_kafka.publishing.event_producer import get_producer
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +53,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            send_to_event_bus(
+            producer = get_producer()
+            producer.send(
                 signal=import_string(options['signal'][0]),
                 topic=options['topic'][0],
                 event_key_field=options['key_field'][0],
                 event_data=json.loads(options['data'][0]),
-                sync=True,  # otherwise command may exit before delivery is complete
             )
+            producer.pre_shutdown()  # otherwise command may exit before delivery is complete
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error producing Kafka event")
