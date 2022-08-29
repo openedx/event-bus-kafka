@@ -5,7 +5,7 @@ This module is for internal use only.
 """
 
 import warnings
-from functools import cache
+from functools import lru_cache
 from typing import Optional
 
 from django.conf import settings
@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover
 
 
 # return type (Optional[SchemaRegistryClient]) removed from signature to avoid error on import
-@cache
+@lru_cache
 def get_schema_registry_client():
     """
     Create a schema registry client from common settings.

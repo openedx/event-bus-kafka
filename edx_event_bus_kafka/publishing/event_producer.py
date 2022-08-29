@@ -6,7 +6,7 @@ Main function is ``get_producer()``.
 
 import json
 import logging
-from functools import cache, lru_cache
+from functools import lru_cache
 from typing import Any, List, Optional
 
 from django.dispatch import receiver
@@ -214,7 +214,7 @@ class EventProducerKafka():
 # fall out of scope and be garbage-collected, destroying the
 # outbound-message queue and threads. The use of this cache allows the
 # producer to be long-lived.
-@cache
+@lru_cache
 def get_producer() -> Optional[EventProducerKafka]:
     """
     Create or retrieve Producer API singleton.
