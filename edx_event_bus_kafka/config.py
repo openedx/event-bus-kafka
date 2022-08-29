@@ -5,7 +5,7 @@ This module is for internal use only.
 """
 
 import warnings
-from functools import lru_cache
+from functools import cache
 from typing import Optional
 
 from django.conf import settings
@@ -21,12 +21,14 @@ except ImportError:  # pragma: no cover
 
 
 # return type (Optional[SchemaRegistryClient]) removed from signature to avoid error on import
-@lru_cache
+@cache
 def get_schema_registry_client():
     """
     Create a schema registry client from common settings.
 
-    This is cached for convenience.
+    This is cached on the assumption of a performance benefit (avoid reloading settings and
+    reconstructing client) but it may also be that the client keeps around long-lived
+    connections that we could benefit from.
 
     Returns
         None if confluent_kafka library is not available or the settings are invalid.
