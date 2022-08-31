@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.6.0] - 2022-09-01
+********************
+
+Changed
+=======
+
+* **Breaking change**: Public API is now defined in ``edx_event_bus_kafka`` package and ``edx_event_bus_kafka.management.commands`` package; all other modules should be considered unstable and not for external use.
+
 [0.5.0] - 2022-08-31
 ********************
 
@@ -32,8 +40,8 @@ Changed
 
 * **Breaking changes** in the producer module, refactored to expose a better API:
 
-  * Rather than `send_to_event_bus(...)`, relying code should now call `get_producer().send(...)`.
-  * The `sync` kwarg is gone; to flush and sync messages before shutdown, call `get_producer().prepare_for_shutdown()` instead.
+  * Rather than ``send_to_event_bus(...)``, relying code should now call ``get_producer().send(...)``.
+  * The ``sync`` kwarg is gone; to flush and sync messages before shutdown, call ``get_producer().prepare_for_shutdown()`` instead.
 
 * Clarify that config module is for internal use only.
 * Implementation changes: Only a single Producer is created, and is used for all signals.
