@@ -214,7 +214,7 @@ class EventProducerKafka():
 # fall out of scope and be garbage-collected, destroying the
 # outbound-message queue and threads. The use of this cache allows the
 # producer to be long-lived.
-@lru_cache
+@lru_cache  # will just be one cache entry, in practice
 def get_producer() -> Optional[EventProducerKafka]:
     """
     Create or retrieve Producer API singleton.

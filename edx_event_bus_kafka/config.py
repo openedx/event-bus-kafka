@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover
 
 
 # return type (Optional[SchemaRegistryClient]) removed from signature to avoid error on import
-@lru_cache
+@lru_cache  # will just be one cache entry, in practice
 def get_schema_registry_client():
     """
     Create a schema registry client from common settings.
