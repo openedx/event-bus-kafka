@@ -3,7 +3,6 @@ Tests for event_consumer module.
 """
 
 import copy
-from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 from django.core.management import call_command
@@ -14,12 +13,6 @@ from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.consumer.event_consumer import KafkaEventConsumer
 from edx_event_bus_kafka.management.commands.consume_events import Command
-
-# See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
-try:
-    from confluent_kafka.serialization import StringSerializer
-except ImportError:  # pragma: no cover
-    pass
 
 
 class FakeMessage:
@@ -65,6 +58,7 @@ class TestEmitSignals(TestCase):
     """
 
     def setUp(self):
+        super().setUp()
         self.normal_event_data = {
             'user': UserData(
                 id=123,
@@ -99,7 +93,7 @@ class TestEmitSignals(TestCase):
 
     def test_no_type(self):
         msg = copy.copy(self.normal_message)
-        msg._headers = []
+        msg._headers = []  # pylint: disable=protected-access
 
         with patch.object(OpenEdxPublicSignal, 'get_signal_by_type') as mock_lookup:
             self.event_consumer.emit_signals_from_message(msg)
@@ -117,10 +111,10 @@ class TestEmitSignals(TestCase):
 
     def test_unwanted_types(self):
         msg = copy.copy(self.normal_message)
-        msg._headers = [
+        msg._headers = [  # pylint: disable=protected-access
             ['ce_type', b'xxxx']
         ]
-        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', self.mock_signal) as mock_lookup:
+        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', self.mock_signal):
             self.event_consumer.emit_signals_from_message(msg)
 
         assert not self.mock_signal.send_event.called

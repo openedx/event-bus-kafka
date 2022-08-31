@@ -19,6 +19,14 @@ Unreleased
 [0.5.0] - 2022-08-31
 ********************
 
+Fixed
+=====
+
+* Various lint issues (and missing ``__init__.py`` files.)
+
+[0.5.0] - 2022-08-31
+********************
+
 Changed
 =======
 
