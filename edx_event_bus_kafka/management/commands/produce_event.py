@@ -1,5 +1,7 @@
 """
 Produce a single event. Intended for testing.
+
+Implements required ``APP.management.commands.*.Command`` structure.
 """
 
 import json
@@ -7,7 +9,6 @@ import logging
 
 from django.core.management.base import BaseCommand
 from django.utils.module_loading import import_string
-from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.publishing.event_producer import get_producer
 
