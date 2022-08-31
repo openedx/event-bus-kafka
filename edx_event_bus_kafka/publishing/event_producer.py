@@ -253,6 +253,6 @@ def on_event_deliver(err, evt):
 
 @receiver(setting_changed)
 def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
-    """Reset caches during testing when settings change."""
+    """Resets caches when settings change during unit tests."""
     get_serializers.cache_clear()
     get_producer.cache_clear()

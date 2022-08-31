@@ -83,5 +83,5 @@ def load_common_settings() -> Optional[dict]:
 
 @receiver(setting_changed)
 def _reset_state(sender, **kwargs):  # pylint: disable=unused-argument
-    """Reset caches during testing when settings change."""
+    """Resets caches when settings change during unit tests."""
     get_schema_registry_client.cache_clear()
