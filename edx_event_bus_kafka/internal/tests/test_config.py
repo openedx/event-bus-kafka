@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from django.test.utils import override_settings
 
-from edx_event_bus_kafka import config
+from edx_event_bus_kafka.internal import config
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:

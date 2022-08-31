@@ -10,7 +10,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.utils.module_loading import import_string
 
-from edx_event_bus_kafka.publishing.event_producer import get_producer
+from edx_event_bus_kafka.internal.producer import get_producer
 
 logger = logging.getLogger(__name__)
 
