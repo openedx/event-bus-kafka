@@ -201,7 +201,7 @@ class EventProducerKafka():
         # Issue: https://github.com/openedx/event-bus-kafka/issues/31
         self.producer.poll(0)
 
-    def pre_shutdown(self):
+    def prepare_for_shutdown(self):
         """
         Prepare producer for a clean shutdown.
 

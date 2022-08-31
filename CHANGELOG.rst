@@ -16,7 +16,7 @@ Unreleased
 
 *
 
-[0.5.0] - 2022-08-29
+[0.5.0] - 2022-08-31
 ********************
 
 Changed
@@ -25,7 +25,7 @@ Changed
 * **Breaking changes** in the producer module, refactored to expose a better API:
 
   * Rather than `send_to_event_bus(...)`, relying code should now call `get_producer().send(...)`.
-  * The `sync` kwarg is gone; to flush and sync messages before shutdown, call `get_producer().pre_shutdown()` instead.
+  * The `sync` kwarg is gone; to flush and sync messages before shutdown, call `get_producer().prepare_for_shutdown()` instead.
 
 * Clarify that config module is for internal use only.
 * Implementation changes: Only a single Producer is created, and is used for all signals.

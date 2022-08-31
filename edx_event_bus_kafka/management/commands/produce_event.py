@@ -60,6 +60,6 @@ class Command(BaseCommand):
                 event_key_field=options['key_field'][0],
                 event_data=json.loads(options['data'][0]),
             )
-            producer.pre_shutdown()  # otherwise command may exit before delivery is complete
+            producer.prepare_for_shutdown()  # otherwise command may exit before delivery is complete
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error producing Kafka event")
