@@ -24,7 +24,7 @@ Changed
 
 * **Breaking change**: Public API is now defined in ``edx_event_bus_kafka`` package and ``edx_event_bus_kafka.management.commands`` package; all other modules should be considered unstable and not for external use.
 
-[0.5.0] - 2022-08-31
+[0.5.1] - 2022-08-31
 ********************
 
 Fixed
