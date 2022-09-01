@@ -24,6 +24,13 @@ The documentation/ADRs may also be moved to more appropriate places as the proce
 
 The repository works together with the openedx/openedx-events repository to make the fully functional event bus.
 
+To use this implementation of the Event Bus with openedx-events, set the following Django settings::
+
+    EVENT_BUS_PRODUCER: edx_event_bus_kafka.get_producer
+    EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS: ...
+    EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL: ...
+    EVENT_BUS_TOPIC_PREFIX: ...
+
 For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 
 Documentation

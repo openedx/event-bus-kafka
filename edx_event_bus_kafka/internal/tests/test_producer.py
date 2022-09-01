@@ -8,6 +8,7 @@ import warnings
 from unittest import TestCase
 from unittest.mock import ANY, Mock, call, patch
 
+import openedx_events.event_bus
 import openedx_events.learning.signals
 import pytest
 from django.test import override_settings
@@ -85,8 +86,13 @@ class TestEventProducer(TestCase):
             assert str(caught_warnings[0].message).startswith("Cannot configure event-bus-kafka: Missing setting ")
 
     def test_get_producer_configured(self):
-        """Creation succeeds when all settings are present."""
+        """
+        Creation succeeds when all settings are present.
+
+        Also tests basic compliance with the implementation-loader API in openedx-events.
+        """
         with override_settings(
+                EVENT_BUS_PRODUCER='edx_event_bus_kafka.get_producer',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
@@ -95,7 +101,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
-            assert isinstance(ep.get_producer(), ep.KafkaEventProducer)
+            assert isinstance(openedx_events.event_bus.get_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
