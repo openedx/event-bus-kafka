@@ -4,7 +4,7 @@ Test the event producer code.
 
 import warnings
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, patch
 
 import openedx_events.learning.signals
 import pytest
@@ -87,7 +87,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
-                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 # include these just to maximize code coverage
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
@@ -96,7 +96,7 @@ class TestEventProducer(TestCase):
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
-        fake_event = MagicMock()
+        fake_event = Mock()
         fake_event.topic.return_value = 'some_topic'
         fake_event.key.return_value = 'some_key'
         fake_event.partition.return_value = 'some_partition'
@@ -121,7 +121,7 @@ class TestEventProducer(TestCase):
     def test_send_to_event_bus(self, mock_get_serializers):
         with override_settings(
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         ):
             producer_api = ep.get_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:

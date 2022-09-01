@@ -39,20 +39,20 @@ class TestCommonSettings(TestCase):
 
     def test_minimal(self):
         with override_settings(
-                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         ):
             assert config.load_common_settings() == {
-                'bootstrap.servers': 'http://localhost:54321',
+                'bootstrap.servers': 'localhost:54321',
             }
 
     def test_full(self):
         with override_settings(
-                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
             assert config.load_common_settings() == {
-                'bootstrap.servers': 'http://localhost:54321',
+                'bootstrap.servers': 'localhost:54321',
                 'sasl.mechanism': 'PLAIN',
                 'security.protocol': 'SASL_SSL',
                 'sasl.username': 'some_other_key',
