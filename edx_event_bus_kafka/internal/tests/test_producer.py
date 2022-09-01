@@ -2,6 +2,8 @@
 Test the event producer code.
 """
 
+import gc
+import time
 import warnings
 from unittest import TestCase
 from unittest.mock import Mock, patch
@@ -137,3 +139,55 @@ class TestEventProducer(TestCase):
             on_delivery=ep.on_event_deliver,
             headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
         )
+
+    @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
+    def test_polling_loop_terminates(self):
+        """
+        Test that polling loop stops as soon as the producer is garbage-collected.
+        """
+        call_count = 0
+
+        def increment_call_count(*args):
+            nonlocal call_count
+            call_count += 1
+
+        mock_producer = Mock(**{'poll.side_effect': increment_call_count})
+        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+
+        # Allow a little time to pass and check that the mock poll has been called
+        time.sleep(1.0)
+        assert call_count >= 3  # some small value; would actually be about 20
+        print(producer_api)  # Use the value here to ensure it isn't GC'd early
+
+        # Allow garbage collection of these objects, then ask for it to happen.
+        producer_api = None
+        mock_producer = None
+        gc.collect()
+
+        time.sleep(0.2)  # small multiple of loop iteration time
+        count_after_gc = call_count
+
+        # Wait a little longer and confirm that the count is no longer rising
+        time.sleep(1.0)
+        assert call_count == count_after_gc
+
+    @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
+    def test_polling_loop_robust(self):
+        """
+        Test that polling loop continues even if one call raises an exception.
+        """
+        call_count = 0
+
+        def increment_call_count(*args):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise Exception("Exercise error handler on first iteration")
+
+        mock_producer = Mock(**{'poll.side_effect': increment_call_count})
+        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+
+        # Allow a little time to pass and check that the mock poll has been called
+        time.sleep(1.0)
+        assert call_count >= 3  # some small value; would actually be about 20
+        print(producer_api)  # Use the value here to ensure it isn't GC'd early
