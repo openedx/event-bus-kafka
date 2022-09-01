@@ -11,7 +11,7 @@ from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from edx_event_bus_kafka.consumer.event_consumer import KafkaEventConsumer
+from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
 
@@ -126,7 +126,7 @@ class TestCommand(TestCase):
     """
 
     @override_settings(EVENT_BUS_KAFKA_CONSUMERS_ENABLED=False)
-    @patch('edx_event_bus_kafka.consumer.event_consumer.KafkaEventConsumer._create_consumer')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     def test_kafka_consumers_disabled(self, mock_create_consumer):
         call_command(Command(), topic='test', group_id='test', signal='')
         assert not mock_create_consumer.called

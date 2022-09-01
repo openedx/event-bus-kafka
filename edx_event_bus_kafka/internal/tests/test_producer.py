@@ -12,7 +12,7 @@ from django.test import override_settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.learning.data import UserData, UserPersonalData
 
-import edx_event_bus_kafka.publishing.event_producer as ep
+import edx_event_bus_kafka.internal.producer as ep
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -94,7 +94,7 @@ class TestEventProducer(TestCase):
         ):
             assert isinstance(ep.get_producer(), ep.EventProducerKafka)
 
-    @patch('edx_event_bus_kafka.publishing.event_producer.logger')
+    @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
         fake_event = MagicMock()
         fake_event.topic.return_value = 'some_topic'
@@ -112,7 +112,7 @@ class TestEventProducer(TestCase):
     # Mock out the serializers for this one so we don't have to deal
     # with expected Avro bytes -- and they can't call their schema server.
     @patch(
-        'edx_event_bus_kafka.publishing.event_producer.get_serializers', autospec=True,
+        'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
         return_value=(
             lambda _key, _ctx: b'key-bytes-here',
             lambda _value, _ctx: b'value-bytes-here',

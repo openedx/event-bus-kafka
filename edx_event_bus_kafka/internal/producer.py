@@ -14,7 +14,7 @@ from django.test.signals import setting_changed
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from edx_event_bus_kafka.config import get_schema_registry_client, load_common_settings
+from .config import get_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 

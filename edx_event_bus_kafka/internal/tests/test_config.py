@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from django.test.utils import override_settings
 
-from edx_event_bus_kafka import config
+from edx_event_bus_kafka.internal import config
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -16,6 +16,9 @@ except ImportError:  # pragma: no cover
 
 
 class TestSchemaRegistryClient(TestCase):
+    """
+    Test client creation.
+    """
     def test_unconfigured(self):
         assert config.get_schema_registry_client() is None
 
@@ -23,8 +26,14 @@ class TestSchemaRegistryClient(TestCase):
         with override_settings(EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345'):
             assert isinstance(config.get_schema_registry_client(), SchemaRegistryClient)
 
+        # Check if it's cached, too
+        assert config.get_schema_registry_client() is config.get_schema_registry_client()
+
 
 class TestCommonSettings(TestCase):
+    """
+    Test loading of settings common to producer and consumer.
+    """
     def test_unconfigured(self):
         assert config.load_common_settings() is None
 

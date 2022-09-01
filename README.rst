@@ -33,6 +33,9 @@ For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 Documentation
 *************
 
+- Main API: ``edx_event_bus_kafka`` exposes ``get_producer`` and a Producer API class. See `<https://github.com/openedx/openedx-events/issues/87>`_ for how these will be documented and used in the future.
+- Django management commands: ``edx_event_bus_kafka.management.commands.*`` expose ``Command`` classes
+
 OEP-52 documentation: https://open-edx-proposals.readthedocs.io/en/latest/architectural-decisions/oep-0052-arch-event-bus-architecture.html
 (TODO: `Set up documentation <https://openedx.atlassian.net/wiki/spaces/DOC/pages/21627535/Publish+Documentation+on+Read+the+Docs>`_)
 
