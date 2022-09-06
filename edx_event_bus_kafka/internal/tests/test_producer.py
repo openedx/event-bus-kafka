@@ -2,9 +2,11 @@
 Test the event producer code.
 """
 
+import gc
+import time
 import warnings
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, patch
 
 import openedx_events.learning.signals
 import pytest
@@ -87,7 +89,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
-                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 # include these just to maximize code coverage
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
@@ -96,7 +98,7 @@ class TestEventProducer(TestCase):
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
-        fake_event = MagicMock()
+        fake_event = Mock()
         fake_event.topic.return_value = 'some_topic'
         fake_event.key.return_value = 'some_key'
         fake_event.partition.return_value = 'some_partition'
@@ -121,7 +123,7 @@ class TestEventProducer(TestCase):
     def test_send_to_event_bus(self, mock_get_serializers):
         with override_settings(
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='http://localhost:54321',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         ):
             producer_api = ep.get_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
@@ -137,3 +139,55 @@ class TestEventProducer(TestCase):
             on_delivery=ep.on_event_deliver,
             headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
         )
+
+    @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
+    def test_polling_loop_terminates(self):
+        """
+        Test that polling loop stops as soon as the producer is garbage-collected.
+        """
+        call_count = 0
+
+        def increment_call_count(*args):
+            nonlocal call_count
+            call_count += 1
+
+        mock_producer = Mock(**{'poll.side_effect': increment_call_count})
+        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+
+        # Allow a little time to pass and check that the mock poll has been called
+        time.sleep(1.0)
+        assert call_count >= 3  # some small value; would actually be about 20
+        print(producer_api)  # Use the value here to ensure it isn't GC'd early
+
+        # Allow garbage collection of these objects, then ask for it to happen.
+        producer_api = None
+        mock_producer = None
+        gc.collect()
+
+        time.sleep(0.2)  # small multiple of loop iteration time
+        count_after_gc = call_count
+
+        # Wait a little longer and confirm that the count is no longer rising
+        time.sleep(1.0)
+        assert call_count == count_after_gc
+
+    @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
+    def test_polling_loop_robust(self):
+        """
+        Test that polling loop continues even if one call raises an exception.
+        """
+        call_count = 0
+
+        def increment_call_count(*args):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise Exception("Exercise error handler on first iteration")
+
+        mock_producer = Mock(**{'poll.side_effect': increment_call_count})
+        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+
+        # Allow a little time to pass and check that the mock poll has been called
+        time.sleep(1.0)
+        assert call_count >= 3  # some small value; would actually be about 20
+        print(producer_api)  # Use the value here to ensure it isn't GC'd early

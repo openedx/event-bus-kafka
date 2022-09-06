@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.6.1] - 2022-09-06
+********************
+
+Added
+=====
+
+* Producer now polls on an interval, improving callback reliability. Configurable with ``EVENT_BUS_KAFKA_POLL_INTERVAL_SEC``.
+
 [0.6.0] - 2022-09-01
 ********************
 

@@ -6,9 +6,13 @@ Main function is ``get_producer()``.
 
 import json
 import logging
+import threading
+import time
+import weakref
 from functools import lru_cache
 from typing import Any, List, Optional
 
+from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
@@ -167,6 +171,13 @@ class EventProducerKafka():
     def __init__(self, producer):
         self.producer = producer
 
+        threading.Thread(
+            target=poll_indefinitely,
+            name="kafka-producer-poll",
+            args=(weakref.ref(self),),  # allow GC but also thread auto-stop (important for tests!)
+            daemon=True,  # don't block shutdown
+        ).start()
+
     def send(
             self, *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
     ) -> None:
@@ -192,13 +203,11 @@ class EventProducerKafka():
         )
 
         # Opportunistically ensure any pending callbacks from recent event-sends are triggered.
-        #
-        # This assumes events come regularly, or that we're not concerned about
-        # high latency between delivery and callback. If those assumptions are
-        # false, we should switch to calling poll(1.0) or similar in a loop on
-        # a separate thread. Or do both.
-        #
-        # Issue: https://github.com/openedx/event-bus-kafka/issues/31
+        # This ensures that we're polling at least as often as we're producing, which is a
+        # reasonable balance. However, if events are infrequent, it doesn't ensure that
+        # callbacks happen in a timely fashion, and the last event emitted before shutdown
+        # would never get a delivery callback. That's why there's also a thread calling
+        # poll(0) on a regular interval (see `poll_indefinitely`).
         self.producer.poll(0)
 
     def prepare_for_shutdown(self):
@@ -208,6 +217,49 @@ class EventProducerKafka():
         Flush pending outbound events, wait for acknowledgement, and process callbacks.
         """
         self.producer.flush(-1)
+
+
+def poll_indefinitely(api_weakref: EventProducerKafka):
+    """
+    Poll the producer indefinitely to ensure delivery/stats/etc. callbacks are triggered.
+
+    The thread stops automatically once the producer is garbage-collected.
+
+    This ensures that callbacks are triggered in a timely fashion, rather than waiting
+    for the poll() call that we make before or after each produce() call. This may be
+    important if events are produced infrequently, and it allows the last event the
+    server emits before shutdown to have its callback run (if it happens soon enough.)
+    """
+    # The reason we hold a weakref to the whole EventProducerKafka and
+    # not directly to the Producer itself is that you just can't make
+    # a weakref to the latter (perhaps because it's a C object.)
+
+    # .. setting_name: EVENT_BUS_KAFKA_POLL_INTERVAL_SEC
+    # .. setting_default: 1.0
+    # .. setting_description: How frequently to poll the event-bus-kafka producer. This should
+    #   be small enough that there's not too much latency in triggering delivery callbacks once
+    #   a message has been acknowledged, but there's no point in setting it any lower than the
+    #   expected round-trip-time of message delivery and acknowledgement. (100 ms – 5 s is
+    #   probably a reasonable range.)
+    poll_interval_seconds = getattr(settings, 'EVENT_BUS_KAFKA_POLL_INTERVAL_SEC', 1.0)
+    while True:
+        time.sleep(poll_interval_seconds)
+
+        # Temporarily hold a strong ref to the producer API singleton
+        api_object = api_weakref()
+        if api_object is None:
+            return
+
+        try:
+            api_object.producer.poll(0)
+        except BaseException:
+            # If polling is failing, we'll almost certainly find out about it from the poll call
+            # we make when producing an event. The call in this loop could be excessively noisy,
+            # so just debug-log it.
+            logger.debug("Event bus producer polling loop encountered exception (continuing)", exc_info=True)
+        finally:
+            # Get rid of that strong ref again
+            api_object = None
 
 
 # Note: This caching is required, since otherwise the Producer will
