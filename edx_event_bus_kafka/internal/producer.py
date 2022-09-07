@@ -225,10 +225,8 @@ def poll_indefinitely(api_weakref: EventProducerKafka):
 
     The thread stops automatically once the producer is garbage-collected.
 
-    This ensures that callbacks are triggered in a timely fashion, rather than waiting
-    for the poll() call that we make before or after each produce() call. This may be
-    important if events are produced infrequently, and it allows the last event the
-    server emits before shutdown to have its callback run (if it happens soon enough.)
+    See ADR for more information:
+    https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0007-producer-polling.rst
     """
     # The reason we hold a weakref to the whole EventProducerKafka and
     # not directly to the Producer itself is that you just can't make
