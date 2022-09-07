@@ -18,7 +18,7 @@ from django.test.signals import setting_changed
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from .config import get_schema_registry_client, load_common_settings
+from .config import get_full_topic, get_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 
@@ -198,8 +198,10 @@ class EventProducerKafka():
         key_bytes = key_serializer(event_key, SerializationContext(topic, MessageField.KEY, headers))
         value_bytes = value_serializer(event_data, SerializationContext(topic, MessageField.VALUE, headers))
 
+        full_topic = get_full_topic(topic)
+
         self.producer.produce(
-            topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
+            full_topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
         )
 
         # Opportunistically ensure any pending callbacks from recent event-sends are triggered.

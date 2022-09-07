@@ -81,6 +81,24 @@ def load_common_settings() -> Optional[dict]:
     return base_settings
 
 
+def get_full_topic(base_topic: str) -> str:
+    """
+    Given a base topic name, add a prefix (if configured).
+    """
+    # .. setting_name: EVENT_BUS_TOPIC_PREFIX
+    # .. setting_default: None
+    # .. setting_description: If provided, add this as a prefix to any topic names (delimited by a hyphen)
+    #   when either producing or consuming events. This can be used to support separation of environments,
+    #   e.g. if multiple staging or test environments are sharing a cluster. For example, if the base topic
+    #   name is "user-logins", then if EVENT_BUS_TOPIC_PREFIX=stage, the producer and consumer would instead
+    #   work with the topic "stage-user-logins".
+    topic_prefix = getattr(settings, 'EVENT_BUS_TOPIC_PREFIX', None)
+    if topic_prefix:
+        return f"{topic_prefix}-{base_topic}"
+    else:
+        return base_topic
+
+
 @receiver(setting_changed)
 def _reset_state(sender, **kwargs):  # pylint: disable=unused-argument
     """Reset caches when settings change during unit tests."""
