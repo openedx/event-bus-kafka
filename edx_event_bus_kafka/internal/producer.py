@@ -19,6 +19,7 @@ from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_schema_registry_client, load_common_settings
+from .exceptions import BadConfigurationException, MissingKeyException
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ try:
     import confluent_kafka
     from confluent_kafka import Producer
     from confluent_kafka.schema_registry.avro import AvroSerializer
-    from confluent_kafka.serialization import MessageField, SerializationContext
+    from confluent_kafka.serialization import MessageField, SerializationContext, StringSerializer
 except ImportError:  # pragma: no cover
     confluent_kafka = None
 
@@ -53,14 +54,14 @@ def extract_event_key(event_data: dict, event_key_field: str) -> Any:
     for field_name in field_path:
         if isinstance(current_data, dict):
             if field_name not in current_data:
-                raise Exception(
+                raise MissingKeyException(
                     f"Could not extract key from event; lookup in {event_key_field} "
                     f"failed at {field_name!r} in dictionary"
                 )
             current_data = current_data[field_name]
         else:
             if not hasattr(current_data, field_name):
-                raise Exception(
+                raise MissingKeyException(
                     f"Could not extract key from event; lookup in {event_key_field} "
                     f"failed at {field_name!r} in object"
                 )
@@ -134,7 +135,7 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     """
     client = get_schema_registry_client()
     if client is None:
-        raise Exception('Cannot create Kafka serializers -- missing library or settings')
+        raise BadConfigurationException('Cannot create Kafka serializers -- missing library or settings')
 
     signal_serializer = AvroSignalSerializer(signal)
 
@@ -191,16 +192,23 @@ class EventProducerKafka():
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
         """
-        event_key = extract_event_key(event_data, event_key_field)
-        headers = {EVENT_TYPE_HEADER_KEY: signal.event_type}
+        try:
+            event_key = extract_event_key(event_data, "bananas")
+            headers = {EVENT_TYPE_HEADER_KEY: signal.event_type}
 
-        key_serializer, value_serializer = get_serializers(signal, event_key_field)
-        key_bytes = key_serializer(event_key, SerializationContext(topic, MessageField.KEY, headers))
-        value_bytes = value_serializer(event_data, SerializationContext(topic, MessageField.VALUE, headers))
+            key_serializer, value_serializer = get_serializers(signal, event_key_field)
+            key_bytes = key_serializer(event_key, SerializationContext(topic, MessageField.KEY, headers))
+            value_bytes = value_serializer(event_data, SerializationContext(topic, MessageField.VALUE, headers))
 
-        self.producer.produce(
-            topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
-        )
+            self.producer.produce(
+                topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
+            )
+        except MissingKeyException as mke:
+            self._send_to_error_topic(topic=topic, event_data=event_data)
+        except BadConfigurationException:
+            raise
+        except e:
+            self._send_to_error_topic(topic=topic, event_data=event_data, event_key=extract_event_key(event_data, event_key_field))
 
         # Opportunistically ensure any pending callbacks from recent event-sends are triggered.
         # This ensures that we're polling at least as often as we're producing, which is a
@@ -209,6 +217,13 @@ class EventProducerKafka():
         # would never get a delivery callback. That's why there's also a thread calling
         # poll(0) on a regular interval (see `poll_indefinitely`).
         self.producer.poll(0)
+
+    def _send_to_error_topic(self, *, topic: str, event_data: dict, event_key = None):
+        event_key_as_str = str(event_key if event_key else "Missing Key")
+        event_data_as_str = json.dumps(event_data, allow_nan=True, skipkeys=True, default=lambda x: str(x))
+        self.producer.produce(f"{topic}-error", key=event_key_as_str, value=event_data_as_str)
+
+
 
     def prepare_for_shutdown(self):
         """
