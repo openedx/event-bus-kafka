@@ -3,8 +3,9 @@ Tests for event_consumer module.
 """
 
 import copy
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
+import pytest
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -82,7 +83,46 @@ class TestEmitSignals(TestCase):
             error=None,
         )
         self.mock_signal = Mock(event_type=self.signal_type, init_data={})
-        self.event_consumer = KafkaEventConsumer('test_topic', 'test_group_id', self.mock_signal)
+        self.event_consumer = KafkaEventConsumer('some-topic', 'test_group_id', self.mock_signal)
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='prod',
+    )
+    def test_consume_loop(self):
+        """
+        Check the basic loop lifecycle.
+        """
+        poll_call_count = 0
+
+        def fake_poll(*args, **kwargs):
+            nonlocal poll_call_count
+            poll_call_count += 1
+            # Return normally twice (to show looping), then throw (to
+            # show that we're not actually handling exceptions, at
+            # least at the moment.) If we start suppressing
+            # exceptions, we'll need some other way to break the loop
+            # for this test.
+            if poll_call_count >= 3:
+                raise Exception("something broke")
+            return self.normal_message
+
+        with patch.object(self.event_consumer, 'process_single_message') as mock_process:
+            mock_consumer = Mock(**{'poll.side_effect': fake_poll}, autospec=True)
+            self.event_consumer.consumer = mock_consumer
+            with pytest.raises(Exception, match="something broke"):
+                self.event_consumer.consume_indefinitely()
+
+        # Check that each of the mocked out methods got called as expected.
+        mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'])
+        assert mock_consumer.poll.call_args_list == [
+            call(timeout=1.0), call(timeout=1.0), call(timeout=1.0)
+        ]
+        assert mock_process.call_args_list == [
+            call(self.normal_message), call(self.normal_message)
+        ]
+        mock_consumer.close.assert_called_once_with()
 
     def test_emit(self):
         with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', return_value=self.mock_signal) as mock_lookup:

@@ -13,7 +13,7 @@ from openedx_events.learning.data import UserData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 from openedx_events.tooling import OpenEdxPublicSignal
 
-from .config import get_schema_registry_client, load_common_settings
+from .config import get_full_topic, get_schema_registry_client, load_common_settings
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,8 @@ class KafkaEventConsumer:
         """
 
         try:
-            self.consumer.subscribe([self.topic])
+            full_topic = get_full_topic(self.topic)
+            self.consumer.subscribe([full_topic])
 
             # TODO (EventBus):
             # 1. Is there an elegant way to exit the loop?

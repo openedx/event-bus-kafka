@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[0.6.2] - 2022-09-08
+********************
+
+Added
+=====
+
+* Topic names can be autoprefixed by setting ``EVENT_BUS_TOPIC_PREFIX``
+
 [0.6.1] - 2022-09-06
 ********************
 
