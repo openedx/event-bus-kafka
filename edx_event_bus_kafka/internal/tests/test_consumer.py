@@ -114,14 +114,15 @@ class TestEmitSignals(TestCase):
             with pytest.raises(Exception, match="something broke"):
                 self.event_consumer.consume_indefinitely()
 
-        assert mock_consumer.subscribe.call_args_list == [call(['prod-some-topic'])]
+        # Check that each of the mocked out methods got called as expected.
+        mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'])
         assert mock_consumer.poll.call_args_list == [
             call(timeout=1.0), call(timeout=1.0), call(timeout=1.0)
         ]
         assert mock_process.call_args_list == [
             call(self.normal_message), call(self.normal_message)
         ]
-        assert mock_consumer.close.call_args_list == [call()]
+        mock_consumer.close.assert_called_once_with()
 
     def test_emit(self):
         with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', return_value=self.mock_signal) as mock_lookup:
