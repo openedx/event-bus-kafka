@@ -6,7 +6,7 @@ Change Log
    in this file.  It adheres to the structure of https://keepachangelog.com/ ,
    but in reStructuredText instead of Markdown (for ease of incorporation into
    Sphinx documentation and the PyPI description).
-   
+
    This project adheres to Semantic Versioning (https://semver.org/).
 
 .. There should always be an "Unreleased" section for changes pending release.
@@ -15,6 +15,14 @@ Unreleased
 **********
 
 *
+
+[0.6.3] - 2022-09-08
+********************
+
+Added
+=====
+
+* KafkaEventConsumer is now part of the public API
 
 [0.6.2] - 2022-09-08
 ********************

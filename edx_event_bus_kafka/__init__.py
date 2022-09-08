@@ -7,5 +7,6 @@ See ADR ``docs/decisions/0006-public-api-and-app-organization.rst`` for the reas
 """
 
 from edx_event_bus_kafka.internal.producer import EventProducerKafka, get_producer
+from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
