@@ -94,7 +94,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
-            assert isinstance(ep.get_producer(), ep.EventProducerKafka)
+            assert isinstance(ep.get_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
@@ -153,7 +153,7 @@ class TestEventProducer(TestCase):
             call_count += 1
 
         mock_producer = Mock(**{'poll.side_effect': increment_call_count})
-        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+        producer_api = ep.KafkaEventProducer(mock_producer)  # Created, starts polling
 
         # Allow a little time to pass and check that the mock poll has been called
         time.sleep(1.0)
@@ -186,7 +186,7 @@ class TestEventProducer(TestCase):
                 raise Exception("Exercise error handler on first iteration")
 
         mock_producer = Mock(**{'poll.side_effect': increment_call_count})
-        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+        producer_api = ep.KafkaEventProducer(mock_producer)  # Created, starts polling
 
         # Allow a little time to pass and check that the mock poll has been called
         time.sleep(1.0)

@@ -157,7 +157,7 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     return key_serializer, value_serializer
 
 
-class EventProducerKafka():
+class KafkaEventProducer():
     """
     API singleton for event production to Kafka.
 
@@ -221,7 +221,7 @@ class EventProducerKafka():
         self.producer.flush(-1)
 
 
-def poll_indefinitely(api_weakref: EventProducerKafka):
+def poll_indefinitely(api_weakref: KafkaEventProducer):
     """
     Poll the producer indefinitely to ensure delivery/stats/etc. callbacks are triggered.
 
@@ -230,7 +230,7 @@ def poll_indefinitely(api_weakref: EventProducerKafka):
     See ADR for more information:
     https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0007-producer-polling.rst
     """
-    # The reason we hold a weakref to the whole EventProducerKafka and
+    # The reason we hold a weakref to the whole KafkaEventProducer and
     # not directly to the Producer itself is that you just can't make
     # a weakref to the latter (perhaps because it's a C object.)
 
@@ -267,7 +267,7 @@ def poll_indefinitely(api_weakref: EventProducerKafka):
 # outbound-message queue and threads. The use of this cache allows the
 # producer to be long-lived.
 @lru_cache  # will just be one cache entry, in practice
-def get_producer() -> Optional[EventProducerKafka]:
+def get_producer() -> Optional[KafkaEventProducer]:
     """
     Create or retrieve Producer API singleton.
 
@@ -281,7 +281,7 @@ def get_producer() -> Optional[EventProducerKafka]:
     if producer_settings is None:
         return None
 
-    return EventProducerKafka(Producer(producer_settings))
+    return KafkaEventProducer(Producer(producer_settings))
 
 
 def on_event_deliver(err, evt):
