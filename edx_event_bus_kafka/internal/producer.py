@@ -36,6 +36,8 @@ except ImportError:  # pragma: no cover
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
 EVENT_TYPE_HEADER_KEY = "ce_type"
 
+LOG_FORMAT_STRING = "Error sending message. Message: {} Error: {}"
+
 
 def extract_event_key(event_data: dict, event_key_field: str) -> Any:
     """
@@ -193,7 +195,7 @@ class EventProducerKafka():
             event_data: The event data (kwargs) sent to the signal
         """
         try:
-            event_key = extract_event_key(event_data, "bananas")
+            event_key = extract_event_key(event_data, event_key_field)
             headers = {EVENT_TYPE_HEADER_KEY: signal.event_type}
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
@@ -203,11 +205,11 @@ class EventProducerKafka():
             self.producer.produce(
                 topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
             )
+        except BadConfigurationException as bce:
+            logger.error(LOG_FORMAT_STRING.format(str(event_data), bce))
         except MissingKeyException as mke:
             self._send_to_error_topic(topic=topic, event_data=event_data)
-        except BadConfigurationException:
-            raise
-        except e:
+        except:
             self._send_to_error_topic(topic=topic, event_data=event_data, event_key=extract_event_key(event_data, event_key_field))
 
         # Opportunistically ensure any pending callbacks from recent event-sends are triggered.
@@ -219,9 +221,12 @@ class EventProducerKafka():
         self.producer.poll(0)
 
     def _send_to_error_topic(self, *, topic: str, event_data: dict, event_key = None):
-        event_key_as_str = str(event_key if event_key else "Missing Key")
-        event_data_as_str = json.dumps(event_data, allow_nan=True, skipkeys=True, default=lambda x: str(x))
-        self.producer.produce(f"{topic}-error", key=event_key_as_str, value=event_data_as_str)
+        try:
+            event_key_as_str = str(event_key if event_key else "Missing Key")
+            event_data_as_str = json.dumps(event_data, allow_nan=True, skipkeys=True, default=lambda x: str(x))
+            self.producer.produce(f"{topic}-error", key=event_key_as_str, value=event_data_as_str)
+        except e:
+            logger.error(str(event_data), e)
 
 
 
@@ -295,8 +300,9 @@ def get_producer() -> Optional[EventProducerKafka]:
     producer_settings = load_common_settings()
     if producer_settings is None:
         return None
+    thing = Producer(producer_settings)
 
-    return EventProducerKafka(Producer(producer_settings))
+    return EventProducerKafka(thing)
 
 
 def on_event_deliver(err, evt):
@@ -312,6 +318,7 @@ def on_event_deliver(err, evt):
     """
     if err is not None:
         logger.warning(f"Event delivery failed: {err!r}")
+        logger.error(LOG_FORMAT_STRING.format(evt, err))
     else:
         # Don't log msg.value() because it may contain userids and/or emails
         logger.info(f"Event delivered to topic {evt.topic()}; key={evt.key()}; "
@@ -321,5 +328,6 @@ def on_event_deliver(err, evt):
 @receiver(setting_changed)
 def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
     """Reset caches when settings change during unit tests."""
+    logger.info("Clearin'")
     get_serializers.cache_clear()
     get_producer.cache_clear()
