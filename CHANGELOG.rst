@@ -16,12 +16,13 @@ Unreleased
 
 *
 
-[0.6.3] - 2022-09-08
+[0.7.0] - 2022-09-08
 ********************
 
-Added
-=====
+Changed
+=======
 
+* **Breaking changes** ``EventProducerKafka`` is now ``KafkaEventProducer``
 * KafkaEventConsumer is now part of the public API
 
 [0.6.2] - 2022-09-08
