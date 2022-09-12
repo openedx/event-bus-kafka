@@ -94,7 +94,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
-            assert isinstance(ep.get_producer(), ep.EventProducerKafka)
+            assert isinstance(ep.get_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
@@ -124,18 +124,19 @@ class TestEventProducer(TestCase):
         with override_settings(
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                EVENT_BUS_TOPIC_PREFIX='prod',
         ):
             producer_api = ep.get_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 producer_api.send(
-                    signal=self.signal, topic='user_stuff',
+                    signal=self.signal, topic='user-stuff',
                     event_key_field='user.id', event_data=self.event_data
                 )
 
         mock_get_serializers.assert_called_once_with(self.signal, 'user.id')
 
         mock_producer.produce.assert_called_once_with(
-            'user_stuff', key=b'key-bytes-here', value=b'value-bytes-here',
+            'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here',
             on_delivery=ep.on_event_deliver,
             headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
         )
@@ -152,7 +153,7 @@ class TestEventProducer(TestCase):
             call_count += 1
 
         mock_producer = Mock(**{'poll.side_effect': increment_call_count})
-        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+        producer_api = ep.KafkaEventProducer(mock_producer)  # Created, starts polling
 
         # Allow a little time to pass and check that the mock poll has been called
         time.sleep(1.0)
@@ -185,7 +186,7 @@ class TestEventProducer(TestCase):
                 raise Exception("Exercise error handler on first iteration")
 
         mock_producer = Mock(**{'poll.side_effect': increment_call_count})
-        producer_api = ep.EventProducerKafka(mock_producer)  # Created, starts polling
+        producer_api = ep.KafkaEventProducer(mock_producer)  # Created, starts polling
 
         # Allow a little time to pass and check that the mock poll has been called
         time.sleep(1.0)

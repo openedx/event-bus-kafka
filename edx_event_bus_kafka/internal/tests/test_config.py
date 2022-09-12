@@ -58,3 +58,20 @@ class TestCommonSettings(TestCase):
                 'sasl.username': 'some_other_key',
                 'sasl.password': 'some_other_secret',
             }
+
+
+class TestTopicPrefixing(TestCase):
+    """
+    Test autoprefixing of base topic.
+    """
+    def test_no_prefix(self):
+        assert config.get_full_topic('user-logins') == 'user-logins'
+
+    @override_settings(EVENT_BUS_TOPIC_PREFIX='')
+    def test_empty_string_prefix(self):
+        """Check that empty string is treated the same as None."""
+        assert config.get_full_topic('user-logins') == 'user-logins'
+
+    @override_settings(EVENT_BUS_TOPIC_PREFIX='stage')
+    def test_regular_prefix(self):
+        assert config.get_full_topic('user-logins') == 'stage-user-logins'
