@@ -107,7 +107,7 @@ setup(
     long_description=README + '\n\n' + CHANGELOG,
     author='edX',
     author_email='oscm@edx.org',
-    url='https://github.com/edx/event-bus-kafka',
+    url='https://github.com/openedx/event-bus-kafka',
     packages=[
         'edx_event_bus_kafka',
     ],
