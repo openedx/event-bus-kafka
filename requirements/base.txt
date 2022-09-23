@@ -32,7 +32,7 @@ django-waffle==3.0.0
     # via
     #   edx-django-utils
     #   edx-toggles
-edx-django-utils==5.0.0
+edx-django-utils==5.1.0
     # via
     #   -r requirements/base.in
     #   edx-toggles
@@ -40,19 +40,19 @@ edx-opaque-keys[django]==2.3.0
     # via openedx-events
 edx-toggles==5.0.0
     # via -r requirements/base.in
-fastavro==1.6.0
+fastavro==1.6.1
     # via openedx-events
 jinja2==3.1.2
     # via code-annotations
 markupsafe==2.1.1
     # via jinja2
-newrelic==8.0.0.179
+newrelic==8.1.0.180
     # via edx-django-utils
-openedx-events==0.12.0
+openedx-events==0.14.0
     # via -r requirements/base.in
 pbr==5.10.0
     # via stevedore
-psutil==5.9.1
+psutil==5.9.2
     # via edx-django-utils
 pycparser==2.21
     # via cffi
