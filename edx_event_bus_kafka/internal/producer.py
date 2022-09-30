@@ -191,14 +191,14 @@ class KafkaEventProducer():
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
         """
+        full_topic = get_full_topic(topic)
+
         event_key = extract_event_key(event_data, event_key_field)
         headers = {EVENT_TYPE_HEADER_KEY: signal.event_type}
 
         key_serializer, value_serializer = get_serializers(signal, event_key_field)
-        key_bytes = key_serializer(event_key, SerializationContext(topic, MessageField.KEY, headers))
-        value_bytes = value_serializer(event_data, SerializationContext(topic, MessageField.VALUE, headers))
-
-        full_topic = get_full_topic(topic)
+        key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
+        value_bytes = value_serializer(event_data, SerializationContext(full_topic, MessageField.VALUE, headers))
 
         self.producer.produce(
             full_topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
