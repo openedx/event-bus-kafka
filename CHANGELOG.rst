@@ -16,6 +16,15 @@ Unreleased
 
 *
 
+[1.0.0] - 2022-10-03
+********************
+
+Changed
+=======
+
+* Fixed bug in schema registry that was sending schemas to the wrong topic
+* Bump version to 1.x to acknowledge that this is in use in production
+
 [0.7.0] - 2022-09-08
 ********************
 

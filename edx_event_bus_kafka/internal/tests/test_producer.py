@@ -6,7 +6,7 @@ import gc
 import time
 import warnings
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import openedx_events.learning.signals
 import pytest
@@ -192,3 +192,28 @@ class TestEventProducer(TestCase):
         time.sleep(1.0)
         assert call_count >= 3  # some small value; would actually be about 20
         print(producer_api)  # Use the value here to ensure it isn't GC'd early
+
+    @override_settings(EVENT_BUS_TOPIC_PREFIX='stage')
+    @override_settings(EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345')
+    @override_settings(EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321')
+    @patch('edx_event_bus_kafka.internal.producer.SerializationContext')
+    def test_serialize_and_produce_to_same_topic(self, mock_context):
+        producer_api = ep.get_producer()
+        with patch('edx_event_bus_kafka.internal.producer.AvroSerializer',
+                   return_value=lambda _x, _y: b'bytes-here'):
+            with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
+                producer_api.send(
+                    signal=self.signal, topic='user-stuff',
+                    event_key_field='user.id', event_data=self.event_data
+                )
+
+        mock_context.assert_has_calls([
+            call('stage-user-stuff', 'key', {'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'}),
+            call('stage-user-stuff', 'value', {'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'}),
+        ])
+        assert mock_context.call_count == 2
+        mock_producer.produce.assert_called_once_with(
+            'stage-user-stuff', key=b'bytes-here', value=b'bytes-here',
+            on_delivery=ep.on_event_deliver,
+            headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
+        )
