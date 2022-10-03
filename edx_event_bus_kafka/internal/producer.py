@@ -186,7 +186,7 @@ class KafkaEventProducer():
 
         Arguments:
             signal: The original OpenEdxPublicSignal the event was sent to
-            topic: The event bus topic for the event
+            topic: The base (un-prefixed) event bus topic for the event
             event_key_field: Path to the event data field to use as the event key (period-delimited
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
