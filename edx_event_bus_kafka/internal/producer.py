@@ -257,7 +257,6 @@ def poll_indefinitely(api_weakref: KafkaEventProducer):
             # we make when producing an event. The call in this loop could be excessively noisy,
             # so just debug-log it.
             logger.debug("Event bus producer polling loop encountered exception (continuing)", exc_info=True)
-            logger.debug("lalalala")
         finally:
             # Get rid of that strong ref again
             api_object = None
