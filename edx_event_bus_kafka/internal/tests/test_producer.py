@@ -6,7 +6,7 @@ import gc
 import time
 import warnings
 from unittest import TestCase
-from unittest.mock import call, Mock, patch
+from unittest.mock import Mock, call, patch
 
 import openedx_events.learning.signals
 import pytest
