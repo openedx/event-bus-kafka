@@ -5,3 +5,6 @@ Django                                  # Web application framework
 openedx-events                          # Events API
 edx_django_utils
 edx_toggles
+
+# newrelic==8.2.0 has broken instrumentation for confluent-kafka. This line can be removed once this issue is fixed.
+newrelic<8.2.0

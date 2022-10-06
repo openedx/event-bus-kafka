@@ -46,8 +46,10 @@ jinja2==3.1.2
     # via code-annotations
 markupsafe==2.1.1
     # via jinja2
-newrelic==8.2.0.181
-    # via edx-django-utils
+newrelic==8.1.0.180
+    # via
+    #   -r requirements/base.in
+    #   edx-django-utils
 openedx-events==1.0.0
     # via -r requirements/base.in
 pbr==5.10.0
