@@ -82,7 +82,7 @@ django-waffle==3.0.0
     #   edx-toggles
 docutils==0.19
     # via readme-renderer
-edx-django-utils==5.1.0
+edx-django-utils==5.2.0
     # via
     #   -r requirements/test.txt
     #   edx-toggles
@@ -234,7 +234,7 @@ requests==2.28.1
     #   confluent-kafka
     #   requests-toolbelt
     #   twine
-requests-toolbelt==0.9.1
+requests-toolbelt==0.10.0
     # via twine
 rfc3986==2.0.0
     # via twine
@@ -272,7 +272,7 @@ tomlkit==0.11.5
     # via pylint
 twine==4.0.1
     # via -r requirements/quality.in
-typing-extensions==4.3.0
+typing-extensions==4.4.0
     # via
     #   astroid
     #   pylint
