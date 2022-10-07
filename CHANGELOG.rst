@@ -16,6 +16,14 @@ Unreleased
 
 *
 
+[1.1.0] - 2022-10-06
+********************
+
+Changed
+=======
+
+* Added monitoring for consumption tasks.
+
 [1.0.0] - 2022-10-03
 ********************
 
