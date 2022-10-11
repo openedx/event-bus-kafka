@@ -6,12 +6,13 @@ import gc
 import time
 import warnings
 from unittest import TestCase
-from unittest.mock import Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import openedx_events.learning.signals
 import pytest
 from django.test import override_settings
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
+from openedx_events.event_bus.avro.tests.test_utilities import SubTestData0, create_simple_signal
 from openedx_events.learning.data import UserData, UserPersonalData
 
 import edx_event_bus_kafka.internal.producer as ep
@@ -103,10 +104,19 @@ class TestEventProducer(TestCase):
         fake_event.key.return_value = 'some_key'
         fake_event.partition.return_value = 'some_partition'
 
-        ep.on_event_deliver(Exception("problem!"), fake_event)
-        mock_logger.warning.assert_called_once_with("Event delivery failed: Exception('problem!')")
+        # simple producing context, we check the full object in other tests
+        context = ep.ProducingContext(event_type='something')
 
-        ep.on_event_deliver(None, fake_event)
+        # ensure on_event_deliver reports the entire calling context if there was an error
+        context.on_event_deliver(Exception("problem!"), fake_event)
+
+        # extract the error message that was produced and check it has all relevant information (order isn't guaranteed
+        # and doesn't actually matter, nor do we want to worry if other information is added later)
+        (error_string,) = mock_logger.exception.call_args.args
+        assert "event_type='something'" in error_string
+        assert "error=problem!" in error_string
+
+        context.on_event_deliver(None, fake_event)
         mock_logger.info.assert_called_once_with(
             'Event delivered to topic some_topic; key=some_key; partition=some_partition'
         )
@@ -137,9 +147,68 @@ class TestEventProducer(TestCase):
 
         mock_producer.produce.assert_called_once_with(
             'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here',
-            on_delivery=ep.on_event_deliver,
+            on_delivery=ANY,
             headers={'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'},
         )
+
+    @patch(
+        'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
+        return_value=(
+            lambda _key, _ctx: b'key-bytes-here',
+            lambda _value, _ctx: b'value-bytes-here',
+        )
+    )
+    @patch('edx_event_bus_kafka.internal.producer.logger')
+    def test_full_event_data_present_in_key_extraction_error(self, mock_logger, *args):
+        simple_signal = create_simple_signal({'test_data': SubTestData0})
+        with override_settings(
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                EVENT_BUS_TOPIC_PREFIX='dev',
+        ):
+            producer_api = ep.get_producer()
+            # force an exception with a bad event_key_field
+            producer_api.send(signal=simple_signal, topic='topic', event_key_field='bad_field',
+                              event_data={'test_data': SubTestData0(sub_name="name", course_id="id")})
+
+        (error_string,) = mock_logger.exception.call_args.args
+        assert "event_data={'test_data': {'sub_name': 'name', 'course_id': 'id'}}" in error_string
+        assert "signal=<OpenEdxPublicSignal: simple.signal>" in error_string
+        assert "initial_topic='topic'" in error_string
+        assert "full_topic='dev-topic'" in error_string
+        assert "event_key_field='bad_field'" in error_string
+
+    @patch(
+        'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
+        return_value=(
+            lambda _key, _ctx: b'key-bytes-here',
+            lambda _value, _ctx: b'value-bytes-here',
+        )
+    )
+    @patch('edx_event_bus_kafka.internal.producer.logger')
+    def test_full_event_data_present_in_kafka_error(self, mock_logger, *args):
+        simple_signal = create_simple_signal({'test_data': SubTestData0})
+        with override_settings(
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                EVENT_BUS_TOPIC_PREFIX='dev',
+        ):
+            producer_api = ep.get_producer()
+            with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
+                # imitate a failed send to Kafka
+                mock_producer.produce = Mock(side_effect=Exception('bad!'))
+                producer_api.send(signal=simple_signal, topic='topic', event_key_field='test_data.course_id',
+                                  event_data={'test_data': SubTestData0(sub_name="name", course_id="ABCx")})
+
+        (error_string,) = mock_logger.exception.call_args.args
+        assert "event_data={'test_data': {'sub_name': 'name', 'course_id': 'ABCx'}}" in error_string
+        assert "signal=<OpenEdxPublicSignal: simple.signal>" in error_string
+        assert "initial_topic='topic'" in error_string
+        assert "full_topic='dev-topic'" in error_string
+        assert "event_key_field='test_data.course_id'" in error_string
+        # since we didn't fail until after key extraction we should have an event_key to report
+        assert "event_key='ABCx'" in error_string
+        assert "error=bad!" in error_string
 
     @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
     def test_polling_loop_terminates(self):
@@ -214,6 +283,6 @@ class TestEventProducer(TestCase):
         assert mock_context.call_count == 2
         mock_producer.produce.assert_called_once_with(
             'stage-user-stuff', key=b'bytes-here', value=b'bytes-here',
-            on_delivery=ep.on_event_deliver,
+            on_delivery=ANY,
             headers={'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'},
         )

@@ -12,9 +12,11 @@ import weakref
 from functools import lru_cache
 from typing import Any, List, Optional
 
+import attr
 from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
+from edx_django_utils.monitoring import record_exception
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
@@ -34,6 +36,23 @@ except ImportError:  # pragma: no cover
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
 EVENT_TYPE_HEADER_KEY = "ce_type"
+
+
+def record_producing_error(error, context):
+    """
+    Record an error in producing an event to both the monitoring system and the regular logs
+
+    Arguments:
+        error: The exception or error raised during producing
+        context: An instance of ProducingContext containing additional information about the message
+    """
+    try:
+        # record_exception() is a wrapper around a New Relic method that can only be called within an except block,
+        # so first re-raise the error
+        raise Exception(error)
+    except BaseException:
+        record_exception()
+        logger.exception(f"Error producing event to event bus. {error=!s} {context!r}")
 
 
 def extract_event_key(event_data: dict, event_key_field: str) -> Any:
@@ -157,6 +176,41 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     return key_serializer, value_serializer
 
 
+@attr.s(kw_only=True, repr=False)
+class ProducingContext:
+    """
+    Wrapper class to allow us to link a call to produce() with the on_event_deliver callback
+    """
+    full_topic = attr.ib(type=str, default=None)
+    event_type = attr.ib(type=str, default=None)
+    event_key = attr.ib(type=str, default=None)
+    signal = attr.ib(type=OpenEdxPublicSignal, default=None)
+    initial_topic = attr.ib(type=str, default=None)
+    event_key_field = attr.ib(type=str, default=None)
+    event_data = attr.ib(type=dict, default=None)
+
+    def __repr__(self):
+        """Create a logging-friendly string"""
+        return " ".join([f"{key}={value!r}" for key, value in attr.asdict(self).items()])
+
+    def on_event_deliver(self, err, evt):
+        """
+        Simple callback method for debugging event production
+
+        If there is any error, log all the known information about the calling context so the event can be recreated
+        and/or resent later
+
+        Arguments:
+            err: Error if event production failed
+            evt: Event that was delivered (or failed to be delivered)
+        """
+        if err is not None:
+            record_producing_error(err, self)
+        else:
+            logger.info(f"Event delivered to topic {evt.topic()}; key={evt.key()}; "
+                        f"partition={evt.partition()}")
+
+
 class KafkaEventProducer():
     """
     API singleton for event production to Kafka.
@@ -191,28 +245,41 @@ class KafkaEventProducer():
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
         """
-        full_topic = get_full_topic(topic)
 
-        event_key = extract_event_key(event_data, event_key_field)
-        # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
-        # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
-        headers = {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
+        # keep track of the initial arguments for recreating the event in the logs if necessary later
+        context = ProducingContext(signal=signal, initial_topic=topic, event_key_field=event_key_field,
+                                   event_data=event_data)
+        try:
+            full_topic = get_full_topic(topic)
+            context.full_topic = full_topic
 
-        key_serializer, value_serializer = get_serializers(signal, event_key_field)
-        key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
-        value_bytes = value_serializer(event_data, SerializationContext(full_topic, MessageField.VALUE, headers))
+            event_key = extract_event_key(event_data, event_key_field)
+            context.event_key = event_key
 
-        self.producer.produce(
-            full_topic, key=key_bytes, value=value_bytes, headers=headers, on_delivery=on_event_deliver,
-        )
+            # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
+            # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
+            headers = {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
+            context.event_type = signal.event_type
 
-        # Opportunistically ensure any pending callbacks from recent event-sends are triggered.
-        # This ensures that we're polling at least as often as we're producing, which is a
-        # reasonable balance. However, if events are infrequent, it doesn't ensure that
-        # callbacks happen in a timely fashion, and the last event emitted before shutdown
-        # would never get a delivery callback. That's why there's also a thread calling
-        # poll(0) on a regular interval (see `poll_indefinitely`).
-        self.producer.poll(0)
+            key_serializer, value_serializer = get_serializers(signal, event_key_field)
+            key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
+            value_bytes = value_serializer(event_data, SerializationContext(full_topic, MessageField.VALUE, headers))
+            self.producer.produce(
+                full_topic, key=key_bytes, value=value_bytes, headers=headers,
+                on_delivery=context.on_event_deliver,
+            )
+
+            # Opportunistically ensure any pending callbacks from recent event-sends are triggered.
+            # This ensures that we're polling at least as often as we're producing, which is a
+            # reasonable balance. However, if events are infrequent, it doesn't ensure that
+            # callbacks happen in a timely fashion, and the last event emitted before shutdown
+            # would never get a delivery callback. That's why there's also a thread calling
+            # poll(0) on a regular interval (see `poll_indefinitely`).
+            self.producer.poll(0)
+        except BaseException as e:
+            # Errors caused by the produce call should be handled by the on_delivery callback.
+            # Here we might expect serialization errors, or any errors from preparing to produce.
+            record_producing_error(e, context)
 
     def prepare_for_shutdown(self):
         """
@@ -251,14 +318,11 @@ def poll_indefinitely(api_weakref: KafkaEventProducer):
         api_object = api_weakref()
         if api_object is None:
             return
-
         try:
             api_object.producer.poll(0)
         except BaseException:
-            # If polling is failing, we'll almost certainly find out about it from the poll call
-            # we make when producing an event. The call in this loop could be excessively noisy,
-            # so just debug-log it.
-            logger.debug("Event bus producer polling loop encountered exception (continuing)", exc_info=True)
+            logger.exception("Event bus producer polling loop encountered exception (continuing)")
+            record_exception()
         finally:
             # Get rid of that strong ref again
             api_object = None
@@ -284,25 +348,6 @@ def get_producer() -> Optional[KafkaEventProducer]:
         return None
 
     return KafkaEventProducer(Producer(producer_settings))
-
-
-def on_event_deliver(err, evt):
-    """
-    Simple callback method for debugging event production
-
-    Arguments:
-        err: Error if event production failed
-        evt: Event that was delivered (or failed to be delivered)
-
-    Note: This is meant to be temporary until we implement
-      more rigorous error handling.
-    """
-    if err is not None:
-        logger.warning(f"Event delivery failed: {err!r}")
-    else:
-        # Don't log msg.value() because it may contain userids and/or emails
-        logger.info(f"Event delivered to topic {evt.topic()}; key={evt.key()}; "
-                    f"partition={evt.partition()}")
 
 
 @receiver(setting_changed)
