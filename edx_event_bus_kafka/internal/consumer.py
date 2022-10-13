@@ -7,7 +7,6 @@ import logging
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.dispatch import receiver
-from edx_django_utils.monitoring import background_task
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.learning.data import UserData
@@ -115,7 +114,6 @@ class KafkaEventConsumer:
             self.consumer.close()
             logger.info("Committing final offsets")
 
-    @background_task()
     def process_single_message(self, msg):
         """
         Emit signal with message data
