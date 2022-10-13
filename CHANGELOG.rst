@@ -14,7 +14,7 @@ Change Log
 Unreleased
 **********
 
-* Removed manual monitoring since New Relic tracks these now.
+*
 
 [1.2.0] - 2022-10-13
 ********************
@@ -23,6 +23,7 @@ Changed
 =======
 
 * ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` now defaults to True instead of False
+* Removed manual monitoring since New Relic tracks these now.
 
 [1.1.0] - 2022-10-06
 ********************
