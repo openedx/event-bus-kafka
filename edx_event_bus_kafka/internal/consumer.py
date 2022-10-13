@@ -27,12 +27,12 @@ except ImportError:  # pragma: no cover
 
 # .. toggle_name: EVENT_BUS_KAFKA_CONSUMERS_ENABLED
 # .. toggle_implementation: SettingToggle
-# .. toggle_default: False
-# .. toggle_description: Enables the ability to listen and process events from the Kafka event bus
-# .. toggle_use_cases: opt_in
+# .. toggle_default: True
+# .. toggle_description: If set to False, consumer will exit immediately. This can be used as an emergency kill-switch
+#   to disable a consumer—as long as the management command is killed and restarted when settings change.
+# .. toggle_use_cases: opt_out
 # .. toggle_creation_date: 2022-01-31
-# .. toggle_tickets: https://openedx.atlassian.net/browse/ARCHBOM-1992
-KAFKA_CONSUMERS_ENABLED = SettingToggle('EVENT_BUS_KAFKA_CONSUMERS_ENABLED', default=False)
+KAFKA_CONSUMERS_ENABLED = SettingToggle('EVENT_BUS_KAFKA_CONSUMERS_ENABLED', default=True)
 
 CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT', 1.0)
 
@@ -97,6 +97,11 @@ class KafkaEventConsumer:
         """
         Consume events from a topic in an infinite loop.
         """
+        # This is already checked at the Command level, but it's possible this loop
+        # could get called some other way, so check it here too.
+        if not KAFKA_CONSUMERS_ENABLED.is_enabled():
+            logger.error("Kafka consumers not enabled")
+            return
 
         try:
             full_topic = get_full_topic(self.topic)

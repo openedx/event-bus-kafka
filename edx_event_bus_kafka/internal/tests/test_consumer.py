@@ -85,6 +85,12 @@ class TestEmitSignals(TestCase):
         self.mock_signal = Mock(event_type=self.signal_type, init_data={})
         self.event_consumer = KafkaEventConsumer('some-topic', 'test_group_id', self.mock_signal)
 
+    @override_settings(EVENT_BUS_KAFKA_CONSUMERS_ENABLED=False)
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_consume_loop_disabled(self, mock_logger):
+        self.event_consumer.consume_indefinitely()  # returns at all
+        mock_logger.error.assert_called_once_with("Kafka consumers not enabled")
+
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
@@ -166,7 +172,9 @@ class TestCommand(TestCase):
     """
 
     @override_settings(EVENT_BUS_KAFKA_CONSUMERS_ENABLED=False)
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    def test_kafka_consumers_disabled(self, mock_create_consumer):
+    def test_kafka_consumers_disabled(self, mock_create_consumer, mock_logger):
         call_command(Command(), topic='test', group_id='test', signal='')
         assert not mock_create_consumer.called
+        mock_logger.error.assert_called_once_with("Kafka consumers not enabled")
