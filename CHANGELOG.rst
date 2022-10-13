@@ -14,7 +14,7 @@ Change Log
 Unreleased
 **********
 
-*
+* Removed manual monitoring since New Relic tracks these now.
 
 [1.1.0] - 2022-10-06
 ********************
