@@ -8,7 +8,7 @@ asgiref==3.5.2
     # via
     #   -r requirements/test.txt
     #   django
-astroid==2.12.10
+astroid==2.12.11
     # via
     #   pylint
     #   pylint-celery
@@ -135,13 +135,13 @@ markupsafe==2.1.1
     #   jinja2
 mccabe==0.7.0
     # via pylint
-more-itertools==8.14.0
+more-itertools==9.0.0
     # via jaraco-classes
-newrelic==8.2.0.181
+newrelic==8.2.1
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-openedx-events==1.0.0
+openedx-events==2.0.0
     # via -r requirements/test.txt
 packaging==21.3
     # via
@@ -159,7 +159,7 @@ pluggy==1.0.0
     # via
     #   -r requirements/test.txt
     #   pytest
-psutil==5.9.2
+psutil==5.9.3
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -179,7 +179,7 @@ pygments==2.13.0
     # via
     #   readme-renderer
     #   rich
-pylint==2.15.3
+pylint==2.15.4
     # via
     #   edx-lint
     #   pylint-celery
@@ -218,7 +218,7 @@ python-slugify==6.1.2
     # via
     #   -r requirements/test.txt
     #   code-annotations
-pytz==2022.4
+pytz==2022.5
     # via
     #   -r requirements/test.txt
     #   django
@@ -252,7 +252,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/test.txt
     #   django
-stevedore==4.0.0
+stevedore==4.0.1
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -286,5 +286,5 @@ webencodings==0.5.1
     # via bleach
 wrapt==1.14.1
     # via astroid
-zipp==3.8.1
+zipp==3.9.0
     # via importlib-metadata

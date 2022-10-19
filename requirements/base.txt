@@ -46,13 +46,13 @@ jinja2==3.1.2
     # via code-annotations
 markupsafe==2.1.1
     # via jinja2
-newrelic==8.2.0.181
+newrelic==8.2.1
     # via edx-django-utils
-openedx-events==1.0.0
+openedx-events==2.0.0
     # via -r requirements/base.in
 pbr==5.10.0
     # via stevedore
-psutil==5.9.2
+psutil==5.9.3
     # via edx-django-utils
 pycparser==2.21
     # via cffi
@@ -62,13 +62,13 @@ pynacl==1.5.0
     # via edx-django-utils
 python-slugify==6.1.2
     # via code-annotations
-pytz==2022.4
+pytz==2022.5
     # via django
 pyyaml==6.0
     # via code-annotations
 sqlparse==0.4.3
     # via django
-stevedore==4.0.0
+stevedore==4.0.1
     # via
     #   code-annotations
     #   edx-django-utils

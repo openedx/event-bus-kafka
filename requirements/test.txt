@@ -81,11 +81,11 @@ markupsafe==2.1.1
     # via
     #   -r requirements/base.txt
     #   jinja2
-newrelic==8.2.0.181
+newrelic==8.2.1
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==1.0.0
+openedx-events==2.0.0
     # via -r requirements/base.txt
 packaging==21.3
     # via pytest
@@ -95,7 +95,7 @@ pbr==5.10.0
     #   stevedore
 pluggy==1.0.0
     # via pytest
-psutil==5.9.2
+psutil==5.9.3
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
@@ -127,7 +127,7 @@ python-slugify==6.1.2
     # via
     #   -r requirements/base.txt
     #   code-annotations
-pytz==2022.4
+pytz==2022.5
     # via
     #   -r requirements/base.txt
     #   django
@@ -141,7 +141,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/base.txt
     #   django
-stevedore==4.0.0
+stevedore==4.0.1
     # via
     #   -r requirements/base.txt
     #   code-annotations
