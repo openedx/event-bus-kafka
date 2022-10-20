@@ -8,7 +8,7 @@ asgiref==3.5.2
     # via
     #   -r requirements/quality.txt
     #   django
-astroid==2.12.10
+astroid==2.12.11
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -120,7 +120,7 @@ edx-django-utils==5.2.0
     # via
     #   -r requirements/quality.txt
     #   edx-toggles
-edx-i18n-tools==0.9.1
+edx-i18n-tools==0.9.2
     # via -r requirements/dev.in
 edx-lint==5.3.0
     # via -r requirements/quality.txt
@@ -188,15 +188,15 @@ mccabe==0.7.0
     # via
     #   -r requirements/quality.txt
     #   pylint
-more-itertools==8.14.0
+more-itertools==9.0.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
-newrelic==8.2.0.181
+newrelic==8.2.1
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
-openedx-events==1.0.0
+openedx-events==2.0.0
     # via -r requirements/quality.txt
 packaging==21.3
     # via
@@ -237,7 +237,7 @@ pluggy==1.0.0
     #   tox
 polib==1.1.1
     # via edx-i18n-tools
-psutil==5.9.2
+psutil==5.9.3
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
@@ -261,7 +261,7 @@ pygments==2.13.0
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.15.3
+pylint==2.15.4
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -308,7 +308,7 @@ python-slugify==6.1.2
     # via
     #   -r requirements/quality.txt
     #   code-annotations
-pytz==2022.4
+pytz==2022.5
     # via
     #   -r requirements/quality.txt
     #   django
@@ -360,7 +360,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/quality.txt
     #   django
-stevedore==4.0.0
+stevedore==4.0.1
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -421,7 +421,7 @@ wrapt==1.14.1
     # via
     #   -r requirements/quality.txt
     #   astroid
-zipp==3.8.1
+zipp==3.9.0
     # via
     #   -r requirements/quality.txt
     #   importlib-metadata

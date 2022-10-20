@@ -132,13 +132,13 @@ markupsafe==2.1.1
     # via
     #   -r requirements/test.txt
     #   jinja2
-more-itertools==8.14.0
+more-itertools==9.0.0
     # via jaraco-classes
-newrelic==8.2.0.181
+newrelic==8.2.1
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-openedx-events==1.0.0
+openedx-events==2.0.0
     # via -r requirements/test.txt
 packaging==21.3
     # via
@@ -158,7 +158,7 @@ pluggy==1.0.0
     # via
     #   -r requirements/test.txt
     #   pytest
-psutil==5.9.2
+psutil==5.9.3
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -201,7 +201,7 @@ python-slugify==6.1.2
     # via
     #   -r requirements/test.txt
     #   code-annotations
-pytz==2022.4
+pytz==2022.5
     # via
     #   -r requirements/test.txt
     #   babel
@@ -235,7 +235,7 @@ six==1.16.0
     #   edx-sphinx-theme
 snowballstemmer==2.2.0
     # via sphinx
-sphinx==5.2.3
+sphinx==5.3.0
     # via
     #   -r requirements/doc.in
     #   edx-sphinx-theme
@@ -255,7 +255,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/test.txt
     #   django
-stevedore==4.0.0
+stevedore==4.0.1
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -285,5 +285,5 @@ urllib3==1.26.12
     #   twine
 webencodings==0.5.1
     # via bleach
-zipp==3.8.1
+zipp==3.9.0
     # via importlib-metadata
