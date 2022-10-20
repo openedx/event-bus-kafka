@@ -10,7 +10,6 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
-from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer
 from edx_event_bus_kafka.management.commands.consume_events import Command
@@ -132,10 +131,8 @@ class TestEmitSignals(TestCase):
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit(self, mock_logger):
-        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', return_value=self.mock_signal) as mock_lookup:
-            self.event_consumer.emit_signals_from_message(self.normal_message)
+        self.event_consumer.emit_signals_from_message(self.normal_message)
 
-        mock_lookup.assert_called_once_with(self.signal_type)
         mock_logger.error.assert_not_called()
         self.mock_signal.send_event.assert_called_once_with(**self.normal_event_data)
 
@@ -144,24 +141,9 @@ class TestEmitSignals(TestCase):
         msg = copy.copy(self.normal_message)
         msg._headers = []  # pylint: disable=protected-access
 
-        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type') as mock_lookup:
-            self.event_consumer.emit_signals_from_message(msg)
+        self.event_consumer.emit_signals_from_message(msg)
 
-        mock_lookup.assert_not_called()
         mock_logger.error.assert_called_once_with("Missing ce_type header on message, cannot determine signal")
-        assert not self.mock_signal.send_event.called
-
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_unknown_type(self, mock_logger):
-        # If we pretend that the test signal type is not a real one, behave accordingly.
-        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', side_effect=KeyError('not found')) as mock_lookup:
-            # Should just suppress exception and log
-            self.event_consumer.emit_signals_from_message(self.normal_message)
-
-        mock_lookup.assert_called_once_with(self.signal_type)
-        mock_logger.exception.assert_called_once_with(
-            "Signal not found: org.openedx.learning.auth.session.login.completed.v1"
-        )
         assert not self.mock_signal.send_event.called
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
@@ -170,8 +152,7 @@ class TestEmitSignals(TestCase):
         msg._headers = [  # pylint: disable=protected-access
             ['ce_type', b'xxxx']
         ]
-        with patch.object(OpenEdxPublicSignal, 'get_signal_by_type', self.mock_signal):
-            self.event_consumer.emit_signals_from_message(msg)
+        self.event_consumer.emit_signals_from_message(msg)
 
         mock_logger.error.assert_called_once_with(
             "Signal types do not match. Expected org.openedx.learning.auth.session.login.completed.v1."
