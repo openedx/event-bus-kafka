@@ -157,21 +157,17 @@ class KafkaEventConsumer:
         # TODO (EventBus): Figure out who is doing the encoding and get the
         #  right one instead of just guessing utf-8
         event_type_str = event_type.decode("utf-8")
-        try:
 
-            # If we get a message with the wrong signal encoding, we do not want to send it along.
-            # TODO (EventBus): Handle this particular sad path more gracefully.
-            if event_type_str != self.signal.event_type:
-                logger.error(
-                    f"Signal types do not match. Expected {self.signal.event_type}."
-                    f"Received message of type {event_type_str}."
-                )
-                return
+        # If we get a message with the wrong signal encoding, we do not want to send it along.
+        # TODO (EventBus): Handle this particular sad path more gracefully.
+        if event_type_str != self.signal.event_type:
+            logger.error(
+                f"Signal types do not match. Expected {self.signal.event_type}."
+                f"Received message of type {event_type_str}."
+            )
+            return
 
-            signal = OpenEdxPublicSignal.get_signal_by_type(event_type_str)
-            signal.send_event(**msg.value())
-        except KeyError:
-            logger.exception(f"Signal not found: {event_type_str}")
+        self.signal.send_event(**msg.value())
 
 
 class ConsumeEventsCommand(BaseCommand):
