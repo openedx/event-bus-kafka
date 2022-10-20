@@ -147,7 +147,7 @@ class TestEmitSignals(TestCase):
         assert not self.mock_signal.send_event.called
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_unwanted_types(self, mock_logger):
+    def test_unexpected_signal_type_in_header(self, mock_logger):
         msg = copy.copy(self.normal_message)
         msg._headers = [  # pylint: disable=protected-access
             ['ce_type', b'xxxx']
