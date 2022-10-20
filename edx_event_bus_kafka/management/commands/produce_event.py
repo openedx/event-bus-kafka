@@ -29,9 +29,8 @@ class Command(BaseCommand):
                     "id": 123,
                     "is_active": true,
                     "pii": {"username": "foobob", "email": "bob@foo.example", "name": "Bob Foo"}}}'
-
-    # TODO (EventBus): Potentially update example topic and group names to follow any future naming conventions.
     """
+    # TODO: Potentially update example topic and group names to follow any future naming conventions.
 
     def add_arguments(self, parser):
 
