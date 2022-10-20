@@ -16,6 +16,19 @@ Unreleased
 
 *
 
+[1.3.0] - 2022-10-13
+********************
+
+* Upgrade openedx-events. When AvroSignalSerializer gets event schemas, it will
+get whatever is currently defined in openedx-events, so this will update the
+COURSE_CATALOG_EVENT_CHANGED schema (dropping `effort` field)
+
+Changed
+=======
+
+* ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` now defaults to True instead of False
+* Removed manual monitoring since New Relic tracks these now.
+
 [1.2.0] - 2022-10-13
 ********************
 
