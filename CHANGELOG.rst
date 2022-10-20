@@ -14,7 +14,7 @@ Change Log
 Unreleased
 **********
 
-*
+* Remove redundant lookup of signal in consumer loop (should not have any effect)
 
 [1.3.0] - 2022-10-13
 ********************
