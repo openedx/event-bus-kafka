@@ -22,9 +22,7 @@ Unreleased
 Changed
 =======
 
-* Upgrade openedx-events. When AvroSignalSerializer gets event schemas, it will
-get whatever is currently defined in openedx-events, so this will update the
-COURSE_CATALOG_EVENT_CHANGED schema (dropping `effort` field)
+* Upgrade openedx-events. When AvroSignalSerializer gets event schemas, it will get whatever is currently defined in openedx-events, so this will update the COURSE_CATALOG_EVENT_CHANGED schema (dropping `effort` field)
 
 [1.2.0] - 2022-10-13
 ********************
