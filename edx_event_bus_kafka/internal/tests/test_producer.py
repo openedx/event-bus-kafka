@@ -138,7 +138,7 @@ class TestEventProducer(TestCase):
         mock_producer.produce.assert_called_once_with(
             'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here',
             on_delivery=ep.on_event_deliver,
-            headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
+            headers={'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'},
         )
 
     @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
@@ -208,12 +208,12 @@ class TestEventProducer(TestCase):
                 )
 
         mock_context.assert_has_calls([
-            call('stage-user-stuff', 'key', {'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'}),
-            call('stage-user-stuff', 'value', {'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'}),
+            call('stage-user-stuff', 'key', {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'}),
+            call('stage-user-stuff', 'value', {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'}),
         ])
         assert mock_context.call_count == 2
         mock_producer.produce.assert_called_once_with(
             'stage-user-stuff', key=b'bytes-here', value=b'bytes-here',
             on_delivery=ep.on_event_deliver,
-            headers={'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'},
+            headers={'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'},
         )
