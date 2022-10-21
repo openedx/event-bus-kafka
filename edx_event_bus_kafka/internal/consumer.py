@@ -88,7 +88,6 @@ class KafkaEventConsumer:
             'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
                                                    schema_registry_client=schema_registry_client,
                                                    from_dict=inner_from_dict),
-            'auto.offset.reset': 'earliest'
         })
 
         return DeserializingConsumer(consumer_config)
