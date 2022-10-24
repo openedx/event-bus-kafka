@@ -194,7 +194,9 @@ class KafkaEventProducer():
         full_topic = get_full_topic(topic)
 
         event_key = extract_event_key(event_data, event_key_field)
-        headers = {EVENT_TYPE_HEADER_KEY: signal.event_type}
+        # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
+        # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
+        headers = {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
 
         key_serializer, value_serializer = get_serializers(signal, event_key_field)
         key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))

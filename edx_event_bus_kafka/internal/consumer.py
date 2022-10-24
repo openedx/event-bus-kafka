@@ -153,8 +153,7 @@ class KafkaEventConsumer:
 
         event_type = event_types[0]
 
-        # TODO (EventBus): Figure out who is doing the encoding and get the
-        #  right one instead of just guessing utf-8
+        # CloudEvents specifies using UTF-8 for header values, so let's be explicit.
         event_type_str = event_type.decode("utf-8")
 
         # If we get a message with the wrong signal encoding, we do not want to send it along.
