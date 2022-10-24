@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[1.4.0] - 2022-10-21
+********************
+
+Changed
+=======
+* Remove override of auto.offset.reset on consumer (which will default to "latest"). New consumer groups will consume only messages that are sent after the group was initialized.
 * Remove redundant lookup of signal in consumer loop (should not have any effect)
 * Explicitly encode message header values as UTF-8 (no change in behavior)
 
