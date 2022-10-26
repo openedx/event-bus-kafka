@@ -162,19 +162,15 @@ class KafkaEventConsumer:
 
 class ConsumeEventsCommand(BaseCommand):
     """
-    Listen for events from the event bus and log them. Only run on servers where
-    ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` is true.
+    Management command for Kafka consumer workers in the event bus.
     """
     help = """
-    This starts a Kafka event consumer that listens to the specified topic and logs all messages it receives. Topic
-    is required.
+    Consume messages of specified signal type from a Kafka topic and send their data to that signal.
 
     example:
-        python3 manage.py cms consume_events -t user-event-debug -g user-event-consumers
+        python3 manage.py cms consume_events -t user-login -g user-activity-service \
             -s org.openedx.learning.auth.session.login.completed.v1
     """
-    # TODO: Add pointer to relevant future docs around topics and consumer groups, and potentially
-    # update example topic and group names to follow any future naming conventions.
 
     def add_arguments(self, parser):
 
@@ -182,7 +178,7 @@ class ConsumeEventsCommand(BaseCommand):
             '-t', '--topic',
             nargs=1,
             required=True,
-            help='Topic to consume'
+            help='Topic to consume (without environment prefix)'
         )
 
         parser.add_argument(

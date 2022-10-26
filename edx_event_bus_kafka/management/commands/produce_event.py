@@ -17,20 +17,19 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     """
-    Produce a single test event.
+    Management command to produce a test event to the event bus.
     """
     help = """
-    This starts a Kafka event consumer that produces a test event with the given data to the specified topic.
+    Produce a single test event with the given data to the specified Kafka topic.
 
     example:
         python3 manage.py cms produce_event --signal openedx_events.learning.signals.SESSION_LOGIN_COMPLETED \
-          --topic user-event-debug --key-field user.pii.username \
+          --topic user-login --key-field user.pii.username \
           --data '{"user": {
                     "id": 123,
                     "is_active": true,
                     "pii": {"username": "foobob", "email": "bob@foo.example", "name": "Bob Foo"}}}'
     """
-    # TODO: Potentially update example topic and group names to follow any future naming conventions.
 
     def add_arguments(self, parser):
 
@@ -40,7 +39,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             '--topic', nargs=1, required=True,
-            help="Topic to consume",
+            help="Topic to produce to (without environment prefix)",
         )
         parser.add_argument(
             '--key-field', nargs=1, required=True,
