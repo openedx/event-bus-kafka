@@ -84,7 +84,6 @@ class KafkaEventConsumer:
             'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
                                                    schema_registry_client=schema_registry_client,
                                                    from_dict=inner_from_dict),
-            # TODO: Possibly remove or change the offset behavior https://github.com/openedx/event-bus-kafka/issues/61
         })
 
         return DeserializingConsumer(consumer_config)
@@ -103,7 +102,7 @@ class KafkaEventConsumer:
             full_topic = get_full_topic(self.topic)
             self.consumer.subscribe([full_topic])
 
-            # TODO: Handle exceptions at all https://github.com/openedx/event-bus-kafka/issues/62
+            # TODO: Make sure exceptions won't kill the loop. https://github.com/openedx/event-bus-kafka/issues/62
             while True:
                 msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                 if msg is not None:
@@ -150,7 +149,6 @@ class KafkaEventConsumer:
         # CloudEvents specifies using UTF-8 for header values, so let's be explicit.
         event_type_str = event_type.decode("utf-8")
 
-        # TODO: Accept multiple event types: https://github.com/openedx/openedx-events/issues/78
         # TODO: Maybe raise error here? Or at least set a metric or custom attribute.
         if event_type_str != self.signal.event_type:
             logger.error(
