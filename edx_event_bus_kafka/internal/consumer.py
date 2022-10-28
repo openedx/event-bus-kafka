@@ -70,10 +70,6 @@ class KafkaEventConsumer:
 
         schema_registry_client = get_schema_registry_client()
 
-        # TODO (EventBus):
-        # 1. Reevaluate if all consumers should listen for the earliest unprocessed offset (auto.offset.reset)
-        # 2. Ensure the signal used in the signal_deserializer is the same one sent over in the message header
-
         signal_deserializer = AvroSignalDeserializer(self.signal)
 
         def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
@@ -106,9 +102,7 @@ class KafkaEventConsumer:
             full_topic = get_full_topic(self.topic)
             self.consumer.subscribe([full_topic])
 
-            # TODO (EventBus):
-            # 1. Is there an elegant way to exit the loop?
-            # 2. Determine if there are other errors that shouldn't kill the entire loop
+            # TODO: Make sure exceptions won't kill the loop. https://github.com/openedx/event-bus-kafka/issues/62
             while True:
                 msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                 if msg is not None:
@@ -123,7 +117,8 @@ class KafkaEventConsumer:
         Emit signal with message data
         """
         if msg.error():
-            # TODO (EventBus): iterate on error handling with retry and dead-letter queue topics
+            # TODO: Iterate on error handling with retry and dead-letter queue topics.
+            # https://github.com/edx/edx-arch-experiments/issues/55 has broad overview of questions about errors.
             if msg.error().code() == KafkaError._PARTITION_EOF:  # pylint: disable=protected-access
                 # End of partition event
                 logger.info(f"{msg.topic()} [{msg.partition()}] reached end at offset {msg.offset}")
@@ -141,8 +136,6 @@ class KafkaEventConsumer:
         """
         headers = msg.headers() or []  # treat None as []
 
-        # TODO (EventBus): iterate on error handling for missing or multiple event_type headers
-        #  (headers() is actually a list of (key, value) tuples rather than a dictionary)
         event_types = [value for key, value in headers if key == EVENT_TYPE_HEADER]
         if len(event_types) == 0:
             logger.error(f"Missing {EVENT_TYPE_HEADER} header on message, cannot determine signal")
@@ -156,8 +149,7 @@ class KafkaEventConsumer:
         # CloudEvents specifies using UTF-8 for header values, so let's be explicit.
         event_type_str = event_type.decode("utf-8")
 
-        # If we get a message with the wrong signal encoding, we do not want to send it along.
-        # TODO (EventBus): Handle this particular sad path more gracefully.
+        # TODO: Maybe raise error here? Or at least set a metric or custom attribute.
         if event_type_str != self.signal.event_type:
             logger.error(
                 f"Signal types do not match. Expected {self.signal.event_type}."
@@ -170,20 +162,14 @@ class KafkaEventConsumer:
 
 class ConsumeEventsCommand(BaseCommand):
     """
-    Listen for events from the event bus and log them. Only run on servers where
-    ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` is true.
+    Management command for Kafka consumer workers in the event bus.
     """
     help = """
-    This starts a Kafka event consumer that listens to the specified topic and logs all messages it receives. Topic
-    is required.
+    Consume messages of specified signal type from a Kafka topic and send their data to that signal.
 
     example:
-        python3 manage.py cms consume_events -t user-event-debug -g user-event-consumers
+        python3 manage.py cms consume_events -t user-login -g user-activity-service \
             -s org.openedx.learning.auth.session.login.completed.v1
-
-    # TODO (EventBus): Add pointer to relevant future docs around topics and consumer groups, and potentially
-    update example topic and group names to follow any future naming conventions.
-
     """
 
     def add_arguments(self, parser):
@@ -192,7 +178,7 @@ class ConsumeEventsCommand(BaseCommand):
             '-t', '--topic',
             nargs=1,
             required=True,
-            help='Topic to consume'
+            help='Topic to consume (without environment prefix)'
         )
 
         parser.add_argument(

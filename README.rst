@@ -22,10 +22,6 @@ The goal for event-bus-kafka is to eventually have a flexible event bus that can
 Ideally, the event bus itself will also be an abstraction behind which platform maintainers can use non-Kafka implementations (Redis, Pulsar, etc.).
 The documentation/ADRs may also be moved to more appropriate places as the process matures.
 
-There are a hefty number of "# TODO (EventBus)" annotations left in to help guide further development.
-While still under development, this app will be subject to frequent and rapid changes.
-Outside of testing this app, it is best to leave the ``EVENT_BUS_KAFKA_CONSUMERS_ENABLED`` setting off.
-
 The repository works together with the openedx/openedx-events repository to make the fully functional event bus.
 
 For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
