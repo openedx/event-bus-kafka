@@ -14,6 +14,14 @@ Change Log
 Unreleased
 **********
 
+[1.4.1] - 2022-10-28
+********************
+
+Fixed
+=====
+* Correct and clarify management command help strings (some copy-paste errors)
+* Update TODO comments
+
 [1.4.0] - 2022-10-21
 ********************
 
