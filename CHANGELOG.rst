@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[1.4.2] - 2022-10-31
+********************
+
+Fixed
+=====
+* Removed proof-of-concept code that logged user-login events
+
 [1.4.1] - 2022-10-28
 ********************
 
