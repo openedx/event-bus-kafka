@@ -3,6 +3,7 @@ Tests for event_consumer module.
 """
 
 import copy
+from typing import Optional
 from unittest.mock import Mock, call, patch
 
 import pytest
@@ -11,7 +12,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
 
-from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer
+from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer, UnusableMessageError
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
 
@@ -20,8 +21,13 @@ class FakeMessage:
     A fake confluent_kafka.cimpl.Message that we can actually construct for mocking.
     """
 
-    def __init__(self, topic: str, headers: list, key: bytes, value, error):
+    def __init__(
+            self, topic: str, partition: Optional[int], offset: Optional[int],
+            headers: list, key: bytes, value, error
+    ):
         self._topic = topic
+        self._partition = partition
+        self._offset = offset
         self._headers = headers
         self._key = key
         self._value = value
@@ -29,6 +35,12 @@ class FakeMessage:
 
     def topic(self) -> str:
         return self._topic
+
+    def partition(self) -> Optional[int]:
+        return self._partition
+
+    def offset(self) -> Optional[int]:
+        return self._offset
 
     def headers(self) -> list:
         """List of str/bytes key/value pairs."""
@@ -74,6 +86,8 @@ class TestEmitSignals(TestCase):
         self.signal_type = self.signal_type_bytes.decode('utf-8')
         self.normal_message = FakeMessage(
             topic='user_stuff',
+            partition=2,
+            offset=12345,
             headers=[
                 ['ce_type', self.signal_type_bytes]
             ],
@@ -88,46 +102,58 @@ class TestEmitSignals(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_consume_loop_disabled(self, mock_logger):
         self.event_consumer.consume_indefinitely()  # returns at all
-        mock_logger.error.assert_called_once_with("Kafka consumers not enabled")
+        mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='prod',
     )
-    def test_consume_loop(self):
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_consume_loop(self, mock_logger):
         """
         Check the basic loop lifecycle.
         """
-        poll_call_count = 0
+        emit_call_count = 0
 
-        def fake_poll(*args, **kwargs):
-            nonlocal poll_call_count
-            poll_call_count += 1
-            # Return normally twice (to show looping), then throw (to
-            # show that we're not actually handling exceptions, at
-            # least at the moment.) If we start suppressing
-            # exceptions, we'll need some other way to break the loop
-            # for this test.
-            if poll_call_count >= 3:
+        def fake_emit(*args, **kwargs):
+            nonlocal emit_call_count, self
+            emit_call_count += 1
+            # Perform the following sequence of events on successive calls:
+            # 1) accept a message normally, 2) throw, 3) accept a message normally
+            # again, and 4) stop the loop so we can finish the unit test.
+            if emit_call_count == 1:
+                return
+            if emit_call_count == 2:
                 raise Exception("something broke")
-            return self.normal_message
+            if emit_call_count == 3:
+                return
+            else:
+                self.event_consumer._shut_down()  # pylint: disable=protected-access
 
-        with patch.object(self.event_consumer, 'process_single_message') as mock_process:
-            mock_consumer = Mock(**{'poll.side_effect': fake_poll}, autospec=True)
+        with patch.object(self.event_consumer, 'emit_signals_from_message', side_effect=fake_emit) as mock_emit:
+            mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
             self.event_consumer.consumer = mock_consumer
-            with pytest.raises(Exception, match="something broke"):
-                self.event_consumer.consume_indefinitely()
+            self.event_consumer.consume_indefinitely()
 
         # Check that each of the mocked out methods got called as expected.
         mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'])
-        assert mock_consumer.poll.call_args_list == [
-            call(timeout=1.0), call(timeout=1.0), call(timeout=1.0)
-        ]
-        assert mock_process.call_args_list == [
-            call(self.normal_message), call(self.normal_message)
-        ]
-        mock_consumer.close.assert_called_once_with()
+        assert mock_emit.call_args_list == [call(self.normal_message)] * 4
+
+        mock_logger.exception.assert_called_once()
+        (exc_log_msg,) = mock_logger.exception.call_args.args
+        assert "Error consuming event from Kafka: Exception('something broke') in context" in exc_log_msg
+        assert "full_topic='prod-some-topic'" in exc_log_msg
+        assert "consumer_group='test_group_id'" in exc_log_msg
+        assert f"expected_signal={self.mock_signal!r}" in exc_log_msg
+        assert "-- event details: " in exc_log_msg
+        assert "'partition': 2" in exc_log_msg
+        assert "'offset': 12345" in exc_log_msg
+        assert "'headers': [['ce_type', b'org.openedx.learning.auth.session.login.completed.v1']]" in exc_log_msg
+        assert "'key': b'\\x00\\x00\\x00\\x00\\x01\\x0cfoobob'" in exc_log_msg
+        assert "email='bob@foo.example'" in exc_log_msg
+
+        mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit(self, mock_logger):
@@ -136,27 +162,29 @@ class TestEmitSignals(TestCase):
         mock_logger.error.assert_not_called()
         self.mock_signal.send_event.assert_called_once_with(**self.normal_event_data)
 
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_no_type(self, mock_logger):
+    def test_no_type(self):
         msg = copy.copy(self.normal_message)
         msg._headers = []  # pylint: disable=protected-access
 
-        self.event_consumer.emit_signals_from_message(msg)
+        with pytest.raises(UnusableMessageError) as excinfo:
+            self.event_consumer.emit_signals_from_message(msg)
 
-        mock_logger.error.assert_called_once_with("Missing ce_type header on message, cannot determine signal")
+        assert excinfo.value.args == (
+            "Missing ce_type header on message, cannot determine signal",
+        )
         assert not self.mock_signal.send_event.called
 
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_unexpected_signal_type_in_header(self, mock_logger):
+    def test_unexpected_signal_type_in_header(self):
         msg = copy.copy(self.normal_message)
         msg._headers = [  # pylint: disable=protected-access
             ['ce_type', b'xxxx']
         ]
-        self.event_consumer.emit_signals_from_message(msg)
+        with pytest.raises(UnusableMessageError) as excinfo:
+            self.event_consumer.emit_signals_from_message(msg)
 
-        mock_logger.error.assert_called_once_with(
-            "Signal types do not match. Expected org.openedx.learning.auth.session.login.completed.v1."
-            "Received message of type xxxx."
+        assert excinfo.value.args == (
+            "Signal types do not match. Expected org.openedx.learning.auth.session.login.completed.v1. "
+            "Received message of type xxxx.",
         )
         assert not self.mock_signal.send_event.called
 
@@ -172,4 +200,4 @@ class TestCommand(TestCase):
     def test_kafka_consumers_disabled(self, mock_create_consumer, mock_logger):
         call_command(Command(), topic='test', group_id='test', signal='')
         assert not mock_create_consumer.called
-        mock_logger.error.assert_called_once_with("Kafka consumers not enabled")
+        mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
