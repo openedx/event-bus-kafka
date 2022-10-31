@@ -6,11 +6,8 @@ import logging
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.dispatch import receiver
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
-from openedx_events.learning.data import UserData
-from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
@@ -208,24 +205,3 @@ class ConsumeEventsCommand(BaseCommand):
             event_consumer.consume_indefinitely()
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")
-
-
-@receiver(SESSION_LOGIN_COMPLETED)
-def log_event_from_event_bus(**kwargs):  # pragma: no cover
-    """
-    Log event received and transmitted from event bus consumer.
-
-    This is test code that should be removed.
-
-    Arguments:
-        kwargs: event data sent to the signal
-    """
-    try:
-        user_data = kwargs.get('user', None)
-        if not user_data or not isinstance(user_data, UserData):
-            logger.error("Received null or incorrect data from SESSION_LOGIN_COMPLETED")
-            return
-        logger.info(f"Received SESSION_LOGIN_COMPLETED signal with user_data"
-                    f" with UserData {user_data}")
-    except Exception:  # pylint: disable=broad-except
-        logger.exception("Error while testing receiving signals from Kafka events")
