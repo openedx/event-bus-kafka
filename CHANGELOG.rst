@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[1.4.3] - 2022-10-31
+********************
+
+Fixed
+=====
+* Upgrade openedx-events and fastavro to bring in a fix for schema creation
+
 [1.4.2] - 2022-10-31
 ********************
 

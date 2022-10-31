@@ -99,7 +99,7 @@ exceptiongroup==1.0.0rc9
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.6.1
+fastavro==1.7.0
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -142,7 +142,7 @@ newrelic==8.3.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-openedx-events==3.0.0
+openedx-events==3.0.1
     # via -r requirements/test.txt
 packaging==21.3
     # via
