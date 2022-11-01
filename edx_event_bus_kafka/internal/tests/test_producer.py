@@ -172,7 +172,7 @@ class TestEventProducer(TestCase):
                               event_data={'test_data': SubTestData0(sub_name="name", course_id="id")})
 
         (error_string,) = mock_logger.exception.call_args.args
-        assert "event_data={'test_data': {'sub_name': 'name', 'course_id': 'id'}}" in error_string
+        assert "event_data={'test_data': SubTestData0(sub_name='name', course_id='id')}" in error_string
         assert "signal=<OpenEdxPublicSignal: simple.signal>" in error_string
         assert "initial_topic='topic'" in error_string
         assert "full_topic='dev-topic'" in error_string
@@ -201,7 +201,7 @@ class TestEventProducer(TestCase):
                                   event_data={'test_data': SubTestData0(sub_name="name", course_id="ABCx")})
 
         (error_string,) = mock_logger.exception.call_args.args
-        assert "event_data={'test_data': {'sub_name': 'name', 'course_id': 'ABCx'}}" in error_string
+        assert "event_data={'test_data': SubTestData0(sub_name='name', course_id='ABCx')}" in error_string
         assert "signal=<OpenEdxPublicSignal: simple.signal>" in error_string
         assert "initial_topic='topic'" in error_string
         assert "full_topic='dev-topic'" in error_string

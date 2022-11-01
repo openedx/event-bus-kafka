@@ -191,7 +191,7 @@ class ProducingContext:
 
     def __repr__(self):
         """Create a logging-friendly string"""
-        return " ".join([f"{key}={value!r}" for key, value in attr.asdict(self).items()])
+        return " ".join([f"{key}={value!r}" for key, value in attr.asdict(self, recurse=False).items()])
 
     def on_event_deliver(self, err, evt):
         """
