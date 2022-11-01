@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[1.5.0] - 2022-10-26
+********************
+
+Changed
+=======
+* Log full event data on all producer errors
+
 [1.4.3] - 2022-10-31
 ********************
 
