@@ -164,6 +164,36 @@ class TestEmitSignals(TestCase):
 
         mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='prod',
+    )
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_record_error_no_event(self, mock_logger):
+        """
+        Covers reporting of an error in the consumer loop when no event is available
+        for logging. (Event-present is already covered in consume_loop test.)
+        """
+        def poll_side_effect(*args, **kwargs):
+            # Only run one iteration
+            self.event_consumer._shut_down()  # pylint: disable=protected-access
+            raise Exception("something random")
+
+        mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
+        self.event_consumer.consumer = mock_consumer
+        self.event_consumer.consume_indefinitely()
+
+        # Check that there was one error log message and that it contained all the right parts,
+        # in some order.
+        mock_logger.exception.assert_called_once()
+        (exc_log_msg,) = mock_logger.exception.call_args.args
+        assert "Error consuming event from Kafka: Exception('something random') in context" in exc_log_msg
+        assert "full_topic='prod-some-topic'" in exc_log_msg
+        assert "consumer_group='test_group_id'" in exc_log_msg
+        assert f"expected_signal={self.mock_signal!r}" in exc_log_msg
+        assert "-- no event available" in exc_log_msg
+
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit(self, mock_logger):
         self.event_consumer.emit_signals_from_message(self.normal_message)
@@ -180,6 +210,21 @@ class TestEmitSignals(TestCase):
 
         assert excinfo.value.args == (
             "Missing ce_type header on message, cannot determine signal",
+        )
+        assert not self.mock_signal.send_event.called
+
+    def test_multiple_types(self):
+        """
+        Very unlikely case, but this gets us coverage.
+        """
+        msg = copy.copy(self.normal_message)
+        msg._headers = [['ce_type', b'abc'], ['ce_type', b'def']]  # pylint: disable=protected-access
+
+        with pytest.raises(UnusableMessageError) as excinfo:
+            self.event_consumer.emit_signals_from_message(msg)
+
+        assert excinfo.value.args == (
+            "Multiple ce_type headers found on message, cannot determine signal",
         )
         assert not self.mock_signal.send_event.called
 
