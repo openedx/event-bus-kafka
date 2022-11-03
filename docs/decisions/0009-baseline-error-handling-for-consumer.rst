@@ -40,7 +40,7 @@ All raised errors will also be sent to telemetry (New Relic) for monitoring.
 Consequences
 ************
 
-The consumer will err on the side of low latency between IDAs, creating higher (or at least sooner) inter-IDA consistency at the possible expense of inter-object consistency within a topic (if some events are dropped and other processed). We will have to ensure that we capture all failures sufficiently durably that we can replay them, and also that receivers are capable of "healing" their data when a topic is replayed.
+The consumer will err on the side of low latency between IDAs, creating higher (or at least sooner) inter-IDA consistency at the possible expense of inter-object consistency within a topic (if some events are dropped and others processed). We will have to ensure that we capture all failures sufficiently durably that we can replay them, and also that receivers are capable of "healing" their data when a topic is replayed.
 
 Rejected Alternatives
 *********************
