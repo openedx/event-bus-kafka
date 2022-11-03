@@ -153,7 +153,7 @@ class KafkaEventConsumer:
         # we don't need to check msg.error() ourselves. But... check it here
         # anyway for robustness against code changes.
         if msg.error() is not None:
-            raise Exception(
+            raise UnusableMessageError(
                 f"Polled message had error object (shouldn't happen): {msg.error()!r}"
             )
 

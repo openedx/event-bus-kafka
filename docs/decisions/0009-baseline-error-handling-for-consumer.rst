@@ -42,7 +42,7 @@ Consequences
 
 The consumer will err on the side of low latency between IDAs, creating higher (or at least sooner) inter-IDA consistency at the possible expense of inter-object consistency within a topic (if some events are dropped and others processed). We will have to ensure that we capture all failures sufficiently durably that we can replay them, and also that receivers are capable of "healing" their data when a topic is replayed.
 
-Rejected Alternatives
-*********************
+Deferred/Rejected Alternatives
+******************************
 
 Another common approach in eventing systems is the use of a Dead Letter Queue (DLQ). Events that cannot be processed are sent to a DLQ topic for later reprocessing. (Alternatively, they may be sent to a retry queue in the hopes that the error is transient, and only sent to the DLQ if the retry fails.) These approaches are still worth looking into, but have their own complexity (especially around message ordering) and the decision of whether to use these has been deferred. For now, the logged errors will serve as a crude DLQ.
