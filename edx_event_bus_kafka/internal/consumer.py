@@ -176,7 +176,7 @@ class KafkaEventConsumer:
 
         self.signal.send_event(**msg.value())
 
-    def record_event_consuming_error(self, run_context, error, maybe_msg):
+    def record_event_consuming_error(self, run_context, error, maybe_event):
         """
         Record an error caught while consuming an event, both to the logs and to telemetry.
 
@@ -184,19 +184,19 @@ class KafkaEventConsumer:
             run_context: Dictionary of contextual information: full_topic, consumer_group,
               and expected_signal.
             error: An exception instance
-            maybe_msg: None if message could not be fetched or decoded, or a Message if one
+            maybe_event: None if event could not be fetched or decoded, or a Message if one
               was successfully deserialized but could not be processed for some reason
         """
         context_msg = ", ".join(f"{k}={v!r}" for k, v in run_context.items())
-        if maybe_msg is None:
+        if maybe_event is None:
             event_msg = "no event available"
         else:
             event_details = {
-                'partition': maybe_msg.partition(),
-                'offset': maybe_msg.offset(),
-                'headers': maybe_msg.headers(),
-                'key': maybe_msg.key(),
-                'value': maybe_msg.value(),
+                'partition': maybe_event.partition(),
+                'offset': maybe_event.offset(),
+                'headers': maybe_event.headers(),
+                'key': maybe_event.key(),
+                'value': maybe_event.value(),
             }
             event_msg = f"event details: {event_details!r}"
 
