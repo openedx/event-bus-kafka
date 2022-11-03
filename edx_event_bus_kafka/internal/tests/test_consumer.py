@@ -114,22 +114,28 @@ class TestEmitSignals(TestCase):
         """
         Check the basic loop lifecycle.
         """
-        emit_call_count = 0
+        def raise_exception():
+            raise Exception("something broke")
+
+        # How the emit_signals_from_message() mock will behave on each successive call.
+        mock_emit_side_effects = [
+            lambda: None,  # accept and ignore a message
+            raise_exception,
+            lambda: None,  # accept another message (exception didn't break loop)
+
+            # Final "call" just serves to stop the loop
+            self.event_consumer._shut_down  # pylint: disable=protected-access
+        ]
+        next_emit_behavior = 0  # index into the above
 
         def fake_emit(*args, **kwargs):
-            nonlocal emit_call_count, self
-            emit_call_count += 1
-            # Perform the following sequence of events on successive calls:
-            # 1) accept a message normally, 2) throw, 3) accept a message normally
-            # again, and 4) stop the loop so we can finish the unit test.
-            if emit_call_count == 1:
-                return
-            if emit_call_count == 2:
-                raise Exception("something broke")
-            if emit_call_count == 3:
-                return
-            else:
-                self.event_consumer._shut_down()  # pylint: disable=protected-access
+            """
+            Call each function in mock_emit_side_effects() on successive invocations.
+            """
+            nonlocal mock_emit_side_effects, next_emit_behavior
+            to_run = mock_emit_side_effects[next_emit_behavior]
+            next_emit_behavior += 1
+            return to_run()
 
         with patch.object(self.event_consumer, 'emit_signals_from_message', side_effect=fake_emit) as mock_emit:
             mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
@@ -138,8 +144,11 @@ class TestEmitSignals(TestCase):
 
         # Check that each of the mocked out methods got called as expected.
         mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'])
-        assert mock_emit.call_args_list == [call(self.normal_message)] * 4
+        # Check that emit was called the expected number of times
+        assert mock_emit.call_args_list == [call(self.normal_message)] * len(mock_emit_side_effects)
 
+        # Check that there was one error log message and that it contained all the right parts,
+        # in some order.
         mock_logger.exception.assert_called_once()
         (exc_log_msg,) = mock_logger.exception.call_args.args
         assert "Error consuming event from Kafka: Exception('something broke') in context" in exc_log_msg
