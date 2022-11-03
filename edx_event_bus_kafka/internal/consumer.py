@@ -132,10 +132,15 @@ class KafkaEventConsumer:
                 msg = None
                 try:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
-                    # DeserializingConsumer.poll() always returns either a valid message
-                    # or None, and raises an exception in all other cases. This means
-                    # we don't need to check msg.error() ourselves.
                     if msg is not None:
+                        # DeserializingConsumer.poll() always returns either a valid message
+                        # or None, and raises an exception in all other cases. This means
+                        # we don't need to check msg.error() ourselves. But... check it here
+                        # anyway for robustness against code changes.
+                        if msg.error() is not None:
+                            raise Exception(
+                                f"Polled message had error object (shouldn't happen): {msg.error()!r}"
+                            )
                         self.emit_signals_from_message(msg)
                 except BaseException as e:
                     self.record_event_consuming_error(run_context, e, msg)

@@ -15,6 +15,12 @@ from openedx_events.learning.data import UserData, UserPersonalData
 from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer, UnusableMessageError
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
+# See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
+try:
+    from confluent_kafka import KafkaError
+except ImportError:  # pragma: no cover
+    pass
+
 
 class FakeMessage:
     """
@@ -22,8 +28,9 @@ class FakeMessage:
     """
 
     def __init__(
-            self, topic: str, partition: Optional[int], offset: Optional[int],
-            headers: list, key: bytes, value, error
+            self, topic: str, partition: Optional[int] = None, offset: Optional[int] = None,
+            headers: Optional[list] = None, key: Optional[bytes] = None, value=None,
+            error=None,
     ):
         self._topic = topic
         self._partition = partition
@@ -42,11 +49,11 @@ class FakeMessage:
     def offset(self) -> Optional[int]:
         return self._offset
 
-    def headers(self) -> list:
+    def headers(self) -> Optional[list]:
         """List of str/bytes key/value pairs."""
         return self._headers
 
-    def key(self) -> bytes:
+    def key(self) -> Optional[bytes]:
         """Bytes (Avro)."""
         return self._key
 
@@ -193,6 +200,36 @@ class TestEmitSignals(TestCase):
         assert "consumer_group='test_group_id'" in exc_log_msg
         assert f"expected_signal={self.mock_signal!r}" in exc_log_msg
         assert "-- no event available" in exc_log_msg
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='prod',
+    )
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_poll_returns_error_message(self, mock_logger):
+        """
+        DeserializingConsumer.poll() should never return a Message with an error() object,
+        but we check it anyway as a safeguard. This test exercises that branch.
+        """
+        def poll_side_effect(*args, **kwargs):
+            # Only run one iteration
+            self.event_consumer._shut_down()  # pylint: disable=protected-access
+            return FakeMessage(
+                topic='user_stuff',
+                partition=2,
+                error=KafkaError(123, "done broke"),
+            )
+
+        mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
+        self.event_consumer.consumer = mock_consumer
+        self.event_consumer.consume_indefinitely()
+
+        mock_logger.exception.assert_called_once()
+        (exc_log_msg,) = mock_logger.exception.call_args.args
+        assert "Error consuming event from Kafka:" in exc_log_msg
+        assert "Exception('Polled message had error object (shouldn\\'t happen):" in exc_log_msg
+        assert "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}') in context" in exc_log_msg
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit(self, mock_logger):
