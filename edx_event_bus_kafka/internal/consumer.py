@@ -3,6 +3,7 @@ Core consumer and event-loop code.
 """
 
 import logging
+import time
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -33,6 +34,13 @@ except ImportError:  # pragma: no cover
 KAFKA_CONSUMERS_ENABLED = SettingToggle('EVENT_BUS_KAFKA_CONSUMERS_ENABLED', default=True)
 
 CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT', 1.0)
+
+# .. setting_name: POLL_FAILURE_SLEEP
+# .. setting_default: 1.0
+# .. setting_description: When the consumer fails to retrieve an event from the broker,
+#   it will sleep for this long before trying again. This is to prevent fast error-loops
+#   if the broker is down or the consumer is misconfigured.
+POLL_FAILURE_SLEEP = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP', 1.0)
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
@@ -136,6 +144,12 @@ class KafkaEventConsumer:
                         self.emit_signals_from_message(msg)
                 except BaseException as e:
                     self.record_event_consuming_error(run_context, e, msg)
+                    # Prevent fast error-looping when no event received from broker. Because
+                    # DeserializingConsumer raises rather than returning a Message when it has an
+                    # error() value, this may be triggered even when a Message *was* returned,
+                    # slowing down the queue. This is probably close enough, though.
+                    if msg is None:
+                        time.sleep(POLL_FAILURE_SLEEP)
         finally:
             # Close down consumer to commit final offsets.
             self.consumer.close()

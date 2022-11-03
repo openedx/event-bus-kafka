@@ -117,7 +117,8 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_TOPIC_PREFIX='prod',
     )
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_consume_loop(self, mock_logger):
+    @patch('edx_event_bus_kafka.internal.consumer.time.sleep', autospec=True)
+    def test_consume_loop(self, mock_sleep, mock_logger):
         """
         Check the basic loop lifecycle.
         """
@@ -169,15 +170,18 @@ class TestEmitSignals(TestCase):
         assert "'key': b'\\x00\\x00\\x00\\x00\\x01\\x0cfoobob'" in exc_log_msg
         assert "email='bob@foo.example'" in exc_log_msg
 
+        mock_sleep.assert_not_called()
         mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='prod',
+        EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP=1
     )
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_record_error_no_event(self, mock_logger):
+    @patch('edx_event_bus_kafka.internal.consumer.time.sleep', autospec=True)
+    def test_record_error_no_event(self, mock_sleep, mock_logger):
         """
         Covers reporting of an error in the consumer loop when no event is available
         for logging. (Event-present is already covered in consume_loop test.)
@@ -200,6 +204,9 @@ class TestEmitSignals(TestCase):
         assert "consumer_group='test_group_id'" in exc_log_msg
         assert f"expected_signal={self.mock_signal!r}" in exc_log_msg
         assert "-- no event available" in exc_log_msg
+
+        # No-event sleep branch was triggered
+        mock_sleep.assert_called_once_with(1)
 
     def test_check_event_error(self):
         """
