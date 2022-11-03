@@ -201,35 +201,24 @@ class TestEmitSignals(TestCase):
         assert f"expected_signal={self.mock_signal!r}" in exc_log_msg
         assert "-- no event available" in exc_log_msg
 
-    @override_settings(
-        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
-        EVENT_BUS_TOPIC_PREFIX='prod',
-    )
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    def test_poll_returns_error_message(self, mock_logger):
+    def test_check_event_error(self):
         """
         DeserializingConsumer.poll() should never return a Message with an error() object,
         but we check it anyway as a safeguard. This test exercises that branch.
         """
-        def poll_side_effect(*args, **kwargs):
-            # Only run one iteration
-            self.event_consumer._shut_down()  # pylint: disable=protected-access
-            return FakeMessage(
-                topic='user_stuff',
-                partition=2,
-                error=KafkaError(123, "done broke"),
+        with pytest.raises(Exception) as exc_info:
+            self.event_consumer.emit_signals_from_message(
+                FakeMessage(
+                    topic='user_stuff',
+                    partition=2,
+                    error=KafkaError(123, "done broke"),
+                )
             )
 
-        mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
-        self.event_consumer.consumer = mock_consumer
-        self.event_consumer.consume_indefinitely()
-
-        mock_logger.exception.assert_called_once()
-        (exc_log_msg,) = mock_logger.exception.call_args.args
-        assert "Error consuming event from Kafka:" in exc_log_msg
-        assert "Exception('Polled message had error object (shouldn\\'t happen):" in exc_log_msg
-        assert "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}') in context" in exc_log_msg
+        assert exc_info.value.args == (
+            "Polled message had error object (shouldn't happen): "
+            "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}",
+        )
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit(self, mock_logger):
