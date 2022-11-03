@@ -238,9 +238,10 @@ class ConsumeEventsCommand(BaseCommand):
     help = """
     Consume messages of specified signal type from a Kafka topic and send their data to that signal.
 
-    example:
+    Example (runs in background)::
+
         python3 manage.py cms consume_events -t user-login -g user-activity-service \
-            -s org.openedx.learning.auth.session.login.completed.v1
+            -s org.openedx.learning.auth.session.login.completed.v1 &
     """
 
     def add_arguments(self, parser):
