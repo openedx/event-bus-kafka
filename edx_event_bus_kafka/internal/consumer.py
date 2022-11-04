@@ -39,7 +39,9 @@ CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT
 # .. setting_default: 1.0
 # .. setting_description: When the consumer fails to retrieve an event from the broker,
 #   it will sleep for this many seconds before trying again. This is to prevent fast error-loops
-#   if the broker is down or the consumer is misconfigured.
+#   if the broker is down or the consumer is misconfigured. It *may* also sleep for errors that
+#   involve receiving an unreadable event, but this could change in the future to be more
+#   specific to "no event received from broker".
 POLL_FAILURE_SLEEP = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP', 1.0)
 
 # CloudEvent standard name for the event type header, see
