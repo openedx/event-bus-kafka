@@ -129,7 +129,7 @@ class KafkaEventConsumer:
             }
             self.consumer.subscribe([full_topic])
             logger.info(
-                f"Running consumer for {run_context!r} with partition assignments {self.consumer.assignment()!r}"
+                f"Running consumer for {run_context!r}"
             )
 
             while True:
