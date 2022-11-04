@@ -14,6 +14,14 @@ Change Log
 Unreleased
 **********
 
+[1.6.0] - 2022-11-04
+********************
+
+Changed
+=======
+* Enhanced error logging in consumer, including telemetry for exceptions
+* Consumer loop will no longer exit when an error is encountered
+
 [1.5.0] - 2022-11-01
 ********************
 
