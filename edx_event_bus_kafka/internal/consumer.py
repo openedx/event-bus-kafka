@@ -35,10 +35,10 @@ KAFKA_CONSUMERS_ENABLED = SettingToggle('EVENT_BUS_KAFKA_CONSUMERS_ENABLED', def
 
 CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT', 1.0)
 
-# .. setting_name: POLL_FAILURE_SLEEP
+# .. setting_name: EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP
 # .. setting_default: 1.0
 # .. setting_description: When the consumer fails to retrieve an event from the broker,
-#   it will sleep for this long before trying again. This is to prevent fast error-loops
+#   it will sleep for this many seconds before trying again. This is to prevent fast error-loops
 #   if the broker is down or the consumer is misconfigured.
 POLL_FAILURE_SLEEP = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP', 1.0)
 
