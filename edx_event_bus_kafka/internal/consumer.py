@@ -128,9 +128,7 @@ class KafkaEventConsumer:
                 'expected_signal': self.signal,
             }
             self.consumer.subscribe([full_topic])
-            logger.info(
-                f"Running consumer for {run_context!r}"
-            )
+            logger.info(f"Running consumer for {run_context!r}")
 
             while True:
                 # Allow unit tests to break out of loop
