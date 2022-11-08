@@ -143,9 +143,7 @@ class KafkaEventConsumer:
                 msg = None
                 try:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
-                    print(f"My message is {msg}")
                     if msg is not None:
-                        print(f"My message is not null")
                         self.emit_signals_from_message(msg)
                 except Exception as e:  # pylint: disable=broad-except
                     self.record_event_consuming_error(run_context, e, msg)
