@@ -102,8 +102,9 @@ class KafkaEventConsumer:
             'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
                                                    schema_registry_client=schema_registry_client,
                                                    from_dict=inner_from_dict),
-            # turn off auto commit to avoid committing offsets before a message has been fully processed. We will
-            # manually commit after processing
+            # Turn off auto commit. Auto commit will commit offsets for the entire batch of messages received,
+            # potentially resulting in data loss if some of those messages are not fully processed. See
+            # https://newrelic.com/blog/best-practices/kafka-consumer-config-auto-commit-data-loss
             'enable.auto.commit': False,
         })
 
