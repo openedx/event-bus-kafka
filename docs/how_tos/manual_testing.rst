@@ -20,13 +20,13 @@ Setting up for testing
 Testing the consumer
 ====================
 
-   - Run the example command listed in the ``edx_event_bus_kafka.consumer.event_consumer.ConsumeEventsCommand`` docstring
-   - The consumer may not read older events from the topic—and it never will for the first run of a topic/group pair—so it needs to be started first in general.
-   - Once an event comes in, expect to see output that ends with a line containing "Received SESSION_LOGIN_COMPLETED signal with user_data"
+- Run the example command listed in the ``edx_event_bus_kafka.consumer.event_consumer.ConsumeEventsCommand`` docstring
+- The consumer may not read older events from the topic—and it never will for the first run of a topic/group pair—so it needs to be started first in general.
+- Once an event comes in, expect to see output that ends with a line containing "Received SESSION_LOGIN_COMPLETED signal with user_data"
 
 Testing the producer
 ====================
 
-   - Run the example command listed in the ``edx_event_bus_kafka.management.commands.produce_event.Command`` docstring
-   - Expect to see output that ends with a line containing "Event delivered to topic"
-   - Go to the topic that was created and then into the Messages tab; select offset=0 to make sure you can see messages that were sent before you had the UI open.
+- Run the example command listed in the ``edx_event_bus_kafka.management.commands.produce_event.Command`` docstring
+- Expect to see output that ends with a line containing "Event delivered to topic"
+- Go to the topic that was created and then into the Messages tab; select offset=0 to make sure you can see messages that were sent before you had the UI open.
