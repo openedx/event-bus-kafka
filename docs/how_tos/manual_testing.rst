@@ -20,8 +20,9 @@ Setting up for testing
 Testing the consumer
 ====================
 
+The consumer may not read older events from the topic—and it never will for the first run of a topic/group pair—so you may need to started it before the producer, or re-run the producer after the consumer is started.
+
 - Run the example command listed in the ``edx_event_bus_kafka.consumer.event_consumer.ConsumeEventsCommand`` docstring
-- The consumer may not read older events from the topic—and it never will for the first run of a topic/group pair—so it needs to be started first in general.
 - Once an event comes in, expect to see output that ends with a line containing "Received SESSION_LOGIN_COMPLETED signal with user_data"
 
 Testing the producer
