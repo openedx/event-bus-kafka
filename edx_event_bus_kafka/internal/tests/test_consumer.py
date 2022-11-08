@@ -170,6 +170,9 @@ class TestEmitSignals(TestCase):
         assert "'key': b'\\x00\\x00\\x00\\x00\\x01\\x0cfoobob'" in exc_log_msg
         assert "email='bob@foo.example'" in exc_log_msg
 
+        # Check that each message got committed (including the errored ones)
+        assert len(mock_consumer.commit.call_args_list) == len(mock_emit_side_effects)
+
         mock_sleep.assert_not_called()
         mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
@@ -207,6 +210,8 @@ class TestEmitSignals(TestCase):
 
         # No-event sleep branch was triggered
         mock_sleep.assert_called_once_with(1)
+
+        mock_consumer.commit.assert_not_called()
 
     def test_check_event_error(self):
         """
@@ -274,6 +279,22 @@ class TestEmitSignals(TestCase):
             "Received message of type xxxx.",
         )
         assert not self.mock_signal.send_event.called
+
+    def test_no_commit_if_no_error_logged(self):
+        """
+        Check that if there is an error that we fail to log, we do not commit the offset
+        """
+        def raise_exception(*args, **kwargs):
+            raise Exception("something broke")
+
+        with patch.object(self.event_consumer, 'emit_signals_from_message', side_effect=raise_exception):
+            with patch.object(self.event_consumer, 'record_event_consuming_error', side_effect=raise_exception):
+                with pytest.raises(Exception):
+                    mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+                    self.event_consumer.consumer = mock_consumer
+                    self.event_consumer.consume_indefinitely()
+
+        mock_consumer.commit.assert_not_called()
 
 
 class TestCommand(TestCase):

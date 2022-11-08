@@ -112,7 +112,7 @@ def descend_avro_schema(serializer_schema: dict, field_path: List[str]) -> dict:
 
             matching = [field for field in field_list if field['name'] == field_name]
             subschema = matching[0]
-        except BaseException as e:
+        except Exception as e:  # pylint: disable=broad-except
             raise Exception(
                 f"Error traversing Avro schema along path {field_path!r}; failed at {field_name!r}."
             ) from e
@@ -276,7 +276,7 @@ class KafkaEventProducer():
             # would never get a delivery callback. That's why there's also a thread calling
             # poll(0) on a regular interval (see `poll_indefinitely`).
             self.producer.poll(0)
-        except BaseException as e:
+        except Exception as e:  # pylint: disable=broad-except
             # Errors caused by the produce call should be handled by the on_delivery callback.
             # Here we might expect serialization errors, or any errors from preparing to produce.
             record_producing_error(e, context)
