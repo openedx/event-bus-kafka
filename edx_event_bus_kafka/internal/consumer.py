@@ -102,6 +102,10 @@ class KafkaEventConsumer:
             'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
                                                    schema_registry_client=schema_registry_client,
                                                    from_dict=inner_from_dict),
+            # Turn off auto commit. Auto commit will commit offsets for the entire batch of messages received,
+            # potentially resulting in data loss if some of those messages are not fully processed. See
+            # https://newrelic.com/blog/best-practices/kafka-consumer-config-auto-commit-data-loss
+            'enable.auto.commit': False,
         })
 
         return DeserializingConsumer(consumer_config)
@@ -142,7 +146,7 @@ class KafkaEventConsumer:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         self.emit_signals_from_message(msg)
-                except BaseException as e:
+                except Exception as e:  # pylint: disable=broad-except
                     self.record_event_consuming_error(run_context, e, msg)
                     # Prevent fast error-looping when no event received from broker. Because
                     # DeserializingConsumer raises rather than returning a Message when it has an
@@ -150,10 +154,14 @@ class KafkaEventConsumer:
                     # slowing down the queue. This is probably close enough, though.
                     if msg is None:
                         time.sleep(POLL_FAILURE_SLEEP)
+                if msg:
+                    # theoretically we could just call consumer.commit() without passing the specific message
+                    # to commit all this consumer's current offset across all partitions since we only process one
+                    # message at a time, but limit it to just the offset/partition of the specified message
+                    # to be super safe
+                    self.consumer.commit(message=msg, asynchronous=False)
         finally:
-            # Close down consumer to commit final offsets.
             self.consumer.close()
-            logger.info("Committing final offsets")
 
     def emit_signals_from_message(self, msg):
         """

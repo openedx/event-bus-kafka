@@ -14,6 +14,14 @@ Change Log
 Unreleased
 **********
 
+[1.7.0] - 2022-11-04
+********************
+
+Changed
+=======
+* Manually manage commits instead of using auto-commit on the consumer
+* Catch Exception instead of BaseException on both producer and consumer
+
 [1.6.0] - 2022-11-04
 ********************
 
