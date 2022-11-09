@@ -66,6 +66,14 @@ class FakeMessage:
         return self._error
 
 
+def fake_receiver_returns_quietly(**kwargs):
+    return
+
+
+def fake_receiver_raises_error(**kwargs):
+    raise Exception("receiver whoops")
+
+
 @override_settings(
     EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='https://test-url',
     EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='bootstrap-servers',
@@ -105,10 +113,14 @@ class TestEmitSignals(TestCase):
         )
         self.mock_receiver = Mock()
         self.signal = SESSION_LOGIN_COMPLETED
+        self.signal.connect(fake_receiver_returns_quietly)
+        self.signal.connect(fake_receiver_raises_error)
         self.signal.connect(self.mock_receiver)
         self.event_consumer = KafkaEventConsumer('some-topic', 'test_group_id', self.signal)
 
     def tearDown(self):
+        self.signal.disconnect(fake_receiver_returns_quietly)
+        self.signal.disconnect(fake_receiver_raises_error)
         self.signal.disconnect(self.mock_receiver)
 
     def assert_signal_sent_with(self, signal, data):
@@ -260,9 +272,36 @@ class TestEmitSignals(TestCase):
             "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}",
         )
 
-    def test_emit(self):
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_emit(self, mock_logger):
         self.event_consumer.emit_signals_from_message(self.normal_message)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
+        mock_logger.warning.assert_called_once_with(
+            "1 receiver(s) out of 3 produced errors when handling signal <OpenEdxPublicSignal: "
+            "org.openedx.learning.auth.session.login.completed.v1>: "
+            "edx_event_bus_kafka.internal.tests.test_consumer.fake_receiver_raises_error="
+            "Exception('receiver whoops')"
+        )
+
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_malformed_receiver_errors(self, mock_logger):
+        """
+        Ensure that even a really messed-up receiver is still logged safely.
+        """
+        self.event_consumer.report_receiver_errors([
+            (lambda x:x, Exception("for lambda")),
+            # This would actually raise an error inside send_robust(), but it will serve well enough for testing...
+            ("not even a function", Exception("just plain bad")),
+        ])
+        mock_logger.warning.assert_called_once_with(
+            "2 receiver(s) out of 2 produced errors when handling signal <OpenEdxPublicSignal: "
+            "org.openedx.learning.auth.session.login.completed.v1>: "
+
+            "edx_event_bus_kafka.internal.tests.test_consumer.TestEmitSignals."
+            "test_malformed_receiver_errors.<locals>.<lambda>=Exception('for lambda'), "
+
+            "not even a function=Exception('just plain bad')"
+        )
 
     def test_no_type(self):
         msg = copy.copy(self.normal_message)
