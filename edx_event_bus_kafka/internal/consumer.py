@@ -159,12 +159,8 @@ class KafkaEventConsumer:
                     # to commit all this consumer's current offset across all partitions since we only process one
                     # message at a time, but limit it to just the offset/partition of the specified message
                     # to be super safe
-                    #
-                    # Use asynchronous commits for performance; if we used synchronous commits we could
-                    # check the return value for errors, but there's really nothing for us to do with that.
-                    self.consumer.commit(message=msg, asynchronous=True)
+                    self.consumer.commit(message=msg)
         finally:
-            # Just notifies the broker that this consumer is shutting down. We have auto-commit disabled.
             self.consumer.close()
 
     def emit_signals_from_message(self, msg):
