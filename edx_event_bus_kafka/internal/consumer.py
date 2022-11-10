@@ -159,7 +159,7 @@ class KafkaEventConsumer:
                     # to commit all this consumer's current offset across all partitions since we only process one
                     # message at a time, but limit it to just the offset/partition of the specified message
                     # to be super safe
-                    self.consumer.commit(message=msg, asynchronous=False)
+                    self.consumer.commit(message=msg)
         finally:
             self.consumer.close()
 
