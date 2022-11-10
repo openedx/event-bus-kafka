@@ -14,6 +14,18 @@ Change Log
 Unreleased
 **********
 
+[1.8.1] - 2022-11-10
+********************
+Changed
+=======
+* Commit consumer offset asynchronously
+
+[1.8.0] - 2022-11-09
+********************
+Added
+=====
+* Consumer logs a warning for receivers that fail with an exception
+
 [1.7.0] - 2022-11-04
 ********************
 

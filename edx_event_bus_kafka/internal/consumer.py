@@ -159,7 +159,7 @@ class KafkaEventConsumer:
                     # to commit all this consumer's current offset across all partitions since we only process one
                     # message at a time, but limit it to just the offset/partition of the specified message
                     # to be super safe
-                    self.consumer.commit(message=msg, asynchronous=False)
+                    self.consumer.commit(message=msg)
         finally:
             self.consumer.close()
 
@@ -202,7 +202,32 @@ class KafkaEventConsumer:
                 f"Received message of type {event_type_str}."
             )
 
-        self.signal.send_event(**msg.value())
+        send_results = self.signal.send_event(**msg.value())
+        self.report_receiver_errors(send_results)
+
+    def report_receiver_errors(self, send_results):
+        """
+        Takes the list of (receiver, response) pairs and logs a warning if any are errors.
+        """
+        error_list = []
+        for receiver, response in send_results:
+            if not isinstance(response, BaseException):
+                continue
+
+            # Probably every receiver will be a regular function or even a lambda with
+            # these attrs, so this check is just to be safe.
+            try:
+                receiver_name = f"{receiver.__module__}.{receiver.__qualname__}"
+            except AttributeError:
+                receiver_name = str(receiver)
+
+            error_list.append(f"{receiver_name}={response!r}")
+
+        if len(error_list) > 0:
+            logger.warning(
+                f"{len(error_list)} receiver(s) out of {len(send_results)} "
+                f"produced errors when handling signal {self.signal}: {', '.join(error_list)}"
+            )
 
     def record_event_consuming_error(self, run_context, error, maybe_event):
         """

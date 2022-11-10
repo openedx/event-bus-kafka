@@ -112,7 +112,7 @@ def descend_avro_schema(serializer_schema: dict, field_path: List[str]) -> dict:
 
             matching = [field for field in field_list if field['name'] == field_name]
             subschema = matching[0]
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             raise Exception(
                 f"Error traversing Avro schema along path {field_path!r}; failed at {field_name!r}."
             ) from e
