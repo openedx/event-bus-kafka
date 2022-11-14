@@ -28,6 +28,8 @@ The consumer may not read older events from the topic—and it never will for th
 Testing the producer
 ====================
 
+Note: If you're also running the consumer, you'll need to do this in a separate studio shell.
+
 - Run the example command listed in the ``edx_event_bus_kafka.management.commands.produce_event.Command`` docstring
 - Expect to see output that ends with a line containing "Event delivered to topic"
 - Go to the topic that was created and then into the Messages tab; select offset=0 to make sure you can see messages that were sent before you had the UI open.
