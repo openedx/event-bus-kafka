@@ -4,7 +4,7 @@
 Status
 ******
 
-**Provisional**
+Accepted
 
 Context
 *******
@@ -33,9 +33,9 @@ Consumers of the Event Bus are generally expected to tolerate duplicate events (
 
 As we gain experience, we can add special handling for certain known cases that would be better served by a backoff, retry, or halt.
 
-Receiver exceptions are not *raised*, per se, but are returned by ``send_robust``. We will log these but not treat these as consumer errors, as these exceptions are much more likely to be related to IDA business logic than to the Event Bus itself. There may also be multiple receivers, and failures in one do not indicate that other receivers should stop receiving the event stream.
+Receiver exceptions are not *raised*, per se, but are returned by ``send_robust``. These exceptions are much more likely to be related to IDA business logic than to the Event Bus itself. There may also be multiple receivers, and failures in one do not indicate that other receivers should stop receiving the event stream. We will log these in the same way as other exceptions so that IDA bugs can be recovered from by replaying events, but they'll be specially marked as receiver errors so that alerting can ignore them, if needed.
 
-All raised errors will also be sent to telemetry (New Relic) for monitoring.
+All of these errors will also be sent to telemetry (New Relic) for monitoring.
 
 Consequences
 ************
