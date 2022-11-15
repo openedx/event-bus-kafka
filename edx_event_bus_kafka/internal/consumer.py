@@ -58,6 +58,12 @@ class UnusableMessageError(Exception):
     """
 
 
+class ReceiverError(Exception):
+    """
+    Indicates that one or more receivers of a signal raised an exception when called.
+    """
+
+
 class KafkaEventConsumer:
     """
     Construct consumer for the given topic, group, and signal. The consumer can then
@@ -203,11 +209,17 @@ class KafkaEventConsumer:
             )
 
         send_results = self.signal.send_event(**msg.value())
-        self.report_receiver_errors(send_results)
+        # Raise an exception if any receivers errored out. This allows logging of the receivers
+        # along with partition, offset, etc. in record_event_consuming_error. Hopefully the
+        # receiver code is idempotent and we can just replay any messages that were involved.
+        self._check_receiver_results(send_results)
 
-    def report_receiver_errors(self, send_results):
+    def _check_receiver_results(self, send_results: list):
         """
-        Takes the list of (receiver, response) pairs and logs a warning if any are errors.
+        Raises exception if any of the receivers produced an exception.
+
+        Arguments:
+            send_results: Output of ``send_events``, a list of ``(receiver, response)`` tuples.
         """
         error_list = []
         for receiver, response in send_results:
@@ -221,10 +233,11 @@ class KafkaEventConsumer:
             except AttributeError:
                 receiver_name = str(receiver)
 
+            # The stack traces are already logged by django.dispatcher, so just the error message is fine.
             error_list.append(f"{receiver_name}={response!r}")
 
         if len(error_list) > 0:
-            logger.warning(
+            raise ReceiverError(
                 f"{len(error_list)} receiver(s) out of {len(send_results)} "
                 f"produced errors when handling signal {self.signal}: {', '.join(error_list)}"
             )
