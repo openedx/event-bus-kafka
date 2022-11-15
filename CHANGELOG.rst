@@ -14,6 +14,8 @@ Change Log
 Unreleased
 **********
 
+[1.9.0] - 2022-11-15
+********************
 Changed
 =======
 * Log and record receiver errors the same way as other errors (with offset, partition, etc.)

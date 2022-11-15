@@ -60,7 +60,7 @@ class UnusableMessageError(Exception):
 
 class ReceiverError(Exception):
     """
-    Indicates that one or more receivers of a signal threw when called.
+    Indicates that one or more receivers of a signal raised an exception when called.
     """
 
 
