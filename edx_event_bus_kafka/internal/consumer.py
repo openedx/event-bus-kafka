@@ -63,6 +63,13 @@ class ReceiverError(Exception):
     Indicates that one or more receivers of a signal raised an exception when called.
     """
 
+    def __init__(self, message: str, causes: list):
+        """
+        Create ReceiverError with a message and a list of exceptions returned by receivers.
+        """
+        super().__init__(message)
+        self.causes = causes  # just used for testing
+
 
 class KafkaEventConsumer:
     """
@@ -221,7 +228,8 @@ class KafkaEventConsumer:
         Arguments:
             send_results: Output of ``send_events``, a list of ``(receiver, response)`` tuples.
         """
-        error_list = []
+        error_descriptions = []
+        errors = []
         for receiver, response in send_results:
             if not isinstance(response, BaseException):
                 continue
@@ -234,12 +242,15 @@ class KafkaEventConsumer:
                 receiver_name = str(receiver)
 
             # The stack traces are already logged by django.dispatcher, so just the error message is fine.
-            error_list.append(f"{receiver_name}={response!r}")
+            error_descriptions.append(f"{receiver_name}={response!r}")
+            errors.append(response)
 
-        if len(error_list) > 0:
+        if len(error_descriptions) > 0:
             raise ReceiverError(
-                f"{len(error_list)} receiver(s) out of {len(send_results)} "
-                f"produced errors when handling signal {self.signal}: {', '.join(error_list)}"
+                f"{len(error_descriptions)} receiver(s) out of {len(send_results)} "
+                "produced errors (stack trace elsewhere in logs) "
+                f"when handling signal {self.signal}: {', '.join(error_descriptions)}",
+                errors
             )
 
     def record_event_consuming_error(self, run_context, error, maybe_event):

@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[1.10.0] - 2022-11-21
+*********************
+Changed
+=======
+* Improve receiver error log message -- mention that stack traces are elsewhere in log
+
 [1.9.0] - 2022-11-15
 ********************
 Changed
