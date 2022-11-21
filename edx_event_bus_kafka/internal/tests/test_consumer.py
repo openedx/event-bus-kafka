@@ -272,15 +272,28 @@ class TestEmitSignals(TestCase):
             "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}",
         )
 
-    def test_emit(self):
+    @patch('django.dispatch.dispatcher.logger', autospec=True)
+    def test_emit(self, mock_logger):
         with pytest.raises(ReceiverError) as exc_info:
             self.event_consumer.emit_signals_from_message(self.normal_message)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         assert exc_info.value.args == (
-            "1 receiver(s) out of 3 produced errors when handling signal <OpenEdxPublicSignal: "
+            "1 receiver(s) out of 3 produced errors (stack trace elsewhere in logs) "
+            "when handling signal <OpenEdxPublicSignal: "
             "org.openedx.learning.auth.session.login.completed.v1>: "
             "edx_event_bus_kafka.internal.tests.test_consumer.fake_receiver_raises_error="
             "Exception('receiver whoops')",
+        )
+
+        # Check that django dispatch is logging the stack trace. Really, we only care that
+        # *something* does it, though. This test just ensures that our "(stack trace
+        # elsewhere in logs)" isn't a lie.
+        (receiver_error,) = exc_info.value.causes
+        mock_logger.error.assert_called_once_with(
+            "Error calling %s in Signal.send_robust() (%s)",
+            'fake_receiver_raises_error',
+            receiver_error,
+            exc_info=receiver_error,
         )
 
     def test_malformed_receiver_errors(self):
@@ -294,7 +307,8 @@ class TestEmitSignals(TestCase):
                 ("not even a function", Exception("just plain bad")),
             ])
         assert exc_info.value.args == (
-            "2 receiver(s) out of 2 produced errors when handling signal <OpenEdxPublicSignal: "
+            "2 receiver(s) out of 2 produced errors (stack trace elsewhere in logs) "
+            "when handling signal <OpenEdxPublicSignal: "
             "org.openedx.learning.auth.session.login.completed.v1>: "
 
             "edx_event_bus_kafka.internal.tests.test_consumer.TestEmitSignals."
