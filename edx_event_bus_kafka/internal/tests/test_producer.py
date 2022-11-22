@@ -77,22 +77,22 @@ class TestEventProducer(TestCase):
         with pytest.raises(Exception, match="missing library or settings"):
             ep.get_serializers(self.signal, 'user.id')
 
-    def test_get_producer_unconfigured(self):
+    def test_create_producer_unconfigured(self):
         """With missing essential settings, just warn and return None."""
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter('always')
-            assert ep.get_producer() is None
+            assert ep.create_producer() is None
             assert len(caught_warnings) == 1
             assert str(caught_warnings[0].message).startswith("Cannot configure event-bus-kafka: Missing setting ")
 
-    def test_get_producer_configured(self):
+    def test_create_producer_configured(self):
         """
         Creation succeeds when all settings are present.
 
         Also tests basic compliance with the implementation-loader API in openedx-events.
         """
         with override_settings(
-                EVENT_BUS_PRODUCER='edx_event_bus_kafka.get_producer',
+                EVENT_BUS_PRODUCER='edx_event_bus_kafka.create_producer',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
@@ -101,7 +101,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
-            assert isinstance(openedx_events.event_bus.get_producer(), ep.KafkaEventProducer)
+            assert isinstance(openedx_events.event_bus.create_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
@@ -142,7 +142,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='prod',
         ):
-            producer_api = ep.get_producer()
+            producer_api = ep.create_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 producer_api.send(
                     signal=self.signal, topic='user-stuff',
@@ -172,7 +172,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='dev',
         ):
-            producer_api = ep.get_producer()
+            producer_api = ep.create_producer()
             # force an exception with a bad event_key_field
             producer_api.send(signal=simple_signal, topic='topic', event_key_field='bad_field',
                               event_data={'test_data': SubTestData0(sub_name="name", course_id="id")})
@@ -199,7 +199,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='dev',
         ):
-            producer_api = ep.get_producer()
+            producer_api = ep.create_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 # imitate a failed send to Kafka
                 mock_producer.produce = Mock(side_effect=Exception('bad!'))
@@ -273,7 +273,7 @@ class TestEventProducer(TestCase):
     @override_settings(EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321')
     @patch('edx_event_bus_kafka.internal.producer.SerializationContext')
     def test_serialize_and_produce_to_same_topic(self, mock_context):
-        producer_api = ep.get_producer()
+        producer_api = ep.create_producer()
         with patch('edx_event_bus_kafka.internal.producer.AvroSerializer',
                    return_value=lambda _x, _y: b'bytes-here'):
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:

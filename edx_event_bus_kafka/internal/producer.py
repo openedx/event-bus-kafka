@@ -1,7 +1,7 @@
 """
 Produce Kafka events from signals.
 
-Main function is ``get_producer()``, which should be referred to from ``EVENT_BUS_PRODUCER``.
+Main function is ``create_producer()``, which should be referred to from ``EVENT_BUS_PRODUCER``.
 """
 
 import json
@@ -329,9 +329,9 @@ def poll_indefinitely(api_weakref: KafkaEventProducer):
             api_object = None
 
 
-def get_producer() -> Optional[KafkaEventProducer]:
+def create_producer() -> Optional[KafkaEventProducer]:
     """
-    Create or retrieve Producer API instance.
+    Create a Producer API instance. Caller should cache the returned object.
 
     If confluent-kafka library or essential settings are missing, warn and return None.
     """

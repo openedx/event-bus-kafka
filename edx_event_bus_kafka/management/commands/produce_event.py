@@ -10,7 +10,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.utils.module_loading import import_string
 
-from edx_event_bus_kafka.internal.producer import get_producer
+from edx_event_bus_kafka.internal.producer import create_producer
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            producer = get_producer()
+            producer = create_producer()
             producer.send(
                 signal=import_string(options['signal'][0]),
                 topic=options['topic'][0],
