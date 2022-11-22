@@ -8,7 +8,7 @@ asgiref==3.5.2
     # via
     #   -r requirements/quality.txt
     #   django
-astroid==2.12.12
+astroid==2.12.13
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -83,7 +83,7 @@ cryptography==38.0.3
     # via
     #   -r requirements/quality.txt
     #   secretstorage
-diff-cover==7.0.1
+diff-cover==7.0.2
     # via -r requirements/dev.in
 dill==0.3.6
     # via
@@ -130,7 +130,7 @@ edx-opaque-keys[django]==2.3.0
     #   openedx-events
 edx-toggles==5.0.0
     # via -r requirements/quality.txt
-exceptiongroup==1.0.1
+exceptiongroup==1.0.4
     # via
     #   -r requirements/quality.txt
     #   pytest
@@ -220,13 +220,13 @@ pep517==0.13.0
     # via
     #   -r requirements/pip-tools.txt
     #   build
-pip-tools==6.9.0
+pip-tools==6.10.0
     # via -r requirements/pip-tools.txt
 pkginfo==1.8.3
     # via
     #   -r requirements/quality.txt
     #   twine
-platformdirs==2.5.3
+platformdirs==2.5.4
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -263,7 +263,7 @@ pygments==2.13.0
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.15.5
+pylint==2.15.6
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -306,7 +306,7 @@ pytest-cov==4.0.0
     # via -r requirements/quality.txt
 pytest-django==4.5.2
     # via -r requirements/quality.txt
-python-slugify==6.1.2
+python-slugify==7.0.0
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -362,7 +362,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/quality.txt
     #   django
-stevedore==4.1.0
+stevedore==4.1.1
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -387,7 +387,7 @@ tomlkit==0.11.6
     # via
     #   -r requirements/quality.txt
     #   pylint
-tox==3.27.0
+tox==3.27.1
     # via
     #   -r requirements/ci.txt
     #   tox-battery
@@ -407,7 +407,7 @@ urllib3==1.26.12
     #   -r requirements/quality.txt
     #   requests
     #   twine
-virtualenv==20.16.6
+virtualenv==20.16.7
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -415,7 +415,7 @@ webencodings==0.5.1
     # via
     #   -r requirements/quality.txt
     #   bleach
-wheel==0.38.2
+wheel==0.38.4
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
