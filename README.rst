@@ -24,6 +24,9 @@ The documentation/ADRs may also be moved to more appropriate places as the proce
 
 The repository works together with the openedx/openedx-events repository to make the fully functional event bus.
 
+Documentation
+*************
+
 To use this implementation of the Event Bus with openedx-events, set the following Django settings::
 
     EVENT_BUS_PRODUCER: edx_event_bus_kafka.create_producer
@@ -33,11 +36,7 @@ To use this implementation of the Event Bus with openedx-events, set the followi
 
 For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 
-Documentation
-*************
-
-- Main API: ``edx_event_bus_kafka`` exposes ``get_producer`` and a Producer API class. See `<https://github.com/openedx/openedx-events/issues/87>`_ for how these will be documented and used in the future.
-- Django management commands: ``edx_event_bus_kafka.management.commands.*`` expose ``Command`` classes
+Django management commands: ``edx_event_bus_kafka.management.commands.*`` expose ``Command`` classes
 
 OEP-52 documentation: https://open-edx-proposals.readthedocs.io/en/latest/architectural-decisions/oep-0052-arch-event-bus-architecture.html
 (TODO: `Set up documentation <https://openedx.atlassian.net/wiki/spaces/DOC/pages/21627535/Publish+Documentation+on+Read+the+Docs>`_)
