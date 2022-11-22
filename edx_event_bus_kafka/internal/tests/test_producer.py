@@ -101,7 +101,7 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
-            assert isinstance(openedx_events.event_bus.create_producer(), ep.KafkaEventProducer)
+            assert isinstance(openedx_events.event_bus.get_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
     def test_on_event_deliver(self, mock_logger):
