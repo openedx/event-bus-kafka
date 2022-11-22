@@ -14,6 +14,20 @@ Change Log
 Unreleased
 **********
 
+[2.0.0] - 2022-11-22
+********************
+Changed
+=======
+* Implement openedx-events Event Bus Producer API
+* **BREAKING CHANGE**: Remove caching from ``get_producer``, as we now rely on the wrapper in openedx-events to cache that call
+
+Upgrading library from 1.x:
+
+- Replace calls to ``edx_event_bus_kafka.get_producer`` with ``openedx_events.event_bus.get_producer``
+- Add Django setting ``EVENT_BUS_PRODUCER = "edx_event_bus_kafka.get_producer"``
+
+These breaking changes are only relevant for the producing side (this should only include the CMS).
+
 [1.10.0] - 2022-11-21
 *********************
 Changed
