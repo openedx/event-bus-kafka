@@ -3,7 +3,7 @@
 
 Status
 ------
-Provisional
+Accepted
 
 Context
 -------
