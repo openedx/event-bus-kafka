@@ -1,7 +1,7 @@
 """
 Produce Kafka events from signals.
 
-Main function is ``get_producer()``.
+Main function is ``create_producer()``, which should be referred to from ``EVENT_BUS_PRODUCER``.
 """
 
 import json
@@ -17,6 +17,7 @@ from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
 from edx_django_utils.monitoring import record_exception
+from openedx_events.event_bus import EventBusProducer
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
@@ -211,7 +212,7 @@ class ProducingContext:
                         f"partition={evt.partition()}")
 
 
-class KafkaEventProducer():
+class KafkaEventProducer(EventBusProducer):
     """
     API singleton for event production to Kafka.
 
@@ -328,14 +329,9 @@ def poll_indefinitely(api_weakref: KafkaEventProducer):
             api_object = None
 
 
-# Note: This caching is required, since otherwise the Producer will
-# fall out of scope and be garbage-collected, destroying the
-# outbound-message queue and threads. The use of this cache allows the
-# producer to be long-lived.
-@lru_cache  # will just be one cache entry, in practice
-def get_producer() -> Optional[KafkaEventProducer]:
+def create_producer() -> Optional[KafkaEventProducer]:
     """
-    Create or retrieve Producer API singleton.
+    Create a Producer API instance. Caller should cache the returned object.
 
     If confluent-kafka library or essential settings are missing, warn and return None.
     """
@@ -354,4 +350,3 @@ def get_producer() -> Optional[KafkaEventProducer]:
 def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
     """Reset caches when settings change during unit tests."""
     get_serializers.cache_clear()
-    get_producer.cache_clear()
