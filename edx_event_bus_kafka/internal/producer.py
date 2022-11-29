@@ -17,6 +17,7 @@ from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
 from edx_django_utils.monitoring import record_exception
+from openedx_events.data import EventsMetadata
 from openedx_events.event_bus import EventBusProducer
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
@@ -34,9 +35,15 @@ try:
 except ImportError:  # pragma: no cover
     confluent_kafka = None
 
-# CloudEvent standard name for the event type header, see
+# CloudEvent standard names for the event headers, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
 EVENT_TYPE_HEADER_KEY = "ce_type"
+DATA_CONTENT_TYPE_HEADER_KEY = "ce_datacontenttype"
+ID_HEADER_KEY= "ce_id"
+SOURCE_HEADER_KEY = "ce_source"
+SOURCEHOST_HEADER_KEY="sourcehost"
+SPEC_VERSION_HEADER_KEY = "ce_specversion"
+CONTENT_TYPE_HEADER_KEY = "content-type"
 
 
 def record_producing_error(error, context):
@@ -183,12 +190,12 @@ class ProducingContext:
     Wrapper class to allow us to link a call to produce() with the on_event_deliver callback
     """
     full_topic = attr.ib(type=str, default=None)
-    event_type = attr.ib(type=str, default=None)
     event_key = attr.ib(type=str, default=None)
     signal = attr.ib(type=OpenEdxPublicSignal, default=None)
     initial_topic = attr.ib(type=str, default=None)
     event_key_field = attr.ib(type=str, default=None)
     event_data = attr.ib(type=dict, default=None)
+    headers = attr.ib(type=dict, default=None)
 
     def __repr__(self):
         """Create a logging-friendly string"""
@@ -235,6 +242,7 @@ class KafkaEventProducer(EventBusProducer):
 
     def send(
             self, *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
+            event_metadata: EventsMetadata
     ) -> None:
         """
         Send a signal event to the event bus under the specified topic.
@@ -259,8 +267,16 @@ class KafkaEventProducer(EventBusProducer):
 
             # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
             # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
-            headers = {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
-            context.event_type = signal.event_type
+            headers = {
+                EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8"),
+                DATA_CONTENT_TYPE_HEADER_KEY: "application/avro",
+                ID_HEADER_KEY: event_metadata.id.encode("utf-8"),
+                SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
+                SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
+                SPEC_VERSION_HEADER_KEY: event_metadata.minorversion.encode("utf-8"),
+                CONTENT_TYPE_HEADER_KEY: "application/avro",
+            }
+            context.headers = headers
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
