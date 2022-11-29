@@ -253,6 +253,7 @@ class KafkaEventProducer(EventBusProducer):
             event_key_field: Path to the event data field to use as the event key (period-delimited
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
+            event_metadata: CloudEvent metadata
         """
 
         # keep track of the initial arguments for recreating the event in the logs if necessary later
@@ -270,10 +271,10 @@ class KafkaEventProducer(EventBusProducer):
             headers = {
                 EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8"),
                 DATA_CONTENT_TYPE_HEADER_KEY: "application/avro",
-                ID_HEADER_KEY: event_metadata.id.encode("utf-8"),
+                ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
                 SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
                 SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
-                SPEC_VERSION_HEADER_KEY: event_metadata.minorversion.encode("utf-8"),
+                SPEC_VERSION_HEADER_KEY: str(event_metadata.minorversion).encode("utf-8"),
                 CONTENT_TYPE_HEADER_KEY: "application/avro",
             }
             context.headers = headers
