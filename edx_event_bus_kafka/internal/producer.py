@@ -231,7 +231,8 @@ class ProducingContext:
         Simple callback method for debugging event production
 
         If there is any error, log all the known information about the calling context so the event can be recreated
-        and/or resent later
+        and/or resent later. This log will not contain the exact headers but will contain the EventsMetadata object
+        that can be used to recreate them.
 
         Arguments:
             err: Error if event production failed
