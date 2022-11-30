@@ -201,6 +201,7 @@ class TestEventProducer(TestCase):
         assert "event_type='simple.signal'" in error_string
         assert "source='openedx/test/web'" in error_string
         assert f"id=UUID('{metadata.id}')" in error_string
+        assert f"sourcehost='{metadata.sourcehost}'" in error_string
 
     @patch(
         'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
