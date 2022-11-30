@@ -162,7 +162,7 @@ class TestEventProducer(TestCase):
                 'sourcehost': metadata.sourcehost.encode("utf8"),
                 'ce_specversion': b'1.0',
                 'content-type': 'application/avro',
-            },
+            }
 
         mock_producer.produce.assert_called_once_with(
             'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here', on_delivery=ANY,
@@ -183,12 +183,14 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='dev',
+                SERVICE_VARIANT='test',
         ):
+            metadata = EventsMetadata(event_type=simple_signal.event_type, minorversion=0)
             producer_api = ep.create_producer()
             # force an exception with a bad event_key_field
             producer_api.send(signal=simple_signal, topic='topic', event_key_field='bad_field',
                               event_data={'test_data': SubTestData0(sub_name="name", course_id="id")},
-                              event_metadata=EventsMetadata(event_type=simple_signal.event_type, minorversion=0))
+                              event_metadata=metadata)
 
         (error_string,) = mock_logger.exception.call_args.args
         assert "event_data={'test_data': SubTestData0(sub_name='name', course_id='id')}" in error_string
@@ -196,6 +198,9 @@ class TestEventProducer(TestCase):
         assert "initial_topic='topic'" in error_string
         assert "full_topic='dev-topic'" in error_string
         assert "event_key_field='bad_field'" in error_string
+        assert "event_type='simple.signal'" in error_string
+        assert "source='openedx/test/web'" in error_string
+        assert f"id=UUID('{metadata.id}')" in error_string
 
     @patch(
         'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
@@ -312,12 +317,17 @@ class TestEventProducer(TestCase):
     def test_headers_from_event_metadata(self):
         with override_settings(SERVICE_VARIANT='test'):
             metadata = EventsMetadata(event_type='type', minorversion=0)
-            headers = ep.get_headers_from_event_metadata(metadata)
+            headers = ep.get_headers_from_signal_and_metadata(signal=self.signal, event_metadata=metadata)
             self.assertDictEqual(headers, {
-                'ce_type': b'type',
+                'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
                 'ce_id': str(metadata.id).encode("utf8"),
                 'ce_source': b'openedx/test/web',
                 'ce_specversion': b'1.0',
                 'sourcehost': metadata.sourcehost.encode("utf8"),
                 'content-type': 'application/avro'
             })
+
+    def test_headers_from_null_event_metadata(self):
+        with override_settings(SERVICE_VARIANT='test'):
+            headers = ep.get_headers_from_signal_and_metadata(signal=self.signal, event_metadata=None)
+            self.assertDictEqual(headers, {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'})

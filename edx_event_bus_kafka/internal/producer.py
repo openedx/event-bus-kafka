@@ -38,9 +38,9 @@ except ImportError:  # pragma: no cover
 # CloudEvent standard names for the event headers, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
 EVENT_TYPE_HEADER_KEY = "ce_type"
-ID_HEADER_KEY= "ce_id"
+ID_HEADER_KEY = "ce_id"
 SOURCE_HEADER_KEY = "ce_source"
-SOURCEHOST_HEADER_KEY="sourcehost"
+SOURCEHOST_HEADER_KEY = "sourcehost"
 SPEC_VERSION_HEADER_KEY = "ce_specversion"
 CONTENT_TYPE_HEADER_KEY = "content-type"
 
@@ -183,7 +183,7 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     return key_serializer, value_serializer
 
 
-def get_headers_from_event_metadata(event_metadata: EventsMetadata):
+def get_headers_from_signal_and_metadata(signal: OpenEdxPublicSignal, event_metadata: EventsMetadata):
     """
     Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object
 
@@ -193,15 +193,17 @@ def get_headers_from_event_metadata(event_metadata: EventsMetadata):
     Returns:
         A dictionary of headers
     """
+    if not event_metadata:
+        return {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
 
     # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
     # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
     return {
-        EVENT_TYPE_HEADER_KEY: event_metadata.event_type.encode("utf-8"),
+        EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8"),
         ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
         SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
         SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
-        # Always 1.0. See https://open-edx-proposals.readthedocs.io/en/latest/architectural-decisions/oep-0041-arch-async-server-event-messaging.html#id4
+        # Always 1.0. See "Fields" in OEP-41
         SPEC_VERSION_HEADER_KEY: b'1.0',
         CONTENT_TYPE_HEADER_KEY: "application/avro",
     }
@@ -265,7 +267,7 @@ class KafkaEventProducer(EventBusProducer):
 
     def send(
             self, *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
-            event_metadata: EventsMetadata
+            event_metadata: EventsMetadata = None
     ) -> None:
         """
         Send a signal event to the event bus under the specified topic.
@@ -288,7 +290,7 @@ class KafkaEventProducer(EventBusProducer):
 
             event_key = extract_event_key(event_data, event_key_field)
             context.event_key = event_key
-            headers = get_headers_from_event_metadata(event_metadata=event_metadata)
+            headers = get_headers_from_signal_and_metadata(signal=signal, event_metadata=event_metadata)
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
