@@ -161,7 +161,8 @@ class TestEventProducer(TestCase):
                 'ce_source': b'openedx/test/web',
                 'sourcehost': metadata.sourcehost.encode("utf8"),
                 'ce_specversion': b'1.0',
-                'content-type': 'application/avro',
+                'content-type': b'application/avro',
+                'ce_datacontenttype': b'application/avro'
             }
 
         mock_producer.produce.assert_called_once_with(
@@ -217,14 +218,16 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='dev',
+                SERVICE_VARIANT='test',
         ):
             producer_api = ep.create_producer()
+            metadata = EventsMetadata(event_type=simple_signal.event_type, minorversion=0)
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 # imitate a failed send to Kafka
                 mock_producer.produce = Mock(side_effect=Exception('bad!'))
                 producer_api.send(signal=simple_signal, topic='topic', event_key_field='test_data.course_id',
                                   event_data={'test_data': SubTestData0(sub_name="name", course_id="ABCx")},
-                                  event_metadata=EventsMetadata(event_type=simple_signal.event_type, minorversion=0))
+                                  event_metadata=metadata)
 
         (error_string,) = mock_logger.exception.call_args.args
         assert "event_data={'test_data': SubTestData0(sub_name='name', course_id='ABCx')}" in error_string
@@ -232,6 +235,9 @@ class TestEventProducer(TestCase):
         assert "initial_topic='topic'" in error_string
         assert "full_topic='dev-topic'" in error_string
         assert "event_key_field='test_data.course_id'" in error_string
+        assert "source='openedx/test/web'" in error_string
+        assert f"id=UUID('{metadata.id}')" in error_string
+        assert f"sourcehost='{metadata.sourcehost}'" in error_string
         # since we didn't fail until after key extraction we should have an event_key to report
         assert "event_key='ABCx'" in error_string
         assert "error=bad!" in error_string
@@ -325,7 +331,8 @@ class TestEventProducer(TestCase):
                 'ce_source': b'openedx/test/web',
                 'ce_specversion': b'1.0',
                 'sourcehost': metadata.sourcehost.encode("utf8"),
-                'content-type': 'application/avro'
+                'content-type': b'application/avro',
+                'ce_datacontenttype': b'application/avro',
             })
 
     def test_headers_from_null_event_metadata(self):

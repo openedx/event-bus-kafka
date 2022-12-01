@@ -42,7 +42,10 @@ ID_HEADER_KEY = "ce_id"
 SOURCE_HEADER_KEY = "ce_source"
 SOURCEHOST_HEADER_KEY = "sourcehost"
 SPEC_VERSION_HEADER_KEY = "ce_specversion"
+# The documentation is unclear as to which of the following two headers to use for content type, so for now
+# use both
 CONTENT_TYPE_HEADER_KEY = "content-type"
+DATA_CONTENT_TYPE_HEADER_KEY = "ce_datacontenttype"
 
 
 def record_producing_error(error, context):
@@ -188,6 +191,7 @@ def get_headers_from_signal_and_metadata(signal: OpenEdxPublicSignal, event_meta
     Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object
 
     Arguments:
+        signal: The OpenEdxPublicSignal that generated the metadata
         event_metadata: An EventsMetadata object sent by an OpenEdxPublicSignal
 
     Returns:
@@ -205,7 +209,8 @@ def get_headers_from_signal_and_metadata(signal: OpenEdxPublicSignal, event_meta
         SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
         # Always 1.0. See "Fields" in OEP-41
         SPEC_VERSION_HEADER_KEY: b'1.0',
-        CONTENT_TYPE_HEADER_KEY: "application/avro",
+        CONTENT_TYPE_HEADER_KEY: b'application/avro',
+        DATA_CONTENT_TYPE_HEADER_KEY: b'application/avro',
     }
 
 
@@ -266,6 +271,7 @@ class KafkaEventProducer(EventBusProducer):
             daemon=True,  # don't block shutdown
         ).start()
 
+    # TODO: Make event_metadata required (https://github.com/openedx/openedx-events/issues/153)
     def send(
             self, *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
             event_metadata: EventsMetadata = None
@@ -279,7 +285,7 @@ class KafkaEventProducer(EventBusProducer):
             event_key_field: Path to the event data field to use as the event key (period-delimited
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
-            event_metadata: An EventsMetadata object with all the metadata necessary for the CloudEvent spec
+            event_metadata: (optional) An EventsMetadata object with all the metadata necessary for the CloudEvent spec
         """
 
         # keep track of the initial arguments for recreating the event in the logs if necessary later
