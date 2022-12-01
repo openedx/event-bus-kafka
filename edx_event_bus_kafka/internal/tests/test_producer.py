@@ -12,6 +12,7 @@ import openedx_events.event_bus
 import openedx_events.learning.signals
 import pytest
 from django.test import override_settings
+from openedx_events.data import EventsMetadata
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.event_bus.avro.tests.test_utilities import SubTestData0, create_simple_signal
 from openedx_events.learning.data import UserData, UserPersonalData
@@ -111,7 +112,7 @@ class TestEventProducer(TestCase):
         fake_event.partition.return_value = 'some_partition'
 
         # simple producing context, we check the full object in other tests
-        context = ep.ProducingContext(event_type='something')
+        context = ep.ProducingContext(full_topic='some_topic')
 
         # ensure on_event_deliver reports the entire calling context if there was an error
         context.on_event_deliver(Exception("problem!"), fake_event)
@@ -119,7 +120,7 @@ class TestEventProducer(TestCase):
         # extract the error message that was produced and check it has all relevant information (order isn't guaranteed
         # and doesn't actually matter, nor do we want to worry if other information is added later)
         (error_string,) = mock_logger.exception.call_args.args
-        assert "event_type='something'" in error_string
+        assert "full_topic='some_topic'" in error_string
         assert "error=problem!" in error_string
 
         context.on_event_deliver(None, fake_event)
@@ -141,20 +142,32 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='prod',
+                SERVICE_VARIANT='test',
         ):
+            metadata = EventsMetadata(event_type=self.signal.event_type,
+                                      minorversion=0)
             producer_api = ep.create_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 producer_api.send(
                     signal=self.signal, topic='user-stuff',
-                    event_key_field='user.id', event_data=self.event_data
+                    event_key_field='user.id', event_data=self.event_data, event_metadata=metadata
                 )
 
         mock_get_serializers.assert_called_once_with(self.signal, 'user.id')
 
+        expected_headers = {
+                'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
+                'ce_id': str(metadata.id).encode("utf8"),
+                'ce_source': b'openedx/test/web',
+                'sourcehost': metadata.sourcehost.encode("utf8"),
+                'ce_specversion': b'1.0',
+                'content-type': b'application/avro',
+                'ce_datacontenttype': b'application/avro'
+            }
+
         mock_producer.produce.assert_called_once_with(
-            'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here',
-            on_delivery=ANY,
-            headers={'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'},
+            'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here', on_delivery=ANY,
+            headers=expected_headers,
         )
 
     @patch(
@@ -171,11 +184,14 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='dev',
+                SERVICE_VARIANT='test',
         ):
+            metadata = EventsMetadata(event_type=simple_signal.event_type, minorversion=0)
             producer_api = ep.create_producer()
             # force an exception with a bad event_key_field
             producer_api.send(signal=simple_signal, topic='topic', event_key_field='bad_field',
-                              event_data={'test_data': SubTestData0(sub_name="name", course_id="id")})
+                              event_data={'test_data': SubTestData0(sub_name="name", course_id="id")},
+                              event_metadata=metadata)
 
         (error_string,) = mock_logger.exception.call_args.args
         assert "event_data={'test_data': SubTestData0(sub_name='name', course_id='id')}" in error_string
@@ -183,6 +199,10 @@ class TestEventProducer(TestCase):
         assert "initial_topic='topic'" in error_string
         assert "full_topic='dev-topic'" in error_string
         assert "event_key_field='bad_field'" in error_string
+        assert "event_type='simple.signal'" in error_string
+        assert "source='openedx/test/web'" in error_string
+        assert f"id=UUID('{metadata.id}')" in error_string
+        assert f"sourcehost='{metadata.sourcehost}'" in error_string
 
     @patch(
         'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
@@ -198,13 +218,16 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_TOPIC_PREFIX='dev',
+                SERVICE_VARIANT='test',
         ):
             producer_api = ep.create_producer()
+            metadata = EventsMetadata(event_type=simple_signal.event_type, minorversion=0)
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 # imitate a failed send to Kafka
                 mock_producer.produce = Mock(side_effect=Exception('bad!'))
                 producer_api.send(signal=simple_signal, topic='topic', event_key_field='test_data.course_id',
-                                  event_data={'test_data': SubTestData0(sub_name="name", course_id="ABCx")})
+                                  event_data={'test_data': SubTestData0(sub_name="name", course_id="ABCx")},
+                                  event_metadata=metadata)
 
         (error_string,) = mock_logger.exception.call_args.args
         assert "event_data={'test_data': SubTestData0(sub_name='name', course_id='ABCx')}" in error_string
@@ -212,6 +235,9 @@ class TestEventProducer(TestCase):
         assert "initial_topic='topic'" in error_string
         assert "full_topic='dev-topic'" in error_string
         assert "event_key_field='test_data.course_id'" in error_string
+        assert "source='openedx/test/web'" in error_string
+        assert f"id=UUID('{metadata.id}')" in error_string
+        assert f"sourcehost='{metadata.sourcehost}'" in error_string
         # since we didn't fail until after key extraction we should have an event_key to report
         assert "event_key='ABCx'" in error_string
         assert "error=bad!" in error_string
@@ -279,16 +305,37 @@ class TestEventProducer(TestCase):
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 producer_api.send(
                     signal=self.signal, topic='user-stuff',
-                    event_key_field='user.id', event_data=self.event_data
+                    event_key_field='user.id', event_data=self.event_data,
+                    event_metadata=EventsMetadata(event_type=self.signal.event_type, minorversion=0)
                 )
 
         mock_context.assert_has_calls([
-            call('stage-user-stuff', 'key', {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'}),
-            call('stage-user-stuff', 'value', {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'}),
+            call('stage-user-stuff', 'key', ANY),
+            call('stage-user-stuff', 'value', ANY),
         ])
         assert mock_context.call_count == 2
         mock_producer.produce.assert_called_once_with(
             'stage-user-stuff', key=b'bytes-here', value=b'bytes-here',
             on_delivery=ANY,
-            headers={'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'},
+            # headers are tested elsewhere, we just want to verify the topics
+            headers=ANY,
         )
+
+    def test_headers_from_event_metadata(self):
+        with override_settings(SERVICE_VARIANT='test'):
+            metadata = EventsMetadata(event_type='type', minorversion=0)
+            headers = ep.get_headers_from_signal_and_metadata(signal=self.signal, event_metadata=metadata)
+            self.assertDictEqual(headers, {
+                'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
+                'ce_id': str(metadata.id).encode("utf8"),
+                'ce_source': b'openedx/test/web',
+                'ce_specversion': b'1.0',
+                'sourcehost': metadata.sourcehost.encode("utf8"),
+                'content-type': b'application/avro',
+                'ce_datacontenttype': b'application/avro',
+            })
+
+    def test_headers_from_null_event_metadata(self):
+        with override_settings(SERVICE_VARIANT='test'):
+            headers = ep.get_headers_from_signal_and_metadata(signal=self.signal, event_metadata=None)
+            self.assertDictEqual(headers, {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'})

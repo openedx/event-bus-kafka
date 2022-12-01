@@ -17,6 +17,7 @@ from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
 from edx_django_utils.monitoring import record_exception
+from openedx_events.data import EventsMetadata
 from openedx_events.event_bus import EventBusProducer
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
@@ -34,9 +35,17 @@ try:
 except ImportError:  # pragma: no cover
     confluent_kafka = None
 
-# CloudEvent standard name for the event type header, see
+# CloudEvent standard names for the event headers, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
 EVENT_TYPE_HEADER_KEY = "ce_type"
+ID_HEADER_KEY = "ce_id"
+SOURCE_HEADER_KEY = "ce_source"
+SOURCEHOST_HEADER_KEY = "sourcehost"
+SPEC_VERSION_HEADER_KEY = "ce_specversion"
+# The documentation is unclear as to which of the following two headers to use for content type, so for now
+# use both
+CONTENT_TYPE_HEADER_KEY = "content-type"
+DATA_CONTENT_TYPE_HEADER_KEY = "ce_datacontenttype"
 
 
 def record_producing_error(error, context):
@@ -177,18 +186,46 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     return key_serializer, value_serializer
 
 
+def get_headers_from_signal_and_metadata(signal: OpenEdxPublicSignal, event_metadata: EventsMetadata):
+    """
+    Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object
+
+    Arguments:
+        signal: The OpenEdxPublicSignal that generated the metadata
+        event_metadata: An EventsMetadata object sent by an OpenEdxPublicSignal
+
+    Returns:
+        A dictionary of headers
+    """
+    if not event_metadata:
+        return {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
+
+    # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
+    # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
+    return {
+        EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8"),
+        ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
+        SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
+        SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
+        # Always 1.0. See "Fields" in OEP-41
+        SPEC_VERSION_HEADER_KEY: b'1.0',
+        CONTENT_TYPE_HEADER_KEY: b'application/avro',
+        DATA_CONTENT_TYPE_HEADER_KEY: b'application/avro',
+    }
+
+
 @attr.s(kw_only=True, repr=False)
 class ProducingContext:
     """
     Wrapper class to allow us to link a call to produce() with the on_event_deliver callback
     """
     full_topic = attr.ib(type=str, default=None)
-    event_type = attr.ib(type=str, default=None)
     event_key = attr.ib(type=str, default=None)
     signal = attr.ib(type=OpenEdxPublicSignal, default=None)
     initial_topic = attr.ib(type=str, default=None)
     event_key_field = attr.ib(type=str, default=None)
     event_data = attr.ib(type=dict, default=None)
+    event_metadata = attr.ib(type=EventsMetadata, default=None)
 
     def __repr__(self):
         """Create a logging-friendly string"""
@@ -199,7 +236,8 @@ class ProducingContext:
         Simple callback method for debugging event production
 
         If there is any error, log all the known information about the calling context so the event can be recreated
-        and/or resent later
+        and/or resent later. This log will not contain the exact headers but will contain the EventsMetadata object
+        that can be used to recreate them.
 
         Arguments:
             err: Error if event production failed
@@ -233,8 +271,10 @@ class KafkaEventProducer(EventBusProducer):
             daemon=True,  # don't block shutdown
         ).start()
 
+    # TODO: Make event_metadata required (https://github.com/openedx/openedx-events/issues/153)
     def send(
             self, *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
+            event_metadata: EventsMetadata = None
     ) -> None:
         """
         Send a signal event to the event bus under the specified topic.
@@ -245,22 +285,19 @@ class KafkaEventProducer(EventBusProducer):
             event_key_field: Path to the event data field to use as the event key (period-delimited
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
+            event_metadata: (optional) An EventsMetadata object with all the metadata necessary for the CloudEvent spec
         """
 
         # keep track of the initial arguments for recreating the event in the logs if necessary later
         context = ProducingContext(signal=signal, initial_topic=topic, event_key_field=event_key_field,
-                                   event_data=event_data)
+                                   event_data=event_data, event_metadata=event_metadata)
         try:
             full_topic = get_full_topic(topic)
             context.full_topic = full_topic
 
             event_key = extract_event_key(event_data, event_key_field)
             context.event_key = event_key
-
-            # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
-            # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
-            headers = {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
-            context.event_type = signal.event_type
+            headers = get_headers_from_signal_and_metadata(signal=signal, event_metadata=event_metadata)
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))

@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[2.1.0] - 2022-12-01
+********************
+Changed
+=======
+* Set CloudEvent headers on events using an optional event_metadata parameter
+
 [2.0.0] - 2022-11-28
 ********************
 Changed
