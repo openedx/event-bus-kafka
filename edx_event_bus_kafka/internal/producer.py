@@ -199,6 +199,8 @@ def get_headers_from_metadata(event_metadata: EventsMetadata):
     # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
     # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
     return {
+        # The way EventMetadata is initialized none of these should ever be null.
+        # If it is we want the error to be raised.
         EVENT_TYPE_HEADER_KEY: event_metadata.event_type.encode("utf-8"),
         ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
         SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
