@@ -188,7 +188,9 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
 
 def get_headers_from_metadata(event_metadata: EventsMetadata):
     """
-    Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object
+    Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object.
+
+    This method assumes the EventMetadata object was the one sent with the event data to the original signal handler.
 
     Arguments:
         event_metadata: An EventsMetadata object sent by an OpenEdxPublicSignal
