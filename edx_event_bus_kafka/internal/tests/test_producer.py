@@ -323,8 +323,8 @@ class TestEventProducer(TestCase):
 
     def test_headers_from_event_metadata(self):
         with override_settings(SERVICE_VARIANT='test'):
-            metadata = EventsMetadata(event_type='type', minorversion=0)
-            headers = ep.get_headers_from_signal_and_metadata(signal=self.signal, event_metadata=metadata)
+            metadata = EventsMetadata(event_type=self.signal.event_type, minorversion=0)
+            headers = ep._get_headers_from_metadata(event_metadata=metadata)  # pylint: disable=protected-access
             self.assertDictEqual(headers, {
                 'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
                 'ce_id': str(metadata.id).encode("utf8"),
@@ -334,8 +334,3 @@ class TestEventProducer(TestCase):
                 'content-type': b'application/avro',
                 'ce_datacontenttype': b'application/avro',
             })
-
-    def test_headers_from_null_event_metadata(self):
-        with override_settings(SERVICE_VARIANT='test'):
-            headers = ep.get_headers_from_signal_and_metadata(signal=self.signal, event_metadata=None)
-            self.assertDictEqual(headers, {'ce_type': b'org.openedx.learning.auth.session.login.completed.v1'})
