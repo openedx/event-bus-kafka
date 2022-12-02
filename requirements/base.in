@@ -2,7 +2,8 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# openedx-events 3.1.0 defines producer interface
-openedx-events>=3.1.0                   # Events API
+# openedx-events 3.1.0 defines producer interface, openedx-events 4.0 makes a formerly-optional parameter mandatory
+# remove <4.0 as part of https://github.com/openedx/openedx-events/issues/153
+openedx-events>=3.1.0,<4.0.0                   # Events API
 edx_django_utils
 edx_toggles
