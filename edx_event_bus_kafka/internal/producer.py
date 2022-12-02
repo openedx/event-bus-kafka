@@ -186,24 +186,20 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     return key_serializer, value_serializer
 
 
-def get_headers_from_signal_and_metadata(signal: OpenEdxPublicSignal, event_metadata: EventsMetadata):
+def get_headers_from_metadata(event_metadata: EventsMetadata):
     """
     Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object
 
     Arguments:
-        signal: The OpenEdxPublicSignal that generated the metadata
         event_metadata: An EventsMetadata object sent by an OpenEdxPublicSignal
 
     Returns:
         A dictionary of headers
     """
-    if not event_metadata:
-        return {EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8")}
-
     # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
     # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
     return {
-        EVENT_TYPE_HEADER_KEY: signal.event_type.encode("utf-8"),
+        EVENT_TYPE_HEADER_KEY: event_metadata.event_type.encode("utf-8"),
         ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
         SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
         SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
@@ -271,10 +267,9 @@ class KafkaEventProducer(EventBusProducer):
             daemon=True,  # don't block shutdown
         ).start()
 
-    # TODO: Make event_metadata required (https://github.com/openedx/openedx-events/issues/153)
     def send(
             self, *, signal: OpenEdxPublicSignal, topic: str, event_key_field: str, event_data: dict,
-            event_metadata: EventsMetadata = None
+            event_metadata: EventsMetadata
     ) -> None:
         """
         Send a signal event to the event bus under the specified topic.
@@ -285,7 +280,7 @@ class KafkaEventProducer(EventBusProducer):
             event_key_field: Path to the event data field to use as the event key (period-delimited
               string naming the dictionary keys to descend)
             event_data: The event data (kwargs) sent to the signal
-            event_metadata: (optional) An EventsMetadata object with all the metadata necessary for the CloudEvent spec
+            event_metadata: An EventsMetadata object with all the metadata necessary for the CloudEvent spec
         """
 
         # keep track of the initial arguments for recreating the event in the logs if necessary later
@@ -297,7 +292,7 @@ class KafkaEventProducer(EventBusProducer):
 
             event_key = extract_event_key(event_data, event_key_field)
             context.event_key = event_key
-            headers = get_headers_from_signal_and_metadata(signal=signal, event_metadata=event_metadata)
+            headers = get_headers_from_metadata(event_metadata=event_metadata)
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))

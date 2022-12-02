@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.0.0] - 2022-12-02
+********************
+Changed
+=======
+* **BREAKING CHANGE**: Make event_metadata parameter required
+
 [2.1.0] - 2022-12-01
 ********************
 Changed
