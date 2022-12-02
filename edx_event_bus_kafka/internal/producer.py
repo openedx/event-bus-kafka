@@ -186,7 +186,7 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     return key_serializer, value_serializer
 
 
-def get_headers_from_metadata(event_metadata: EventsMetadata):
+def _get_headers_from_metadata(event_metadata: EventsMetadata):
     """
     Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object.
 
@@ -296,7 +296,7 @@ class KafkaEventProducer(EventBusProducer):
 
             event_key = extract_event_key(event_data, event_key_field)
             context.event_key = event_key
-            headers = get_headers_from_metadata(event_metadata=event_metadata)
+            headers = _get_headers_from_metadata(event_metadata=event_metadata)
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
