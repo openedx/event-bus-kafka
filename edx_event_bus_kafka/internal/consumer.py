@@ -7,7 +7,7 @@ import time
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from edx_django_utils.monitoring import record_exception
+from edx_django_utils.monitoring import record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.tooling import OpenEdxPublicSignal
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 try:
     import confluent_kafka
     from confluent_kafka import DeserializingConsumer
+    from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
 except ImportError:  # pragma: no cover
     confluent_kafka = None
@@ -46,6 +47,7 @@ POLL_FAILURE_SLEEP = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SL
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
+EVENT_ID_HEADER = "ce_id"
 EVENT_TYPE_HEADER = "ce_type"
 
 
@@ -159,6 +161,7 @@ class KafkaEventConsumer:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         self.emit_signals_from_message(msg)
+                    self._add_message_monitoring(run_context=run_context, message=msg)
                 except Exception as e:  # pylint: disable=broad-except
                     self.record_event_consuming_error(run_context, e, msg)
                     # Prevent fast error-looping when no event received from broker. Because
@@ -265,6 +268,8 @@ class KafkaEventConsumer:
               was successfully deserialized but could not be processed for some reason
         """
         context_msg = ", ".join(f"{k}={v!r}" for k, v in run_context.items())
+        # Pulls the event message off the error for certain exceptions.
+        maybe_event, _ = self._get_kafka_message_and_error(message=maybe_event, error=error)
         if maybe_event is None:
             event_msg = "no event available"
         else:
@@ -282,10 +287,87 @@ class KafkaEventConsumer:
             # and will only read the exception from stack context.
             raise Exception(error)
         except BaseException:
+            self._add_message_monitoring(run_context=run_context, message=maybe_event, error=error)
             record_exception()
             logger.exception(
                 f"Error consuming event from Kafka: {error!r} in context {context_msg} -- {event_msg}"
             )
+
+    def _add_message_monitoring(self, run_context, message, error=None):
+        """
+        Record additional details for monitoring.
+
+        Arguments:
+            run_context: Dictionary of contextual information: full_topic, consumer_group,
+              and expected_signal.
+            message: None if event could not be fetched or decoded, or a Message if one
+              was successfully deserialized but could not be processed for some reason
+            error: (Optional) An exception instance, or None if no error.
+        """
+        try:
+            kafka_message, kafka_error = self._get_kafka_message_and_error(message=message, error=error)
+
+            # .. custom_attribute_name: kafka_topic
+            # .. custom_attribute_description: The full topic of the message or error.
+            set_custom_attribute('kafka_topic', run_context['full_topic'])
+            # .. custom_attribute_name: kafka_has_message
+            # .. custom_attribute_description: Boolean describing whether there was a message involved. Some errors
+            #   have no message.
+            set_custom_attribute('kafka_has_message', bool(kafka_message))
+
+            if kafka_message:
+                headers = kafka_message.headers() or []  # treat None as []
+                # header is list of tuples, so handle case with duplicate headers for same key
+                message_ids = [value.decode("utf-8") for key, value in headers if key == EVENT_ID_HEADER]
+                if message_ids and len(message_ids) > 0:
+                    # .. custom_attribute_name: kafka_message_id
+                    # .. custom_attribute_description: The message id which can be matched to the logs. Note that the
+                    #   header in the logs will use 'ce_id'.
+                    set_custom_attribute('kafka_message_id', ",".join(message_ids))
+
+            if kafka_error:
+                # .. custom_attribute_name: kafka_error_fatal
+                # .. custom_attribute_description: Boolean describing if the error is fatal.
+                set_custom_attribute('kafka_error_fatal', kafka_error.fatal())
+                # .. custom_attribute_name: kafka_error_retriable
+                # .. custom_attribute_description: Boolean describing if the error is retriable.
+                set_custom_attribute('kafka_error_retriable', kafka_error.retriable())
+
+        except Exception as e:  # pylint: disable=broad-except, pragma: no cover
+            # Use this to fix any bugs in what should be benign monitoring code
+            set_custom_attribute('kafka_monitoring_error', repr(e))
+
+    def _get_kafka_message_and_error(self, message, error):
+        """
+        Returns tuple of (kafka_message, kafka_error), if they can be found.
+
+        Notes:
+            * If the message was sent as a parameter, it will be returned.
+            * If the message was not sent, and a KafkaException was sent, the
+                message will be pulled from the exception if it exists.
+            * A KafkaError will be returned if it is either passed directly,
+                or if it was wrapped by a KafkaException.
+
+        Arguments:
+            message: None if event could not be fetched or decoded, or a Message if one
+              was successfully deserialized but could not be processed for some reason
+            error: An exception instance, or None if no error.
+        """
+        if not error or isinstance(error, KafkaError):
+            return message, error
+
+        kafka_error = getattr(error, 'kafka_error', None)
+        if not kafka_error and len(error.args) > 0 and isinstance(error.args[0], KafkaError):
+            # KafkaException uses args[0] to wrap the KafkaError
+            kafka_error = error.args[0]
+
+        if message:
+            # give priority to the passed message, although it should be the same message, in theory
+            kafka_message = message
+        else:
+            kafka_message = getattr(error, 'kafka_message', None)
+
+        return kafka_message, kafka_error
 
 
 class ConsumeEventsCommand(BaseCommand):

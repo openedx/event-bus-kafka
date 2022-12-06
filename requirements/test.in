@@ -7,3 +7,4 @@ pytest-cov                              # pytest extension for code coverage sta
 pytest-django                           # pytest extension for better Django support
 code-annotations                        # provides commands used by the pii_check make target.
 confluent_kafka[avro,schema-registry]   # Kafka client
+ddt                                     # Run a test case multiple times with different input
