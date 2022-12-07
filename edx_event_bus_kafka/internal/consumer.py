@@ -256,7 +256,7 @@ class KafkaEventConsumer:
                 errors
             )
 
-    def record_event_consuming_error(self, run_context, error, maybe_event):
+    def record_event_consuming_error(self, run_context, error, maybe_message):
         """
         Record an error caught while consuming an event, both to the logs and to telemetry.
 
@@ -264,21 +264,21 @@ class KafkaEventConsumer:
             run_context: Dictionary of contextual information: full_topic, consumer_group,
               and expected_signal.
             error: An exception instance
-            maybe_event: None if event could not be fetched or decoded, or a Message if one
-              was successfully deserialized but could not be processed for some reason
+            maybe_message: None if event could not be fetched or decoded, or a Kafka Message if
+              one was successfully deserialized but could not be processed for some reason
         """
         context_msg = ", ".join(f"{k}={v!r}" for k, v in run_context.items())
         # Pulls the event message off the error for certain exceptions.
-        maybe_event, _ = self._get_kafka_message_and_error(message=maybe_event, error=error)
-        if maybe_event is None:
+        maybe_kafka_message, _ = self._get_kafka_message_and_error(message=maybe_message, error=error)
+        if maybe_kafka_message is None:
             event_msg = "no event available"
         else:
             event_details = {
-                'partition': maybe_event.partition(),
-                'offset': maybe_event.offset(),
-                'headers': maybe_event.headers(),
-                'key': maybe_event.key(),
-                'value': maybe_event.value(),
+                'partition': maybe_kafka_message.partition(),
+                'offset': maybe_kafka_message.offset(),
+                'headers': maybe_kafka_message.headers(),
+                'key': maybe_kafka_message.key(),
+                'value': maybe_kafka_message.value(),
             }
             event_msg = f"event details: {event_details!r}"
 
@@ -287,7 +287,7 @@ class KafkaEventConsumer:
             # and will only read the exception from stack context.
             raise Exception(error)
         except BaseException:
-            self._add_message_monitoring(run_context=run_context, message=maybe_event, error=error)
+            self._add_message_monitoring(run_context=run_context, message=maybe_kafka_message, error=error)
             record_exception()
             logger.exception(
                 f"Error consuming event from Kafka: {error!r} in context {context_msg} -- {event_msg}"
@@ -319,11 +319,17 @@ class KafkaEventConsumer:
                 headers = kafka_message.headers() or []  # treat None as []
                 # header is list of tuples, so handle case with duplicate headers for same key
                 message_ids = [value.decode("utf-8") for key, value in headers if key == EVENT_ID_HEADER]
-                if message_ids and len(message_ids) > 0:
+                if len(message_ids) > 0:
                     # .. custom_attribute_name: kafka_message_id
                     # .. custom_attribute_description: The message id which can be matched to the logs. Note that the
                     #   header in the logs will use 'ce_id'.
                     set_custom_attribute('kafka_message_id', ",".join(message_ids))
+                event_types = [value.decode("utf-8") for key, value in headers if key == EVENT_TYPE_HEADER]
+                if len(event_types) > 0:
+                    # .. custom_attribute_name: kafka_event_type
+                    # .. custom_attribute_description: The event type of the message. Note that the header in the logs
+                    #   will use 'ce_type'.
+                    set_custom_attribute('kafka_event_type', ",".join(event_types))
 
             if kafka_error:
                 # .. custom_attribute_name: kafka_error_fatal
@@ -333,7 +339,7 @@ class KafkaEventConsumer:
                 # .. custom_attribute_description: Boolean describing if the error is retriable.
                 set_custom_attribute('kafka_error_retriable', kafka_error.retriable())
 
-        except Exception as e:  # pylint: disable=broad-except, pragma: no cover
+        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
             # Use this to fix any bugs in what should be benign monitoring code
             set_custom_attribute('kafka_monitoring_error', repr(e))
 
@@ -357,15 +363,19 @@ class KafkaEventConsumer:
             return message, error
 
         kafka_error = getattr(error, 'kafka_error', None)
+        # KafkaException uses args[0] to wrap the KafkaError
         if not kafka_error and len(error.args) > 0 and isinstance(error.args[0], KafkaError):
-            # KafkaException uses args[0] to wrap the KafkaError
             kafka_error = error.args[0]
 
-        if message:
-            # give priority to the passed message, although it should be the same message, in theory
-            kafka_message = message
-        else:
-            kafka_message = getattr(error, 'kafka_message', None)
+        kafka_message = getattr(error, 'kafka_message', None)
+        if message and kafka_message and kafka_message != message:  # pragma: no cover
+            # If this unexpected error ever occurs, we can invest in a better error message
+            #   with a test, that includes event header details.
+            logger.error("Error consuming event from Kafka: (UNEXPECTED) The event message did not match"
+                         " the message packaged with the error."
+                         f" -- event message={message!r}, error event message={kafka_message!r}.")
+        # give priority to the passed message, although in theory, it should be the same message if not None
+        kafka_message = message or kafka_message
 
         return kafka_message, kafka_error
 

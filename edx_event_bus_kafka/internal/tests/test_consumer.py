@@ -216,6 +216,7 @@ class TestEmitSignals(TestCase):
             [
                 call("kafka_topic", "prod-some-topic"),
                 call("kafka_message_id", "0000-0000"),
+                call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
                 call("kafka_has_message", True),
             ] * len(mock_emit_side_effects),
             any_order=True,
@@ -233,6 +234,7 @@ class TestEmitSignals(TestCase):
         offset=6789,
         headers=[
             ('ce_id', b'1111-1111'),
+            ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
         ],
         key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
         value=b'XXX',
@@ -273,8 +275,9 @@ class TestEmitSignals(TestCase):
         self.event_consumer.consumer = mock_consumer
         self.event_consumer.consume_indefinitely()
 
-        # Check that there was one error log message and that it contained all the right parts,
+        # Check that there was one exception log message and that it contained all the right parts,
         # in some order.
+        mock_logger.error.assert_not_called()
         mock_logger.exception.assert_called_once()
         (exc_log_msg,) = mock_logger.exception.call_args.args
         assert f"Error consuming event from Kafka: {repr(exception)} in context" in exc_log_msg
@@ -292,9 +295,10 @@ class TestEmitSignals(TestCase):
             call("kafka_has_message", has_message),
         ]
         if has_message:
-            expected_custom_attribute_calls.append(
-                call("kafka_message_id", "1111-1111")
-            )
+            expected_custom_attribute_calls += [
+                call("kafka_message_id", "1111-1111"),
+                call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
+            ]
         if has_kafka_error:
             # hardcoded attributes of TEST_KAFKA_ERROR
             expected_custom_attribute_calls += [
