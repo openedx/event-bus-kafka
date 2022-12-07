@@ -38,7 +38,6 @@ certifi==2022.9.24
 cffi==1.15.1
     # via
     #   -r requirements/quality.txt
-    #   cryptography
     #   pynacl
 chardet==5.0.0
     # via diff-cover
@@ -79,10 +78,8 @@ coverage[toml]==6.5.0
     #   -r requirements/quality.txt
     #   codecov
     #   pytest-cov
-cryptography==38.0.4
-    # via
-    #   -r requirements/quality.txt
-    #   secretstorage
+ddt==1.6.0
+    # via -r requirements/quality.txt
 diff-cover==7.1.1
     # via -r requirements/dev.in
 dill==0.3.6
@@ -166,11 +163,6 @@ jaraco-classes==3.2.3
     # via
     #   -r requirements/quality.txt
     #   keyring
-jeepney==0.8.0
-    # via
-    #   -r requirements/quality.txt
-    #   keyring
-    #   secretstorage
 jinja2==3.1.2
     # via
     #   -r requirements/quality.txt
@@ -343,10 +335,6 @@ rich==12.6.0
     # via
     #   -r requirements/quality.txt
     #   twine
-secretstorage==3.3.3
-    # via
-    #   -r requirements/quality.txt
-    #   keyring
 six==1.16.0
     # via
     #   -r requirements/ci.txt
