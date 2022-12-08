@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.2.0] - 2022-12-14
+********************
+Changed
+=======
+* Add timestamp parameter for consumer, allowing the starting offset for consuming to be overridden from the default.
+
 [3.1.0] - 2022-12-07
 ********************
 
