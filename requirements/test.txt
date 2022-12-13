@@ -37,8 +37,6 @@ confluent-kafka[avro,schema-registry]==1.9.2
     # via -r requirements/test.in
 coverage[toml]==6.5.0
     # via pytest-cov
-ddt==1.6.0
-    # via -r requirements/test.in
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.txt

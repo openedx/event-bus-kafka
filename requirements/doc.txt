@@ -32,6 +32,7 @@ certifi==2022.9.24
 cffi==1.15.1
     # via
     #   -r requirements/test.txt
+    #   cryptography
     #   pynacl
 charset-normalizer==2.1.1
     # via
@@ -54,8 +55,8 @@ coverage[toml]==6.5.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-ddt==1.6.0
-    # via -r requirements/test.txt
+cryptography==38.0.4
+    # via secretstorage
 django==3.2.16
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
@@ -120,6 +121,10 @@ iniconfig==1.1.1
     #   pytest
 jaraco-classes==3.2.3
     # via keyring
+jeepney==0.8.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==3.1.2
     # via
     #   -r requirements/test.txt
@@ -222,6 +227,8 @@ rfc3986==2.0.0
     # via twine
 rich==12.6.0
     # via twine
+secretstorage==3.3.3
+    # via keyring
 six==1.16.0
     # via
     #   bleach
