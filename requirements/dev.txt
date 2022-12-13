@@ -83,6 +83,8 @@ cryptography==38.0.4
     # via
     #   -r requirements/quality.txt
     #   secretstorage
+ddt==1.6.0
+    # via -r requirements/quality.txt
 diff-cover==7.1.1
     # via -r requirements/dev.in
 dill==0.3.6

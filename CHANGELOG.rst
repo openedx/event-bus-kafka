@@ -14,6 +14,17 @@ Change Log
 Unreleased
 **********
 
+[3.1.0] - 2022-12-07
+********************
+
+Added
+=====
+* A variety of custom attributes are now set for monitoring purposes. Search for custom_attribute_name annotations for details.
+
+Changed
+=======
+* Error recording to the log will now include message details when the message is available on the error.
+
 [3.0.0] - 2022-12-02
 ********************
 Changed
