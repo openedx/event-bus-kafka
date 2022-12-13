@@ -57,6 +57,8 @@ coverage[toml]==6.5.0
     #   pytest-cov
 cryptography==38.0.4
     # via secretstorage
+ddt==1.6.0
+    # via -r requirements/test.txt
 django==3.2.16
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt

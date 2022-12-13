@@ -60,6 +60,8 @@ coverage[toml]==6.5.0
     #   pytest-cov
 cryptography==38.0.4
     # via secretstorage
+ddt==1.6.0
+    # via -r requirements/test.txt
 dill==0.3.6
     # via pylint
 django==3.2.16
