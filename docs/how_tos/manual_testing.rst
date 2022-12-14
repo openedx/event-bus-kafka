@@ -28,6 +28,8 @@ The consumer may not read older events from the topic—and it never will for th
 Testing the producer
 ====================
 
+The Studio producer can be exercised by setting ``SEND_CATALOG_INFO_SIGNAL = True`` in ``cms/envs/devstack.py`` and editing a course's settings. Or, it can be invoked directly by management command using the below instructions.
+
 Note: If you're also running the consumer, you'll need to do this in a separate studio shell.
 
 - Run the example command listed in the ``edx_event_bus_kafka.management.commands.produce_event.Command`` docstring
