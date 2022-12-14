@@ -4,10 +4,11 @@ Core consumer and event-loop code.
 
 import logging
 import time
+from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from edx_django_utils.monitoring import record_exception
+from edx_django_utils.monitoring import record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.tooling import OpenEdxPublicSignal
@@ -19,7 +20,8 @@ logger = logging.getLogger(__name__)
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import DeserializingConsumer
+    from confluent_kafka import DeserializingConsumer, TopicPartition
+    from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
 except ImportError:  # pragma: no cover
     confluent_kafka = None
@@ -46,6 +48,7 @@ POLL_FAILURE_SLEEP = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SL
 
 # CloudEvent standard name for the event type header, see
 # https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
+EVENT_ID_HEADER = "ce_id"
 EVENT_TYPE_HEADER = "ce_type"
 
 
@@ -129,10 +132,36 @@ class KafkaEventConsumer:
         """
         self._shut_down_loop = True
 
-    def consume_indefinitely(self):
+    def consume_indefinitely(self, offset_timestamp=None):
         """
         Consume events from a topic in an infinite loop.
+
+        Arguments:
+            offset_timestamp(datetime): reset the offsets of the consumer partitions to this timestamp before consuming.
         """
+
+        def reset_offsets(consumer, partitions):
+            # This is a callback method used on consumer assignment to handle offset reset logic.
+            # We do not want to attempt to change offsets if the offset is None.
+            if offset_timestamp is None:
+                return
+
+            # Get the offset from the epoch in seconds.
+            offset_timestamp_s = int(offset_timestamp.timestamp())
+            # We construct partitions with the epoch timestamp in the offset position.
+            timestamp_partitions = [TopicPartition(self.topic, p.partition, offset_timestamp_s) for p in partitions]
+
+            partitions_with_offsets = consumer.offsets_for_times(timestamp_partitions, timeout=1.0)
+
+            # Partitions have an error field that may be set on return.
+            errors = [p.error for p in partitions_with_offsets if p.error is not None]
+            if len(errors) > 0:
+                raise Exception("Error getting offsets for timestamps: {errors}")
+
+            logger.info(f'Found offsets for timestamp {offset_timestamp}: {partitions_with_offsets}')
+
+            consumer.assign(partitions_with_offsets)
+
         # This is already checked at the Command level, but it's possible this loop
         # could get called some other way, so check it here too.
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
@@ -146,7 +175,7 @@ class KafkaEventConsumer:
                 'consumer_group': self.group_id,
                 'expected_signal': self.signal,
             }
-            self.consumer.subscribe([full_topic])
+            self.consumer.subscribe([full_topic], on_assign=reset_offsets)
             logger.info(f"Running consumer for {run_context!r}")
 
             while True:
@@ -159,6 +188,7 @@ class KafkaEventConsumer:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         self.emit_signals_from_message(msg)
+                    self._add_message_monitoring(run_context=run_context, message=msg)
                 except Exception as e:  # pylint: disable=broad-except
                     self.record_event_consuming_error(run_context, e, msg)
                     # Prevent fast error-looping when no event received from broker. Because
@@ -253,7 +283,7 @@ class KafkaEventConsumer:
                 errors
             )
 
-    def record_event_consuming_error(self, run_context, error, maybe_event):
+    def record_event_consuming_error(self, run_context, error, maybe_message):
         """
         Record an error caught while consuming an event, both to the logs and to telemetry.
 
@@ -261,19 +291,21 @@ class KafkaEventConsumer:
             run_context: Dictionary of contextual information: full_topic, consumer_group,
               and expected_signal.
             error: An exception instance
-            maybe_event: None if event could not be fetched or decoded, or a Message if one
-              was successfully deserialized but could not be processed for some reason
+            maybe_message: None if event could not be fetched or decoded, or a Kafka Message if
+              one was successfully deserialized but could not be processed for some reason
         """
         context_msg = ", ".join(f"{k}={v!r}" for k, v in run_context.items())
-        if maybe_event is None:
+        # Pulls the event message off the error for certain exceptions.
+        maybe_kafka_message, _ = self._get_kafka_message_and_error(message=maybe_message, error=error)
+        if maybe_kafka_message is None:
             event_msg = "no event available"
         else:
             event_details = {
-                'partition': maybe_event.partition(),
-                'offset': maybe_event.offset(),
-                'headers': maybe_event.headers(),
-                'key': maybe_event.key(),
-                'value': maybe_event.value(),
+                'partition': maybe_kafka_message.partition(),
+                'offset': maybe_kafka_message.offset(),
+                'headers': maybe_kafka_message.headers(),
+                'key': maybe_kafka_message.key(),
+                'value': maybe_kafka_message.value(),
             }
             event_msg = f"event details: {event_details!r}"
 
@@ -282,10 +314,97 @@ class KafkaEventConsumer:
             # and will only read the exception from stack context.
             raise Exception(error)
         except BaseException:
+            self._add_message_monitoring(run_context=run_context, message=maybe_kafka_message, error=error)
             record_exception()
             logger.exception(
                 f"Error consuming event from Kafka: {error!r} in context {context_msg} -- {event_msg}"
             )
+
+    def _add_message_monitoring(self, run_context, message, error=None):
+        """
+        Record additional details for monitoring.
+
+        Arguments:
+            run_context: Dictionary of contextual information: full_topic, consumer_group,
+              and expected_signal.
+            message: None if event could not be fetched or decoded, or a Message if one
+              was successfully deserialized but could not be processed for some reason
+            error: (Optional) An exception instance, or None if no error.
+        """
+        try:
+            kafka_message, kafka_error = self._get_kafka_message_and_error(message=message, error=error)
+
+            # .. custom_attribute_name: kafka_topic
+            # .. custom_attribute_description: The full topic of the message or error.
+            set_custom_attribute('kafka_topic', run_context['full_topic'])
+            # .. custom_attribute_name: kafka_has_message
+            # .. custom_attribute_description: Boolean describing whether there was a message involved. Some errors
+            #   have no message.
+            set_custom_attribute('kafka_has_message', bool(kafka_message))
+
+            if kafka_message:
+                headers = kafka_message.headers() or []  # treat None as []
+                # header is list of tuples, so handle case with duplicate headers for same key
+                message_ids = [value.decode("utf-8") for key, value in headers if key == EVENT_ID_HEADER]
+                if len(message_ids) > 0:
+                    # .. custom_attribute_name: kafka_message_id
+                    # .. custom_attribute_description: The message id which can be matched to the logs. Note that the
+                    #   header in the logs will use 'ce_id'.
+                    set_custom_attribute('kafka_message_id', ",".join(message_ids))
+                event_types = [value.decode("utf-8") for key, value in headers if key == EVENT_TYPE_HEADER]
+                if len(event_types) > 0:
+                    # .. custom_attribute_name: kafka_event_type
+                    # .. custom_attribute_description: The event type of the message. Note that the header in the logs
+                    #   will use 'ce_type'.
+                    set_custom_attribute('kafka_event_type', ",".join(event_types))
+
+            if kafka_error:
+                # .. custom_attribute_name: kafka_error_fatal
+                # .. custom_attribute_description: Boolean describing if the error is fatal.
+                set_custom_attribute('kafka_error_fatal', kafka_error.fatal())
+                # .. custom_attribute_name: kafka_error_retriable
+                # .. custom_attribute_description: Boolean describing if the error is retriable.
+                set_custom_attribute('kafka_error_retriable', kafka_error.retriable())
+
+        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
+            # Use this to fix any bugs in what should be benign monitoring code
+            set_custom_attribute('kafka_monitoring_error', repr(e))
+
+    def _get_kafka_message_and_error(self, message, error):
+        """
+        Returns tuple of (kafka_message, kafka_error), if they can be found.
+
+        Notes:
+            * If the message was sent as a parameter, it will be returned.
+            * If the message was not sent, and a KafkaException was sent, the
+                message will be pulled from the exception if it exists.
+            * A KafkaError will be returned if it is either passed directly,
+                or if it was wrapped by a KafkaException.
+
+        Arguments:
+            message: None if event could not be fetched or decoded, or a Message if one
+              was successfully deserialized but could not be processed for some reason
+            error: An exception instance, or None if no error.
+        """
+        if not error or isinstance(error, KafkaError):
+            return message, error
+
+        kafka_error = getattr(error, 'kafka_error', None)
+        # KafkaException uses args[0] to wrap the KafkaError
+        if not kafka_error and len(error.args) > 0 and isinstance(error.args[0], KafkaError):
+            kafka_error = error.args[0]
+
+        kafka_message = getattr(error, 'kafka_message', None)
+        if message and kafka_message and kafka_message != message:  # pragma: no cover
+            # If this unexpected error ever occurs, we can invest in a better error message
+            #   with a test, that includes event header details.
+            logger.error("Error consuming event from Kafka: (UNEXPECTED) The event message did not match"
+                         " the message packaged with the error."
+                         f" -- event message={message!r}, error event message={kafka_message!r}.")
+        # give priority to the passed message, although in theory, it should be the same message if not None
+        kafka_message = message or kafka_message
+
+        return kafka_message, kafka_error
 
 
 class ConsumeEventsCommand(BaseCommand):
@@ -322,6 +441,14 @@ class ConsumeEventsCommand(BaseCommand):
             required=True,
             help='Type of signal to emit from consumed messages.'
         )
+        parser.add_argument(
+            '-o', '--offset_time',
+            nargs=1,
+            required=False,
+            default=None,
+            help='The timestamp (in ISO format) that we would like to set the consumers to read from on startup. '
+                  'Overrides existing offsets.'
+        )
 
     def handle(self, *args, **options):
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
@@ -329,11 +456,18 @@ class ConsumeEventsCommand(BaseCommand):
             return
         try:
             signal = OpenEdxPublicSignal.get_signal_by_type(options['signal'][0])
+            if options['offset_time'][0] is not None:
+                try:
+                    offset_timestamp = datetime.fromisoformat(options['offset_time'][0])
+                except ValueError:
+                    logger.exception('Could not parse the offset timestamp.')
+                    raise
+
             event_consumer = KafkaEventConsumer(
                 topic=options['topic'][0],
                 group_id=options['group_id'][0],
                 signal=signal,
             )
-            event_consumer.consume_indefinitely()
+            event_consumer.consume_indefinitely(offset_timestamp=offset_timestamp)
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")

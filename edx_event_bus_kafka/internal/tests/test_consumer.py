@@ -4,8 +4,9 @@ Tests for event_consumer module.
 
 import copy
 from typing import Optional
-from unittest.mock import Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
+import ddt
 import pytest
 from django.core.management import call_command
 from django.test import TestCase
@@ -18,8 +19,9 @@ from edx_event_bus_kafka.management.commands.consume_events import Command
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
-    from confluent_kafka import KafkaError
-except ImportError:  # pragma: no cover
+    from confluent_kafka import KafkaError, KafkaException
+    from confluent_kafka.error import ConsumeError
+except ImportError as e:  # pragma: no cover
     pass
 
 
@@ -29,20 +31,16 @@ class FakeMessage:
     """
 
     def __init__(
-            self, topic: str, partition: Optional[int] = None, offset: Optional[int] = None,
+            self, partition: Optional[int] = None, offset: Optional[int] = None,
             headers: Optional[list] = None, key: Optional[bytes] = None, value=None,
             error=None,
     ):
-        self._topic = topic
         self._partition = partition
         self._offset = offset
         self._headers = headers
         self._key = key
         self._value = value
         self._error = error
-
-    def topic(self) -> str:
-        return self._topic
 
     def partition(self) -> Optional[int]:
         return self._partition
@@ -80,6 +78,7 @@ def fake_receiver_raises_error(**kwargs):
     EVENT_BUS_KAFKA_API_KEY='test-key',
     EVENT_BUS_KAFKA_API_SECRET='test-secret',
 )
+@ddt.ddt
 class TestEmitSignals(TestCase):
     """
     Tests for message parsing and signal-sending.
@@ -98,14 +97,16 @@ class TestEmitSignals(TestCase):
                 )
             )
         }
+        self.message_id_bytes = b'0000-0000'
+        self.message_id = self.message_id_bytes.decode('utf-8')
         self.signal_type_bytes = b'org.openedx.learning.auth.session.login.completed.v1'
         self.signal_type = self.signal_type_bytes.decode('utf-8')
         self.normal_message = FakeMessage(
-            topic='user_stuff',
             partition=2,
             offset=12345,
             headers=[
-                ['ce_type', self.signal_type_bytes]
+                ('ce_id', self.message_id_bytes),
+                ('ce_type', self.signal_type_bytes),
             ],
             key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
             value=self.normal_event_data,
@@ -154,9 +155,10 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='prod',
     )
+    @patch('edx_event_bus_kafka.internal.consumer.set_custom_attribute', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.time.sleep', autospec=True)
-    def test_consume_loop(self, mock_sleep, mock_logger):
+    def test_consume_loop(self, mock_sleep, mock_logger, mock_set_custom_attribute):
         """
         Check the basic loop lifecycle.
         """
@@ -189,7 +191,7 @@ class TestEmitSignals(TestCase):
             self.event_consumer.consume_indefinitely()
 
         # Check that each of the mocked out methods got called as expected.
-        mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'])
+        mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'], on_assign=ANY)
         # Check that emit was called the expected number of times
         assert mock_emit.call_args_list == [call(self.normal_message)] * len(mock_emit_side_effects)
 
@@ -205,9 +207,20 @@ class TestEmitSignals(TestCase):
         assert "-- event details: " in exc_log_msg
         assert "'partition': 2" in exc_log_msg
         assert "'offset': 12345" in exc_log_msg
-        assert "'headers': [['ce_type', b'org.openedx.learning.auth.session.login.completed.v1']]" in exc_log_msg
+        assert "'headers': [('ce_id', b'0000-0000'), " \
+               "('ce_type', b'org.openedx.learning.auth.session.login.completed.v1')]" in exc_log_msg
         assert "'key': b'\\x00\\x00\\x00\\x00\\x01\\x0cfoobob'" in exc_log_msg
         assert "email='bob@foo.example'" in exc_log_msg
+
+        mock_set_custom_attribute.assert_has_calls(
+            [
+                call("kafka_topic", "prod-some-topic"),
+                call("kafka_message_id", "0000-0000"),
+                call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
+                call("kafka_has_message", True),
+            ] * len(mock_emit_side_effects),
+            any_order=True,
+        )
 
         # Check that each message got committed (including the errored ones)
         assert len(mock_consumer.commit.call_args_list) == len(mock_emit_side_effects)
@@ -215,38 +228,84 @@ class TestEmitSignals(TestCase):
         mock_sleep.assert_not_called()
         mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
+    TEST_KAFKA_ERROR = KafkaError(2, fatal=True, retriable=True)
+    TEST_FAILED_MESSAGE = FakeMessage(
+        partition=7,
+        offset=6789,
+        headers=[
+            ('ce_id', b'1111-1111'),
+            ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
+        ],
+        key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
+        value=b'XXX',
+        error=TEST_KAFKA_ERROR,  # Add the error, in case we use this at some point
+    )
+    TEST_CONSUME_ERROR_NO_MESSAGE = ConsumeError(TEST_KAFKA_ERROR, exception=None, kafka_message=None)
+    TEST_CONSUME_ERROR_WITH_MESSAGE = ConsumeError(TEST_KAFKA_ERROR, exception=None, kafka_message=TEST_FAILED_MESSAGE)
+    TEST_KAFKA_EXCEPTION = KafkaException(TEST_KAFKA_ERROR)
+
+    @patch('edx_event_bus_kafka.internal.consumer.set_custom_attribute', autospec=True)
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    @patch('edx_event_bus_kafka.internal.consumer.time.sleep', autospec=True)
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='prod',
         EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP=1
     )
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    @patch('edx_event_bus_kafka.internal.consumer.time.sleep', autospec=True)
-    def test_record_error_no_event(self, mock_sleep, mock_logger):
+    @ddt.data(
+        (Exception("something random"), False, False),
+        (TEST_CONSUME_ERROR_NO_MESSAGE, False, True),
+        (TEST_CONSUME_ERROR_WITH_MESSAGE, True, True),
+        (TEST_KAFKA_EXCEPTION, False, True),
+    )
+    @ddt.unpack
+    def test_record_error_for_various_errors(
+        self, exception, has_message, has_kafka_error, mock_sleep, mock_logger, mock_set_custom_attribute,
+    ):
         """
-        Covers reporting of an error in the consumer loop when no event is available
-        for logging. (Event-present is already covered in consume_loop test.)
+        Covers reporting of an error in the consumer loop for various types of errors.
         """
         def poll_side_effect(*args, **kwargs):
             # Only run one iteration
             self.event_consumer._shut_down()  # pylint: disable=protected-access
-            raise Exception("something random")
+            raise exception
 
         mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
         self.event_consumer.consumer = mock_consumer
         self.event_consumer.consume_indefinitely()
 
-        # Check that there was one error log message and that it contained all the right parts,
+        # Check that there was one exception log message and that it contained all the right parts,
         # in some order.
+        mock_logger.error.assert_not_called()
         mock_logger.exception.assert_called_once()
         (exc_log_msg,) = mock_logger.exception.call_args.args
-        assert "Error consuming event from Kafka: Exception('something random') in context" in exc_log_msg
+        assert f"Error consuming event from Kafka: {repr(exception)} in context" in exc_log_msg
         assert "full_topic='prod-some-topic'" in exc_log_msg
         assert "consumer_group='test_group_id'" in exc_log_msg
         assert ("expected_signal=<OpenEdxPublicSignal: "
                 "org.openedx.learning.auth.session.login.completed.v1>") in exc_log_msg
-        assert "-- no event available" in exc_log_msg
+        if has_message:
+            assert "-- event details" in exc_log_msg
+        else:
+            assert "-- no event available" in exc_log_msg
+
+        expected_custom_attribute_calls = [
+            call("kafka_topic", "prod-some-topic"),
+            call("kafka_has_message", has_message),
+        ]
+        if has_message:
+            expected_custom_attribute_calls += [
+                call("kafka_message_id", "1111-1111"),
+                call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
+            ]
+        if has_kafka_error:
+            # hardcoded attributes of TEST_KAFKA_ERROR
+            expected_custom_attribute_calls += [
+                call('kafka_error_fatal', True),
+                call('kafka_error_retriable', True),
+            ]
+        mock_set_custom_attribute.assert_has_calls(expected_custom_attribute_calls, any_order=True)
 
         # No-event sleep branch was triggered
         mock_sleep.assert_called_once_with(1)
@@ -261,7 +320,6 @@ class TestEmitSignals(TestCase):
         with pytest.raises(Exception) as exc_info:
             self.event_consumer.emit_signals_from_message(
                 FakeMessage(
-                    topic='user_stuff',
                     partition=2,
                     error=KafkaError(123, "done broke"),
                 )
@@ -387,3 +445,26 @@ class TestCommand(TestCase):
         call_command(Command(), topic='test', group_id='test', signal='')
         assert not mock_create_consumer.called
         mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
+
+    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
+    def test_kafka_consumers_with_timestamp(self, mock_consume_indefinitely, mock_create_consumer, _gsbt):
+        call_command(
+            Command(),
+            topic='test',
+            group_id='test',
+            signal='openedx',
+            offset_time=['2019-05-18T15:17:08.132263']
+        )
+        assert mock_create_consumer.called
+        assert mock_consume_indefinitely.called
+
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
+    def test_kafka_consumers_with_bad_timestamp(self, _ci, _cc, _gsbt, mock_logger):
+        call_command(Command(), topic='test', group_id='test', signal='openedx', offset_time=['notatimestamp'])
+        mock_logger.exception.assert_any_call("Could not parse the offset timestamp.")
+        mock_logger.exception.assert_called_with("Error consuming Kafka events")
