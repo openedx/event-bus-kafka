@@ -4,6 +4,7 @@ Core consumer and event-loop code.
 
 import logging
 import time
+from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import DeserializingConsumer
+    from confluent_kafka import DeserializingConsumer, TopicPartition
     from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
 except ImportError:  # pragma: no cover
@@ -131,10 +132,36 @@ class KafkaEventConsumer:
         """
         self._shut_down_loop = True
 
-    def consume_indefinitely(self):
+    def consume_indefinitely(self, offset_timestamp=None):
         """
         Consume events from a topic in an infinite loop.
+
+        Arguments:
+            offset_timestamp(datetime): reset the offsets of the consumer partitions to this timestamp before consuming.
         """
+
+        def reset_offsets(consumer, partitions):
+            # This is a callback method used on consumer assignment to handle offset reset logic.
+            # We do not want to attempt to change offsets if the offset is None.
+            if offset_timestamp is None:
+                return
+
+            # Get the offset from the epoch in seconds.
+            offset_timestamp_s = int(offset_timestamp.timestamp())
+            # We construct partitions with the epoch timestamp in the offset position.
+            timestamp_partitions = [TopicPartition(self.topic, p.partition, offset_timestamp_s) for p in partitions]
+
+            partitions_with_offsets = consumer.offsets_for_times(timestamp_partitions, timeout=1.0)
+
+            # Partitions have an error field that may be set on return.
+            errors = [p.error for p in partitions_with_offsets if p.error is not None]
+            if len(errors) > 0:
+                raise Exception("Error getting offsets for timestamps: {errors}")
+
+            logger.info(f'Found offsets for timestamp {offset_timestamp}: {partitions_with_offsets}')
+
+            consumer.assign(partitions_with_offsets)
+
         # This is already checked at the Command level, but it's possible this loop
         # could get called some other way, so check it here too.
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
@@ -148,7 +175,7 @@ class KafkaEventConsumer:
                 'consumer_group': self.group_id,
                 'expected_signal': self.signal,
             }
-            self.consumer.subscribe([full_topic])
+            self.consumer.subscribe([full_topic], on_assign=reset_offsets)
             logger.info(f"Running consumer for {run_context!r}")
 
             while True:
@@ -414,6 +441,14 @@ class ConsumeEventsCommand(BaseCommand):
             required=True,
             help='Type of signal to emit from consumed messages.'
         )
+        parser.add_argument(
+            '-o', '--offset_time',
+            nargs=1,
+            required=False,
+            default=None,
+            help='The timestamp (in ISO format) that we would like to set the consumers to read from on startup. '
+                  'Overrides existing offsets.'
+        )
 
     def handle(self, *args, **options):
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
@@ -421,11 +456,18 @@ class ConsumeEventsCommand(BaseCommand):
             return
         try:
             signal = OpenEdxPublicSignal.get_signal_by_type(options['signal'][0])
+            if options['offset_time'][0] is not None:
+                try:
+                    offset_timestamp = datetime.fromisoformat(options['offset_time'][0])
+                except ValueError:
+                    logger.exception('Could not parse the offset timestamp.')
+                    raise
+
             event_consumer = KafkaEventConsumer(
                 topic=options['topic'][0],
                 group_id=options['group_id'][0],
                 signal=signal,
             )
-            event_consumer.consume_indefinitely()
+            event_consumer.consume_indefinitely(offset_timestamp=offset_timestamp)
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")
