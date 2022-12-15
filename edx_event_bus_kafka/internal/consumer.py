@@ -337,12 +337,14 @@ class KafkaEventConsumer:
             # .. custom_attribute_name: kafka_topic
             # .. custom_attribute_description: The full topic of the message or error.
             set_custom_attribute('kafka_topic', run_context['full_topic'])
-            # .. custom_attribute_name: kafka_has_message
-            # .. custom_attribute_description: Boolean describing whether there was a message involved. Some errors
-            #   have no message.
-            set_custom_attribute('kafka_has_message', bool(kafka_message))
 
             if kafka_message:
+                # .. custom_attribute_name: kafka_partition
+                # .. custom_attribute_description: The partition of the message.
+                set_custom_attribute('kafka_partition', kafka_message.partition())
+                # .. custom_attribute_name: kafka_offset
+                # .. custom_attribute_description: The offset of the message.
+                set_custom_attribute('kafka_offset', kafka_message.offset())
                 headers = kafka_message.headers() or []  # treat None as []
                 # header is list of tuples, so handle case with duplicate headers for same key
                 message_ids = [value.decode("utf-8") for key, value in headers if key == EVENT_ID_HEADER]
