@@ -216,8 +216,9 @@ class TestEmitSignals(TestCase):
             [
                 call("kafka_topic", "prod-some-topic"),
                 call("kafka_message_id", "0000-0000"),
+                call("kafka_partition", 2),
+                call("kafka_offset", 12345),
                 call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
-                call("kafka_has_message", True),
             ] * len(mock_emit_side_effects),
             any_order=True,
         )
@@ -292,7 +293,6 @@ class TestEmitSignals(TestCase):
 
         expected_custom_attribute_calls = [
             call("kafka_topic", "prod-some-topic"),
-            call("kafka_has_message", has_message),
         ]
         if has_message:
             expected_custom_attribute_calls += [

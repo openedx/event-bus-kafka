@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.3.0] - 2022-12-15
+********************
+Changed
+=======
+* Added/removed some custom attributes are now set for monitoring purposes. Search for custom_attribute_name annotations for details.
+
 [3.2.0] - 2022-12-14
 ********************
 Changed
