@@ -18,7 +18,7 @@ Unreleased
 ********************
 Changed
 =======
-* Added/removed some custom attributes are now set for monitoring purposes. Search for custom_attribute_name annotations for details.
+* Added/removed some custom attributes used for monitoring. Search for custom_attribute_name annotations for details.
 
 [3.2.0] - 2022-12-14
 ********************
