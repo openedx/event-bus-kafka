@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.4.0] - 2022-12-16
+********************
+Changed
+=======
+* Kill infinite consumer loop when we see a fatal KafkaError, as recommended in the documentation. See https://github.com/confluentinc/librdkafka/blob/e0b9e92a0b492b5b1a6f1bcf08744928d45bf396/INTRODUCTION.md#fatal-consumer-errors.
+
 [3.3.0] - 2022-12-15
 ********************
 Changed
