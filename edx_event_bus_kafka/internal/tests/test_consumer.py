@@ -229,7 +229,6 @@ class TestEmitSignals(TestCase):
         mock_sleep.assert_not_called()
         mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
-    TEST_KAFKA_ERROR = KafkaError(2, fatal=True, retriable=True)
     TEST_FAILED_MESSAGE = FakeMessage(
         partition=7,
         offset=6789,
@@ -239,11 +238,13 @@ class TestEmitSignals(TestCase):
         ],
         key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
         value=b'XXX',
-        error=TEST_KAFKA_ERROR,  # Add the error, in case we use this at some point
     )
+    TEST_KAFKA_ERROR = KafkaError(2, fatal=False, retriable=True)
     TEST_CONSUME_ERROR_NO_MESSAGE = ConsumeError(TEST_KAFKA_ERROR, exception=None, kafka_message=None)
     TEST_CONSUME_ERROR_WITH_MESSAGE = ConsumeError(TEST_KAFKA_ERROR, exception=None, kafka_message=TEST_FAILED_MESSAGE)
     TEST_KAFKA_EXCEPTION = KafkaException(TEST_KAFKA_ERROR)
+    TEST_KAFKA_FATAL_ERROR = KafkaError(2, fatal=True, retriable=True)
+    TEST_CONSUME_ERROR_FATAL = ConsumeError(TEST_KAFKA_FATAL_ERROR, exception=None, kafka_message=None)
 
     @patch('edx_event_bus_kafka.internal.consumer.set_custom_attribute', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
@@ -255,14 +256,15 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP=1
     )
     @ddt.data(
-        (Exception("something random"), False, False),
-        (TEST_CONSUME_ERROR_NO_MESSAGE, False, True),
-        (TEST_CONSUME_ERROR_WITH_MESSAGE, True, True),
-        (TEST_KAFKA_EXCEPTION, False, True),
+        (Exception("something random"), False, False, False),
+        (TEST_CONSUME_ERROR_NO_MESSAGE, False, True, False),
+        (TEST_CONSUME_ERROR_WITH_MESSAGE, True, True, False),
+        (TEST_KAFKA_EXCEPTION, False, True, False),
+        (TEST_CONSUME_ERROR_FATAL, False, True, True),
     )
     @ddt.unpack
     def test_record_error_for_various_errors(
-        self, exception, has_message, has_kafka_error, mock_sleep, mock_logger, mock_set_custom_attribute,
+        self, exception, has_message, has_kafka_error, is_fatal, mock_sleep, mock_logger, mock_set_custom_attribute,
     ):
         """
         Covers reporting of an error in the consumer loop for various types of errors.
@@ -274,7 +276,12 @@ class TestEmitSignals(TestCase):
 
         mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
         self.event_consumer.consumer = mock_consumer
-        self.event_consumer.consume_indefinitely()
+        if is_fatal:
+            with pytest.raises(ConsumeError) as exc_info:
+                self.event_consumer.consume_indefinitely()
+            assert exc_info.value == exception
+        else:
+            self.event_consumer.consume_indefinitely()
 
         # Check that there was one exception log message and that it contained all the right parts,
         # in some order.
@@ -300,15 +307,15 @@ class TestEmitSignals(TestCase):
                 call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
             ]
         if has_kafka_error:
-            # hardcoded attributes of TEST_KAFKA_ERROR
             expected_custom_attribute_calls += [
-                call('kafka_error_fatal', True),
+                call('kafka_error_fatal', is_fatal),
                 call('kafka_error_retriable', True),
             ]
         mock_set_custom_attribute.assert_has_calls(expected_custom_attribute_calls, any_order=True)
 
-        # No-event sleep branch was triggered
-        mock_sleep.assert_called_once_with(1)
+        # For non-fatal errors, "no-event" sleep branch was triggered
+        if not is_fatal:
+            mock_sleep.assert_called_once_with(1)
 
         mock_consumer.commit.assert_not_called()
 

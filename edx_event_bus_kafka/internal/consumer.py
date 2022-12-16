@@ -191,6 +191,10 @@ class KafkaEventConsumer:
                     self._add_message_monitoring(run_context=run_context, message=msg)
                 except Exception as e:  # pylint: disable=broad-except
                     self.record_event_consuming_error(run_context, e, msg)
+                    # Kill the infinite loop if the error is fatal for the consumer
+                    _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
+                    if kafka_error and kafka_error.fatal():
+                        raise e
                     # Prevent fast error-looping when no event received from broker. Because
                     # DeserializingConsumer raises rather than returning a Message when it has an
                     # error() value, this may be triggered even when a Message *was* returned,
