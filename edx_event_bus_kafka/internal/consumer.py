@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import DeserializingConsumer, TopicPartition
+    from confluent_kafka import DeserializingConsumer
     from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
 except ImportError:  # pragma: no cover
@@ -148,10 +148,11 @@ class KafkaEventConsumer:
 
             # Get the offset from the epoch in seconds.
             offset_timestamp_s = int(offset_timestamp.timestamp())
-            # We construct partitions with the epoch timestamp in the offset position.
-            timestamp_partitions = [TopicPartition(self.topic, p.partition, offset_timestamp_s) for p in partitions]
+            # We set the epoch timestamp in the offset position.
+            for partition in partitions:
+                partition.offset = offset_timestamp_s
 
-            partitions_with_offsets = consumer.offsets_for_times(timestamp_partitions, timeout=1.0)
+            partitions_with_offsets = consumer.offsets_for_times(partitions, timeout=1.0)
 
             # Partitions have an error field that may be set on return.
             errors = [p.error for p in partitions_with_offsets if p.error is not None]
@@ -462,12 +463,14 @@ class ConsumeEventsCommand(BaseCommand):
             return
         try:
             signal = OpenEdxPublicSignal.get_signal_by_type(options['signal'][0])
-            if options['offset_time'][0] is not None:
+            if options['offset_time'] and options['offset_time'][0] is not None:
                 try:
                     offset_timestamp = datetime.fromisoformat(options['offset_time'][0])
                 except ValueError:
                     logger.exception('Could not parse the offset timestamp.')
                     raise
+            else:
+                offset_timestamp = None
 
             event_consumer = KafkaEventConsumer(
                 topic=options['topic'][0],

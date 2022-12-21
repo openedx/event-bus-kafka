@@ -3,6 +3,7 @@ Tests for event_consumer module.
 """
 
 import copy
+from datetime import datetime
 from typing import Optional
 from unittest.mock import ANY, Mock, call, patch
 
@@ -19,7 +20,7 @@ from edx_event_bus_kafka.management.commands.consume_events import Command
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
-    from confluent_kafka import KafkaError, KafkaException
+    from confluent_kafka import KafkaError, KafkaException, TopicPartition
     from confluent_kafka.error import ConsumeError
 except ImportError as e:  # pragma: no cover
     pass
@@ -149,6 +150,25 @@ class TestEmitSignals(TestCase):
     def test_consume_loop_disabled(self, mock_logger):
         self.event_consumer.consume_indefinitely()  # returns at all
         mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
+
+    def test_offset_time_topics(self):
+        test_time = datetime.now()
+        self.event_consumer.consumer = Mock()
+        self.event_consumer._shut_down()  # pylint: disable=protected-access
+        self.event_consumer.consume_indefinitely(offset_timestamp=test_time)
+        reset_offsets = self.event_consumer.consumer.subscribe.call_args[1]['on_assign']
+        partitions = [TopicPartition('dummy_topic', 0, 0), TopicPartition('dummy_topic', 1, 0)]
+        self.event_consumer.consumer.offsets_for_times.return_value = partitions
+
+        # This is usually called by Kafka after assignment of partitions. For testing, we are calling
+        # it directly.
+        reset_offsets(self.event_consumer.consumer, partitions)
+
+        test_time_s = int(test_time.timestamp())
+        expected_partitions = [
+            TopicPartition('dummy_topic', 0, test_time_s), TopicPartition('dummy_topic', 1, test_time_s)
+        ]
+        self.event_consumer.consumer.offsets_for_times.assert_called_once_with(expected_partitions, timeout=1.0)
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',

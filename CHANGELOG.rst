@@ -13,6 +13,11 @@ Change Log
 
 Unreleased
 **********
+[3.4.1] - 2022-12-20
+********************
+Fixed
+=======
+* Fixed bugs in the event replay/offset handling code for consumers.
 
 [3.4.0] - 2022-12-16
 ********************
