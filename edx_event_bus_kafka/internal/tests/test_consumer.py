@@ -273,6 +273,60 @@ class TestEmitSignals(TestCase):
         mock_sleep.assert_not_called()
         mock_consumer.close.assert_called_once_with()  # since shutdown was requested, not because of exception
 
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='dev',
+        EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
+    )
+    def test_consecutive_error_limit(self):
+        """Confirm that consecutive errors can break out of loop."""
+        def raise_exception():
+            raise Exception("something broke")
+
+        exception_count = 4
+
+        with patch.object(
+                self.event_consumer, 'emit_signals_from_message',
+                side_effect=side_effects([raise_exception] * exception_count)
+        ) as mock_emit:
+            mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+            self.event_consumer.consumer = mock_consumer
+            with pytest.raises(Exception) as exc_info:
+                self.event_consumer.consume_indefinitely()
+
+        assert mock_emit.call_args_list == [call(self.normal_message)] * exception_count
+        assert exc_info.value.args == ("Too many consecutive errors, exiting (4 in a row)",)
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='dev',
+        EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
+    )
+    def test_non_consecutive_errors(self):
+        """Confirm that non-consecutive errors may not break out of loop."""
+        def raise_exception():
+            raise Exception("something broke")
+
+        mock_emit_side_effects = [
+            raise_exception, raise_exception,
+            lambda: None,  # an iteration that doesn't raise an exception
+            raise_exception, raise_exception,
+            # Stop the loop, since the non-consecutive exceptions won't do it
+            self.event_consumer._shut_down,  # pylint: disable=protected-access
+        ]
+
+        with patch.object(
+                self.event_consumer, 'emit_signals_from_message',
+                side_effect=side_effects(mock_emit_side_effects)
+        ) as mock_emit:
+            mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+            self.event_consumer.consumer = mock_consumer
+            self.event_consumer.consume_indefinitely()  # exits normally
+
+        assert mock_emit.call_args_list == [call(self.normal_message)] * len(mock_emit_side_effects)
+
     TEST_FAILED_MESSAGE = FakeMessage(
         partition=7,
         offset=6789,

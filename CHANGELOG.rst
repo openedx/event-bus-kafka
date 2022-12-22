@@ -13,10 +13,17 @@ Change Log
 
 Unreleased
 **********
+
+[3.5.0] - 2023-01-05
+********************
+Added
+=====
+* New setting ``EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT`` will terminate the consumer if too many errors occur in a row, supporting an automated version of "have you tried turning it off and on again" (as long as consumer will automatically be restarted e.g. by Kubernetes).
+
 [3.4.1] - 2022-12-20
 ********************
 Fixed
-=======
+=====
 * Fixed bugs in the event replay/offset handling code for consumers.
 
 [3.4.0] - 2022-12-16

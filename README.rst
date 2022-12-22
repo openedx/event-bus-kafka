@@ -29,10 +29,16 @@ Documentation
 
 To use this implementation of the Event Bus with openedx-events, set the following Django settings::
 
-    EVENT_BUS_PRODUCER: edx_event_bus_kafka.create_producer
     EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS: ...
     EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL: ...
     EVENT_BUS_TOPIC_PREFIX: ...
+
+    # Required, on the producing side only:
+    EVENT_BUS_PRODUCER: edx_event_bus_kafka.create_producer
+
+Optional settings that are worth considering:
+
+- ``EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT``
 
 For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 
