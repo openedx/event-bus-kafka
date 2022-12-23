@@ -26,6 +26,37 @@ except ImportError as e:  # pragma: no cover
     pass
 
 
+def side_effects(functions: list):
+    """
+    Given a list of functions, return a new function that will call each one in turn
+    on successive invocations. (The returned function ignores any arguments it is
+    called with.) Each function's return value will be returned. Behavior is
+    undefined if insufficient functions are supplied.
+    """
+    f_iter = iter(functions)
+
+    def inner(*_args, **_kwargs):
+        nonlocal f_iter
+        return next(f_iter)()
+
+    return inner
+
+
+class TestUtils(TestCase):
+    """Tests for local unit test utilities."""
+
+    def test_side_effects(self):
+        f = side_effects([
+            lambda: 5,
+            lambda: 1/0,
+            lambda: 6,
+        ])
+        assert f() == 5
+        with pytest.raises(ArithmeticError):
+            f()
+        assert f(1, 2, 3, a=4, b=5) == 6
+
+
 class FakeMessage:
     """
     A fake confluent_kafka.cimpl.Message that we can actually construct for mocking.
@@ -194,18 +225,11 @@ class TestEmitSignals(TestCase):
             # Final "call" just serves to stop the loop
             self.event_consumer._shut_down  # pylint: disable=protected-access
         ]
-        next_emit_behavior = 0  # index into the above
 
-        def fake_emit(*args, **kwargs):
-            """
-            Call each function in mock_emit_side_effects() on successive invocations.
-            """
-            nonlocal mock_emit_side_effects, next_emit_behavior
-            to_run = mock_emit_side_effects[next_emit_behavior]
-            next_emit_behavior += 1
-            return to_run()
-
-        with patch.object(self.event_consumer, 'emit_signals_from_message', side_effect=fake_emit) as mock_emit:
+        with patch.object(
+                self.event_consumer, 'emit_signals_from_message',
+                side_effect=side_effects(mock_emit_side_effects),
+        ) as mock_emit:
             mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
             self.event_consumer.consumer = mock_consumer
             self.event_consumer.consume_indefinitely()
