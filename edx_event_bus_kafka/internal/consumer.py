@@ -169,6 +169,20 @@ class KafkaEventConsumer:
             logger.error("Kafka consumers not enabled, exiting.")
             return
 
+        # .. setting_name: EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT
+        # .. setting_default: None
+        # .. setting_description: If the consumer encounters this many consecutive errors, exit with an
+        #   error. This is intended to be used in a context where a management system (such as Kubernetes)
+        #   will relaunch the consumer automatically. The effect is that all runtime state is cleared,
+        #   allowing consumers in arbitrary "stuck" states to resume their work automatically. (The impetus
+        #   for this setting was a Django DB connection failure that was staying failed.) Process
+        #   managers like Kubernetes will use delays and backoffs, so this may also help with transient
+        #   issues such as networking problems or a burst of errors in a downstream service. Errors may
+        #   include failure to poll, failure to decode events, or errors returned by signal handlers.
+        #   This does not prevent committing of offsets back to the broker; any messages that caused an
+        #   error will still be marked as consumed, and may need to be replayed.
+        CONSECUTIVE_ERRORS_LIMIT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT', None)
+
         try:
             full_topic = get_full_topic(self.topic)
             run_context = {
@@ -179,18 +193,32 @@ class KafkaEventConsumer:
             self.consumer.subscribe([full_topic], on_assign=reset_offsets)
             logger.info(f"Running consumer for {run_context!r}")
 
+            # How many errors have we seen in a row? If this climbs too high, exit with error.
+            # Any error counts, here — whether due to a polling failure or a message processing
+            # failure. But only a successfully processed message clears the counter. Just
+            # being able to talk to the broker and get a message (or a normal poll timeout) is
+            # not sufficient to show that progress can be made.
+            consecutive_errors = 0
+
             while True:
                 # Allow unit tests to break out of loop
                 if self._shut_down_loop:
                     break
+
+                # Detect probably-broken consumer and exit with error.
+                if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
+                    raise Exception(f"Too many consecutive errors, exiting ({consecutive_errors} in a row)")
 
                 msg = None
                 try:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         self.emit_signals_from_message(msg)
+                        consecutive_errors = 0
+
                     self._add_message_monitoring(run_context=run_context, message=msg)
                 except Exception as e:  # pylint: disable=broad-except
+                    consecutive_errors += 1
                     self.record_event_consuming_error(run_context, e, msg)
                     # Kill the infinite loop if the error is fatal for the consumer
                     _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
