@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.5.1] - 2023-01-05
+********************
+Fixed
+=====
+* Convert timestamps to millisecond offsets as expected by the Kafka API when replaying by timestamp in the consumer
+
 [3.5.0] - 2023-01-05
 ********************
 Added
