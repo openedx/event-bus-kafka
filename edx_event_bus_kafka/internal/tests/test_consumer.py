@@ -195,7 +195,7 @@ class TestEmitSignals(TestCase):
         # it directly.
         reset_offsets(self.event_consumer.consumer, partitions)
 
-        test_time_ms = int(test_time.timestamp())*1000
+        test_time_ms = int(test_time.timestamp()*1000)
 
         # TopicPartition objects are considered equal if the topic and partition are equal, regardless of offset
         # so we need to compare the objects by property
