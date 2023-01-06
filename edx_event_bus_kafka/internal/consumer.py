@@ -146,8 +146,10 @@ class KafkaEventConsumer:
             if offset_timestamp is None:
                 return
 
-            # Get the offset from the epoch (Kafka expects offsets in milliseconds for offsets_for_times, see
-            # https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.offsets_for_times)
+            # Get the offset from the epoch. Kafka expects offsets in milliseconds for offsets_for_times. Although
+            # this is undocumented in the libraries we're using (confluent-kafka and librdkafa), for reference
+            # see the docs for kafka-python:
+            # https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.offsets_for_times
             offset_timestamp_ms = int(offset_timestamp.timestamp()*1000)
             # We set the epoch timestamp in the offset position.
             for partition in partitions:
