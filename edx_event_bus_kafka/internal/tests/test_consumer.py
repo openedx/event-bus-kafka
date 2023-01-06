@@ -195,11 +195,18 @@ class TestEmitSignals(TestCase):
         # it directly.
         reset_offsets(self.event_consumer.consumer, partitions)
 
-        test_time_s = int(test_time.timestamp())
-        expected_partitions = [
-            TopicPartition('dummy_topic', 0, test_time_s), TopicPartition('dummy_topic', 1, test_time_s)
-        ]
-        self.event_consumer.consumer.offsets_for_times.assert_called_once_with(expected_partitions, timeout=1.0)
+        test_time_ms = int(test_time.timestamp()*1000)
+
+        # TopicPartition objects are considered equal if the topic and partition are equal, regardless of offset
+        # so we need to compare the objects by property
+        [partition_0, partition_1] = self.event_consumer.consumer.offsets_for_times.call_args.args[0]
+        assert partition_0.offset == test_time_ms
+        assert partition_0.topic == 'dummy_topic'
+        assert partition_0.partition == 0
+
+        assert partition_1.offset == test_time_ms
+        assert partition_1.topic == 'dummy_topic'
+        assert partition_1.partition == 1
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
