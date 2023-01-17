@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+
+[3.6.0] - 2023-01-06
+********************
+Changed
+=======
+* Consumers do not consume events after resetting offsets.
+
 [3.5.1] - 2023-01-06
 ********************
 Fixed
