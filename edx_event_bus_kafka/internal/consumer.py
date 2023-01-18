@@ -208,6 +208,14 @@ class KafkaEventConsumer:
                 if self._shut_down_loop:
                     break
 
+                # If offsets are set, do not consume events.
+                if offset_timestamp is not None:
+                    # This log message may be noisy when we are replaying, but hopefully we only see it
+                    # once every 30 seconds.
+                    logger.info("Offsets are being reset. Sleeping instead of consuming events.")
+                    time.sleep(30)
+                    continue
+
                 # Detect probably-broken consumer and exit with error.
                 if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
                     raise Exception(f"Too many consecutive errors, exiting ({consecutive_errors} in a row)")

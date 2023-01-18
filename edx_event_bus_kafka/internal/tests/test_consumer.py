@@ -311,6 +311,22 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_TOPIC_PREFIX='dev',
         EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
     )
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    @patch('edx_event_bus_kafka.internal.consumer.time.sleep', autospec=True)
+    def test_no_consume_with_offsets(self, mock_sleep, mock_logger):
+        mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+        self.event_consumer.consumer = mock_consumer
+        mock_sleep.side_effect = side_effects([self.event_consumer._shut_down])  # pylint: disable=protected-access
+        self.event_consumer.consume_indefinitely(offset_timestamp=0)
+        mock_sleep.assert_called_with(30)
+        mock_logger.info.assert_any_call('Offsets are being reset. Sleeping instead of consuming events.')
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='dev',
+        EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
+    )
     def test_non_consecutive_errors(self):
         """Confirm that non-consecutive errors may not break out of loop."""
         def raise_exception():
