@@ -15,6 +15,12 @@ Unreleased
 **********
 
 
+[3.6.1] - 2023-01-20
+********************
+Fixed
+=======
+* Added a poll call to force resets to be processed during replay/offset-reset mode.
+
 [3.6.0] - 2023-01-06
 ********************
 Changed
