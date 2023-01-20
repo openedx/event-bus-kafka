@@ -14,7 +14,13 @@ Change Log
 Unreleased
 **********
 
-[3.6.2] - 2023-01-26
+[3.6.2] - 2023-01-27
+********************
+Fixed
+=======
+* In the consumer loop, reset the database connection and try the message again after a connection error (OperationalError 2013)
+
+[3.6.2] - 2023-01-20
 ********************
 Fixed
 =====

@@ -5,7 +5,7 @@ Tests for event_consumer module.
 import copy
 from datetime import datetime
 from typing import Optional
-from unittest.mock import ANY, Mock, call, patch
+from unittest.mock import ANY, DEFAULT, Mock, call, patch
 
 import ddt
 import pytest
@@ -65,7 +65,7 @@ class FakeMessage:
     def __init__(
             self, partition: Optional[int] = None, offset: Optional[int] = None,
             headers: Optional[list] = None, key: Optional[bytes] = None, value=None,
-            error=None,
+            error=None, topic=None,
     ):
         self._partition = partition
         self._offset = offset
@@ -73,6 +73,7 @@ class FakeMessage:
         self._key = key
         self._value = value
         self._error = error
+        self._topic = topic
 
     def partition(self) -> Optional[int]:
         return self._partition
@@ -94,6 +95,9 @@ class FakeMessage:
 
     def error(self):
         return self._error
+
+    def topic(self) -> Optional[str]:
+        return self._topic
 
 
 def fake_receiver_returns_quietly(**kwargs):
@@ -143,6 +147,7 @@ class TestEmitSignals(TestCase):
             key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
             value=self.normal_event_data,
             error=None,
+            topic="foo",
         )
         self.mock_receiver = Mock()
         self.signal = SESSION_LOGIN_COMPLETED
@@ -304,6 +309,41 @@ class TestEmitSignals(TestCase):
 
         assert mock_emit.call_args_list == [call(self.normal_message)] * exception_count
         assert exc_info.value.args == ("Too many consecutive errors, exiting (4 in a row)",)
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='dev',
+    )
+    def test_connection_reset_if_unusable(self):
+        """Confirm we reconnect to the database if our connection is deemed unusable"""
+        mock_emit = Mock(side_effect=side_effects([self.event_consumer._shut_down]))  # pylint: disable=protected-access
+        with patch.multiple(self.event_consumer,
+                            emit_signals_from_message=mock_emit,
+                            **{'_db_needs_reconnect': Mock(return_value=True), '_reconnect_to_db': DEFAULT}
+                            ) as mock_event_consumer:
+            mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+            self.event_consumer.consumer = mock_consumer
+            self.event_consumer.consume_indefinitely()
+        mock_event_consumer['_reconnect_to_db'].assert_called_once()
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='dev',
+    )
+    def test_connection_not_reset_if_not_needed(self):
+        """Confirm we don't reconnect to the database unnecessarily"""
+
+        mock_emit = Mock(side_effect=side_effects([self.event_consumer._shut_down]))  # pylint: disable=protected-access
+        with patch.multiple(self.event_consumer,
+                            emit_signals_from_message=mock_emit,
+                            **{'_db_needs_reconnect': Mock(return_value=False), '_reconnect_to_db': DEFAULT}
+                            ) as mock_event_consumer:
+            mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+            self.event_consumer.consumer = mock_consumer
+            self.event_consumer.consume_indefinitely()
+        mock_event_consumer['_reconnect_to_db'].assert_not_called()
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',

@@ -8,6 +8,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import connection
 from edx_django_utils.monitoring import record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
@@ -132,6 +133,24 @@ class KafkaEventConsumer:
         """
         self._shut_down_loop = True
 
+    def _db_needs_reconnect(self):
+        """
+        Determine if we need to try to reconnect to the database
+
+        Returns:
+            True if we have a db connection but it is unusable
+            False otherwise (if we don't have a connection or our current connection is fine)
+        """
+        return connection.connection and not connection.is_usable()
+
+    def _reconnect_to_db(self):
+        """
+        Pass-through to connection.connect()
+
+        Moved out for easier testing (mocking connections in pytest is hard)
+        """
+        connection.connect()
+
     def consume_indefinitely(self, offset_timestamp=None):
         """
         Consume events from a topic in an infinite loop.
@@ -234,6 +253,10 @@ class KafkaEventConsumer:
                 try:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
+                        # Before processing, make sure our connection is still active
+                        if self._db_needs_reconnect():
+                            self._reconnect_to_db()
+
                         self.emit_signals_from_message(msg)
                         consecutive_errors = 0
 
