@@ -213,6 +213,13 @@ class KafkaEventConsumer:
                     # This log message may be noisy when we are replaying, but hopefully we only see it
                     # once every 30 seconds.
                     logger.info("Offsets are being reset. Sleeping instead of consuming events.")
+
+                    # We are calling poll here because we believe the offsets will not be set
+                    # correctly until poll is called, despite the offsets being reset in a different call.
+                    # Because we are not trying to consume any messages in this mode, we are deliberately calling
+                    # poll without processing the message it returns or commiting the new offset.
+                    self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
+
                     time.sleep(30)
                     continue
 
