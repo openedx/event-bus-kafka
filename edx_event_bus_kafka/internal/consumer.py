@@ -216,8 +216,10 @@ class KafkaEventConsumer:
 
                     # We are calling poll here because we believe the offsets will not be set
                     # correctly until poll is called, despite the offsets being reset in a different call.
-                    # Because we are not trying to consume any messages in this mode, we are deliberately calling
-                    # poll without processing the message it returns or commiting the new offset.
+                    # This is because we don't believe that the partitions for the current consumer are assigned
+                    # until the first poll happens. Because we are not trying to consume any messages in this mode,
+                    # we are deliberately calling poll without processing the message it returns
+                    # or commiting the new offset.
                     self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
 
                     time.sleep(30)
