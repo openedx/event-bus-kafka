@@ -65,7 +65,7 @@ class FakeMessage:
     def __init__(
             self, partition: Optional[int] = None, offset: Optional[int] = None,
             headers: Optional[list] = None, key: Optional[bytes] = None, value=None,
-            error=None, topic=None,
+            error=None,
     ):
         self._partition = partition
         self._offset = offset
@@ -73,7 +73,6 @@ class FakeMessage:
         self._key = key
         self._value = value
         self._error = error
-        self._topic = topic
 
     def partition(self) -> Optional[int]:
         return self._partition
@@ -95,9 +94,6 @@ class FakeMessage:
 
     def error(self):
         return self._error
-
-    def topic(self) -> Optional[str]:
-        return self._topic
 
 
 def fake_receiver_returns_quietly(**kwargs):
@@ -147,7 +143,6 @@ class TestEmitSignals(TestCase):
             key=b'\x00\x00\x00\x00\x01\x0cfoobob',  # Avro, as observed in manual test
             value=self.normal_event_data,
             error=None,
-            topic="foo",
         )
         self.mock_receiver = Mock()
         self.signal = SESSION_LOGIN_COMPLETED
