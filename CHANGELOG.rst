@@ -18,7 +18,7 @@ Unreleased
 ********************
 Fixed
 =======
-* In the consumer loop, reset the database connection and try the message again after a connection error (OperationalError 2013)
+* In the consumer loop, open new database connection if the old one has closed before processing messages
 
 [3.6.2] - 2023-01-20
 ********************
