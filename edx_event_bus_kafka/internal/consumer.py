@@ -164,7 +164,8 @@ class KafkaEventConsumer:
 
             logger.info(f'Found offsets for timestamp {offset_timestamp}: {partitions_with_offsets}')
 
-            consumer.assign(partitions_with_offsets)
+            # We need to commit these offsets to Kafka in order to ensure these offsets are persisted.
+            consumer.commit(offsets=partitions_with_offsets)
 
         # This is already checked at the Command level, but it's possible this loop
         # could get called some other way, so check it here too.

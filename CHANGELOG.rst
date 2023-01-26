@@ -14,6 +14,11 @@ Change Log
 Unreleased
 **********
 
+[3.6.2] - 2023-01-26
+********************
+Fixed
+=====
+* Reset mode now commits the correct offsets to Kafka.
 
 [3.6.1] - 2023-01-20
 ********************
