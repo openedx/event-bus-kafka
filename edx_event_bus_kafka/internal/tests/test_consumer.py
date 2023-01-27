@@ -5,7 +5,7 @@ Tests for event_consumer module.
 import copy
 from datetime import datetime
 from typing import Optional
-from unittest.mock import ANY, DEFAULT, Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import ddt
 import pytest
@@ -310,35 +310,38 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='dev',
     )
-    def test_connection_reset_if_unusable(self):
+    @patch('edx_event_bus_kafka.internal.consumer._db_needs_reconnect', return_value=True)
+    @patch('edx_event_bus_kafka.internal.consumer._reconnect_to_db')
+    def test_connection_reset_if_unusable(self, mock_reconnect, _):
         """Confirm we reconnect to the database if our connection is deemed unusable"""
-        mock_emit = Mock(side_effect=side_effects([self.event_consumer._shut_down]))  # pylint: disable=protected-access
-        with patch.multiple(self.event_consumer,
-                            emit_signals_from_message=mock_emit,
-                            **{'_db_needs_reconnect': Mock(return_value=True), '_reconnect_to_db': DEFAULT}
-                            ) as mock_event_consumer:
+
+        with patch.object(
+                self.event_consumer, 'emit_signals_from_message',
+                side_effect=side_effects([self.event_consumer._shut_down])  # pylint: disable=protected-access
+        ):
             mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
             self.event_consumer.consumer = mock_consumer
             self.event_consumer.consume_indefinitely()
-        mock_event_consumer['_reconnect_to_db'].assert_called_once()
+        mock_reconnect.assert_called_once()
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='dev',
     )
-    def test_connection_not_reset_if_not_needed(self):
+    @patch('edx_event_bus_kafka.internal.consumer._db_needs_reconnect', return_value=False)
+    @patch('edx_event_bus_kafka.internal.consumer._reconnect_to_db')
+    def test_connection_not_reset_if_not_needed(self, mock_reconnect, _):
         """Confirm we don't reconnect to the database unnecessarily"""
 
-        mock_emit = Mock(side_effect=side_effects([self.event_consumer._shut_down]))  # pylint: disable=protected-access
-        with patch.multiple(self.event_consumer,
-                            emit_signals_from_message=mock_emit,
-                            **{'_db_needs_reconnect': Mock(return_value=False), '_reconnect_to_db': DEFAULT}
-                            ) as mock_event_consumer:
+        with patch.object(
+                self.event_consumer, 'emit_signals_from_message',
+                side_effect=side_effects([self.event_consumer._shut_down])  # pylint: disable=protected-access
+        ):
             mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
             self.event_consumer.consumer = mock_consumer
             self.event_consumer.consume_indefinitely()
-        mock_event_consumer['_reconnect_to_db'].assert_not_called()
+        mock_reconnect.assert_not_called()
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',

@@ -75,6 +75,28 @@ class ReceiverError(Exception):
         self.causes = causes  # just used for testing
 
 
+def _db_needs_reconnect():
+    """
+    Determine if we need to try to reconnect to the database
+
+    Returns:
+        True if we have a db connection but it is unusable
+        False otherwise (if we don't have a connection or our current connection is fine)
+    """
+    has_connection = bool(connection.connection)
+    return has_connection and not connection.is_usable()
+
+
+def _reconnect_to_db():
+    """
+    Used to re-connect broken connections by calling connection.connect()
+
+    This is a straight-up pass-through to connection.connect(). Moved out for easier testing (mocking the db.connection
+    module wreaks havoc in pytest)
+    """
+    connection.connect()
+
+
 class KafkaEventConsumer:
     """
     Construct consumer for the given topic, group, and signal. The consumer can then
@@ -132,24 +154,6 @@ class KafkaEventConsumer:
         Test utility for shutting down the consumer loop.
         """
         self._shut_down_loop = True
-
-    def _db_needs_reconnect(self):
-        """
-        Determine if we need to try to reconnect to the database
-
-        Returns:
-            True if we have a db connection but it is unusable
-            False otherwise (if we don't have a connection or our current connection is fine)
-        """
-        return connection.connection and not connection.is_usable()
-
-    def _reconnect_to_db(self):
-        """
-        Pass-through to connection.connect()
-
-        Moved out for easier testing (mocking connections in pytest is hard)
-        """
-        connection.connect()
 
     def consume_indefinitely(self, offset_timestamp=None):
         """
@@ -254,8 +258,8 @@ class KafkaEventConsumer:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         # Before processing, make sure our connection is still active
-                        if self._db_needs_reconnect():
-                            self._reconnect_to_db()
+                        if _db_needs_reconnect():
+                            _reconnect_to_db()
 
                         self.emit_signals_from_message(msg)
                         consecutive_errors = 0
