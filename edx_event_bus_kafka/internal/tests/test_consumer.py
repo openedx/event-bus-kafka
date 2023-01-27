@@ -5,7 +5,8 @@ Tests for event_consumer module.
 import copy
 from datetime import datetime
 from typing import Optional
-from unittest.mock import Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
+from uuid import uuid1
 
 import ddt
 import pytest
@@ -129,8 +130,9 @@ class TestEmitSignals(TestCase):
                 )
             )
         }
-        self.message_id_bytes = b'0000-0000'
-        self.message_id = self.message_id_bytes.decode('utf-8')
+        self.message_id = uuid1()
+        self.message_id_bytes = str(self.message_id).encode('utf-8')
+
         self.signal_type_bytes = b'org.openedx.learning.auth.session.login.completed.v1'
         self.signal_type = self.signal_type_bytes.decode('utf-8')
         self.normal_message = FakeMessage(
@@ -258,7 +260,7 @@ class TestEmitSignals(TestCase):
         assert "-- event details: " in exc_log_msg
         assert "'partition': 2" in exc_log_msg
         assert "'offset': 12345" in exc_log_msg
-        assert "'headers': [('ce_id', b'0000-0000'), " \
+        assert f"'headers': [('ce_id', b'{self.message_id}'), " \
                "('ce_type', b'org.openedx.learning.auth.session.login.completed.v1')]" in exc_log_msg
         assert "'key': b'\\x00\\x00\\x00\\x00\\x01\\x0cfoobob'" in exc_log_msg
         assert "email='bob@foo.example'" in exc_log_msg
@@ -266,7 +268,7 @@ class TestEmitSignals(TestCase):
         mock_set_custom_attribute.assert_has_calls(
             [
                 call("kafka_topic", "prod-some-topic"),
-                call("kafka_message_id", "0000-0000"),
+                call("kafka_message_id", str(self.message_id)),
                 call("kafka_partition", 2),
                 call("kafka_offset", 12345),
                 call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
@@ -590,6 +592,26 @@ class TestEmitSignals(TestCase):
                     self.event_consumer.consume_indefinitely()
 
         mock_consumer.commit.assert_not_called()
+
+    def test_bad_headers(self):
+        """
+        Check that if we cannot process the message headers, we raise an UnusableMessageError
+
+        The various kinds of bad headers are more fully tested in test_utils
+        """
+        msg = copy.copy(self.normal_message)
+        msg._headers = [  # pylint: disable=protected-access
+            ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
+            ('ce_id', b'bad_id')
+        ]
+        with pytest.raises(UnusableMessageError) as excinfo:
+            self.event_consumer.emit_signals_from_message(msg)
+
+        assert excinfo.value.args == (
+            "Error determining metadata from message headers: badly formed hexadecimal UUID string",
+        )
+
+        assert not self.mock_receiver.called
 
 
 class TestCommand(TestCase):

@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[3.8.0] - 2023-01-31
+********************
+Added
+=====
+* Producer now passes all metadata fields as headers
+* Consumer emits events with the original metadata information (from the producer)
+
 [3.7.1] - 2023-01-31
 ********************
 Fixed

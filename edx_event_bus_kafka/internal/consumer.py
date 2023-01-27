@@ -1,21 +1,23 @@
 """
 Core consumer and event-loop code.
 """
-
 import logging
 import time
 import warnings
 from datetime import datetime
 
+from attrs import asdict, fields, filters
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
 from edx_django_utils.monitoring import record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
+from openedx_events.data import EventsMetadata
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
+from .utils import _get_metadata_from_headers
 
 logger = logging.getLogger(__name__)
 
@@ -348,8 +350,14 @@ class KafkaEventConsumer:
                 f"Signal types do not match. Expected {self.signal.event_type}. "
                 f"Received message of type {event_type_str}."
             )
-
-        send_results = self.signal.send_event(**msg.value())
+        try:
+            event_metadata = asdict(_get_metadata_from_headers(headers),
+                                    # don't pass the event_type along since send_with_custom_metadata doesn't use it
+                                    # and will raise if it's present
+                                    filter=filters.exclude(fields(EventsMetadata).event_type))
+        except Exception as e:
+            raise UnusableMessageError(f"Error determining metadata from message headers: {e}")
+        send_results = self.signal.send_event_with_custom_metadata(**event_metadata, **msg.value())
         # Raise an exception if any receivers errored out. This allows logging of the receivers
         # along with partition, offset, etc. in record_event_consuming_error. Hopefully the
         # receiver code is idempotent and we can just replay any messages that were involved.

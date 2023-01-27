@@ -2,6 +2,7 @@
 Test the event producer code.
 """
 
+import datetime
 import gc
 import time
 import warnings
@@ -144,8 +145,9 @@ class TestEventProducer(TestCase):
                 EVENT_BUS_TOPIC_PREFIX='prod',
                 SERVICE_VARIANT='test',
         ):
+            now = datetime.datetime.now(datetime.timezone.utc)
             metadata = EventsMetadata(event_type=self.signal.event_type,
-                                      minorversion=0)
+                                      time=now, sourcelib=(1, 2, 3))
             producer_api = ep.create_producer()
             with patch.object(producer_api, 'producer', autospec=True) as mock_producer:
                 producer_api.send(
@@ -162,7 +164,10 @@ class TestEventProducer(TestCase):
                 'sourcehost': metadata.sourcehost.encode("utf8"),
                 'ce_specversion': b'1.0',
                 'content-type': b'application/avro',
-                'ce_datacontenttype': b'application/avro'
+                'ce_datacontenttype': b'application/avro',
+                'ce_time': now.isoformat().encode("utf8"),
+                'ce_minorversion': b'0',
+                'sourcelib': b'1.2.3',
             }
 
         mock_producer.produce.assert_called_once_with(
@@ -320,17 +325,3 @@ class TestEventProducer(TestCase):
             # headers are tested elsewhere, we just want to verify the topics
             headers=ANY,
         )
-
-    def test_headers_from_event_metadata(self):
-        with override_settings(SERVICE_VARIANT='test'):
-            metadata = EventsMetadata(event_type=self.signal.event_type, minorversion=0)
-            headers = ep._get_headers_from_metadata(event_metadata=metadata)  # pylint: disable=protected-access
-            self.assertDictEqual(headers, {
-                'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
-                'ce_id': str(metadata.id).encode("utf8"),
-                'ce_source': b'openedx/test/web',
-                'ce_specversion': b'1.0',
-                'sourcehost': metadata.sourcehost.encode("utf8"),
-                'content-type': b'application/avro',
-                'ce_datacontenttype': b'application/avro',
-            })
