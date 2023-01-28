@@ -309,6 +309,37 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='dev',
+    )
+    @patch('edx_event_bus_kafka.internal.consumer.connection')
+    @ddt.data(
+        (False, False, False),  # no connection, don't reconnect
+        (True, False, True),  # connection unusable, reconnect expected
+        (False, True, False),  # usable connection, no need to reconnect
+    )
+    @ddt.unpack
+    def test_connection_reset(self, has_connection, is_usable, reconnect_expected, mock_connection):
+        """Confirm we reconnect to the database as required"""
+        if not has_connection:
+            mock_connection.connection = None
+        mock_connection.is_usable.return_value = is_usable
+
+        with patch.object(
+                self.event_consumer, 'emit_signals_from_message',
+                side_effect=side_effects([self.event_consumer._shut_down])  # pylint: disable=protected-access
+        ):
+            mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
+            self.event_consumer.consumer = mock_consumer
+            self.event_consumer.consume_indefinitely()
+
+        if reconnect_expected:
+            mock_connection.connect.assert_called_once()
+        else:
+            mock_connection.connect.assert_not_called()
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='dev',
         EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
     )
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)

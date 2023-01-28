@@ -8,6 +8,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import connection
 from edx_django_utils.monitoring import record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
@@ -72,6 +73,16 @@ class ReceiverError(Exception):
         """
         super().__init__(message)
         self.causes = causes  # just used for testing
+
+
+def _reconnect_to_db_if_needed():
+    """
+    Reconnects the db connection if needed.
+    """
+    has_connection = bool(connection.connection)
+    requires_reconnect = has_connection and not connection.is_usable()
+    if requires_reconnect:
+        connection.connect()
 
 
 class KafkaEventConsumer:
@@ -164,7 +175,8 @@ class KafkaEventConsumer:
 
             logger.info(f'Found offsets for timestamp {offset_timestamp}: {partitions_with_offsets}')
 
-            consumer.assign(partitions_with_offsets)
+            # We need to commit these offsets to Kafka in order to ensure these offsets are persisted.
+            consumer.commit(offsets=partitions_with_offsets)
 
         # This is already checked at the Command level, but it's possible this loop
         # could get called some other way, so check it here too.
@@ -233,6 +245,9 @@ class KafkaEventConsumer:
                 try:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
+                        # Before processing, make sure our db connection is still active
+                        _reconnect_to_db_if_needed()
+
                         self.emit_signals_from_message(msg)
                         consecutive_errors = 0
 
