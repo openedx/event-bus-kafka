@@ -24,7 +24,7 @@ Changed
 [3.6.3] - 2023-01-27
 ********************
 Fixed
-=======
+=====
 * In the consumer loop, open new database connection if the old one has closed before processing messages
 
 [3.6.2] - 2023-01-26
