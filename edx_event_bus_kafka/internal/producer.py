@@ -23,7 +23,7 @@ from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
-from .utils import _get_headers_from_metadata
+from .utils import AUDIT_LOGGING_ENABLED, HEADER_ID, _get_headers_from_metadata, last_message_header_value
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def record_producing_error(error, context):
         raise Exception(error)
     except BaseException:
         record_exception()
-        logger.exception(f"Error producing event to event bus. {error=!s} {context!r}")
+        logger.exception(f"Error delivering message to Kafka event bus. {error=!s} {context!r}")
 
 
 def extract_event_key(event_data: dict, event_key_field: str) -> Any:
@@ -207,8 +207,16 @@ class ProducingContext:
         if err is not None:
             record_producing_error(err, self)
         else:
-            logger.info(f"Event delivered to topic {evt.topic()}; key={evt.key()}; "
-                        f"partition={evt.partition()}")
+            # Audit logging on success. See ADR: docs/decisions/0010_audit_logging.rst
+            if not AUDIT_LOGGING_ENABLED.is_enabled():
+                return
+
+            message_id = last_message_header_value(evt.headers() or [], HEADER_ID)
+            # See ADR for details on why certain fields were included or omitted.
+            logger.info(
+                f"Message delivered to Kafka event bus: topic={evt.topic()}, partition={evt.partition()}, "
+                f"offset={evt.offset()}, message_id={message_id}, key={evt.key()}"
+            )
 
 
 class KafkaEventProducer(EventBusProducer):

@@ -5,12 +5,24 @@ Utilities for converting between message headers and EventsMetadata
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 import openedx_events.data as oed
+from edx_toggles.toggles import SettingToggle
 
 logger = logging.getLogger(__name__)
+
+# .. toggle_name: EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED
+# .. toggle_implementation: SettingToggle
+# .. toggle_default: True
+# .. toggle_description: If True, whenever an event is produced or consumed, log enough
+#   information to uniquely identify it for debugging purposes. This will not include
+#   all the data on the event, but at a minimum will include topic, partition, offset,
+#   message ID, and key. Deployers may wish to disable this if log volume is excessive.
+# .. toggle_use_cases: opt_out
+# .. toggle_creation_date: 2023-02-07
+AUDIT_LOGGING_ENABLED = SettingToggle('EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED', default=True)
 
 
 def _sourcelib_tuple_to_str(sourcelib: Tuple):
@@ -56,6 +68,39 @@ HEADER_SOURCELIB = MessageHeader("sourcelib", event_metadata_field="sourcelib",
 # use both
 HEADER_CONTENT_TYPE = MessageHeader("content-type")
 HEADER_DATA_CONTENT_TYPE = MessageHeader("ce_datacontenttype")
+
+
+def get_message_header_values(headers: List, header: MessageHeader) -> List[str]:
+    """
+    Return all values for this header.
+
+    Arguments:
+        headers: List of key/value tuples. Keys are strings, values are bytestrings.
+        header: The MessageHeader to look for.
+
+    Returns:
+        List of zero or more header values decoded as strings.
+    """
+    # CloudEvents specifies using UTF-8 for header values, so let's be explicit.
+    return [value.decode("utf-8") for key, value in headers if key == header.message_header_key]
+
+
+def last_message_header_value(headers: List, header: MessageHeader) -> Optional[str]:
+    """
+    Return the value for the header with the specified key, if there is at least one.
+
+    We should not ordinarily expect there to be more than one instance of a header.
+    However, if there is one, this function will return the last value of it. (The
+    latest value may have been intended to override an earlier value.)
+
+    Arguments:
+        headers: List of key/value tuples. Keys are strings, values are bytestrings.
+        header: The MessageHeader to look for.
+
+    Returns:
+        Decoded value of the last header with this key, or None if there are none.
+    """
+    return next(reversed(get_message_header_values(headers, header)), None)
 
 
 def _get_metadata_from_headers(headers: List[Tuple]):
