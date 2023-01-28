@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.7.0] - 2023-01-30
+********************
+Changed
+=======
+* Added ``reset_offsets_indefinitely`` and deprecated timestamp argument of ``consume_indefinitely``
+
 [3.6.3] - 2023-01-27
 ********************
 Fixed
