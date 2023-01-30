@@ -182,11 +182,11 @@ class TestEmitSignals(TestCase):
         self.event_consumer.consume_indefinitely()  # returns at all
         mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
 
-    def test_reset_offsets_indefinitely(self):
+    def test_reset_offsets_and_sleep_indefinitely(self):
         test_time = datetime.now()
         self.event_consumer.consumer = Mock()
         self.event_consumer._shut_down()  # pylint: disable=protected-access
-        self.event_consumer.reset_offsets_indefinitely(offset_timestamp=test_time)
+        self.event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=test_time)
         reset_offsets = self.event_consumer.consumer.subscribe.call_args[1]['on_assign']
         partitions = [TopicPartition('dummy_topic', 0, 0), TopicPartition('dummy_topic', 1, 0)]
         self.event_consumer.consumer.offsets_for_times.return_value = partitions
@@ -607,7 +607,7 @@ class TestCommand(TestCase):
 
     @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.reset_offsets_indefinitely')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.reset_offsets_and_sleep_indefinitely')
     def test_kafka_consumers_with_timestamp(self, mock_reset_offsets, mock_create_consumer, _gsbt):
         call_command(
             Command(),

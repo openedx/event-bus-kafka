@@ -18,8 +18,8 @@ Unreleased
 ********************
 Changed
 =======
-* Added ``reset_offsets_indefinitely`` method to consumer; relying code should switch to calling this when an offset timestamp is set.
-* Deprecated the ``offset_timestamp`` parameter on the consumer's ``consume_indefinitely`` method, since ``reset_offsets_indefinitely`` should be used instead.
+* Added ``reset_offsets_and_sleep_indefinitely`` method to consumer; relying code should switch to calling this when an offset timestamp is set.
+* Deprecated the ``offset_timestamp`` parameter on the consumer's ``consume_indefinitely`` method, since ``reset_offsets_and_sleep_indefinitely`` should be used instead.
 
 [3.6.3] - 2023-01-27
 ********************

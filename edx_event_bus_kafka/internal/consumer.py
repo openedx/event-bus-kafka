@@ -144,7 +144,7 @@ class KafkaEventConsumer:
         """
         self._shut_down_loop = True
 
-    def reset_offsets_indefinitely(self, offset_timestamp):
+    def reset_offsets_and_sleep_indefinitely(self, offset_timestamp):
         """
         Reset any assigned partitions to the given offset, and sleep indefinitely.
 
@@ -294,8 +294,9 @@ class KafkaEventConsumer:
         Consume events from a topic in an infinite loop.
 
         Arguments:
-            offset_timestamp (datetime): Optional and deprecated; if supplied, call ``reset_offsets_indefinitely``
-                instead. Relying code should switch to calling that method directly.
+            offset_timestamp (datetime): Optional and deprecated; if supplied, calls
+                ``reset_offsets_and_sleep_indefinitely`` instead. Relying code should
+                switch to calling that method directly.
         """
         # TODO: Once this deprecated argument can be removed, just
         # remove this delegation method entirely and rename
@@ -305,9 +306,9 @@ class KafkaEventConsumer:
         else:
             warnings.warn(
                 "Calling consume_indefinitely with offset_timestamp is deprecated; "
-                "please call reset_offsets_indefinitely directly instead."
+                "please call reset_offsets_and_sleep_indefinitely directly instead."
             )
-            self.reset_offsets_indefinitely(offset_timestamp)
+            self.reset_offsets_and_sleep_indefinitely(offset_timestamp)
 
     def emit_signals_from_message(self, msg):
         """
@@ -578,6 +579,6 @@ class ConsumeEventsCommand(BaseCommand):
             if offset_timestamp is None:
                 event_consumer.consume_indefinitely()
             else:
-                event_consumer.reset_offsets_indefinitely(offset_timestamp=offset_timestamp)
+                event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=offset_timestamp)
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")
