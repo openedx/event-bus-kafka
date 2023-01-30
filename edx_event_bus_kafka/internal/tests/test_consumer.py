@@ -607,6 +607,19 @@ class TestCommand(TestCase):
 
     @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
+    def test_kafka_consumers_normal(self, mock_consume, mock_create_consumer, _gsbt):
+        call_command(
+            Command(),
+            topic='test',
+            group_id='test',
+            signal='openedx',
+        )
+        assert mock_create_consumer.called
+        assert mock_consume.called
+
+    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.reset_offsets_and_sleep_indefinitely')
     def test_kafka_consumers_with_timestamp(self, mock_reset_offsets, mock_create_consumer, _gsbt):
         call_command(
