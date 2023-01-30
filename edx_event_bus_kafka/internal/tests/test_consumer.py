@@ -5,7 +5,7 @@ Tests for event_consumer module.
 import copy
 from datetime import datetime
 from typing import Optional
-from unittest.mock import ANY, Mock, call, patch
+from unittest.mock import Mock, call, patch
 
 import ddt
 import pytest
@@ -182,11 +182,11 @@ class TestEmitSignals(TestCase):
         self.event_consumer.consume_indefinitely()  # returns at all
         mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
 
-    def test_offset_time_topics(self):
+    def test_reset_offsets_and_sleep_indefinitely(self):
         test_time = datetime.now()
         self.event_consumer.consumer = Mock()
         self.event_consumer._shut_down()  # pylint: disable=protected-access
-        self.event_consumer.consume_indefinitely(offset_timestamp=test_time)
+        self.event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=test_time)
         reset_offsets = self.event_consumer.consumer.subscribe.call_args[1]['on_assign']
         partitions = [TopicPartition('dummy_topic', 0, 0), TopicPartition('dummy_topic', 1, 0)]
         self.event_consumer.consumer.offsets_for_times.return_value = partitions
@@ -242,7 +242,7 @@ class TestEmitSignals(TestCase):
             self.event_consumer.consume_indefinitely()
 
         # Check that each of the mocked out methods got called as expected.
-        mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'], on_assign=ANY)
+        mock_consumer.subscribe.assert_called_once_with(['prod-some-topic'])
         # Check that emit was called the expected number of times
         assert mock_emit.call_args_list == [call(self.normal_message)] * len(mock_emit_side_effects)
 
@@ -608,7 +608,20 @@ class TestCommand(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
-    def test_kafka_consumers_with_timestamp(self, mock_consume_indefinitely, mock_create_consumer, _gsbt):
+    def test_kafka_consumers_normal(self, mock_consume, mock_create_consumer, _gsbt):
+        call_command(
+            Command(),
+            topic='test',
+            group_id='test',
+            signal='openedx',
+        )
+        assert mock_create_consumer.called
+        assert mock_consume.called
+
+    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.reset_offsets_and_sleep_indefinitely')
+    def test_kafka_consumers_with_timestamp(self, mock_reset_offsets, mock_create_consumer, _gsbt):
         call_command(
             Command(),
             topic='test',
@@ -617,7 +630,7 @@ class TestCommand(TestCase):
             offset_time=['2019-05-18T15:17:08.132263']
         )
         assert mock_create_consumer.called
-        assert mock_consume_indefinitely.called
+        assert mock_reset_offsets.called
 
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')

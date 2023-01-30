@@ -4,6 +4,7 @@ Core consumer and event-loop code.
 
 import logging
 import time
+import warnings
 from datetime import datetime
 
 from django.conf import settings
@@ -143,12 +144,12 @@ class KafkaEventConsumer:
         """
         self._shut_down_loop = True
 
-    def consume_indefinitely(self, offset_timestamp=None):
+    def reset_offsets_and_sleep_indefinitely(self, offset_timestamp):
         """
-        Consume events from a topic in an infinite loop.
+        Reset any assigned partitions to the given offset, and sleep indefinitely.
 
         Arguments:
-            offset_timestamp(datetime): reset the offsets of the consumer partitions to this timestamp before consuming.
+            offset_timestamp (datetime): Reset the offsets of the consumer partitions to this timestamp.
         """
 
         def reset_offsets(consumer, partitions):
@@ -178,6 +179,37 @@ class KafkaEventConsumer:
             # We need to commit these offsets to Kafka in order to ensure these offsets are persisted.
             consumer.commit(offsets=partitions_with_offsets)
 
+        full_topic = get_full_topic(self.topic)
+        # Partition assignment will trigger the reset logic. This should happen on the first poll call,
+        # but will also happen any time the broker needs to rebalance partitions among the consumer
+        # group, which could happen repeatedly over the lifetime of this process.
+        self.consumer.subscribe([full_topic], on_assign=reset_offsets)
+
+        while True:
+            # Allow unit tests to break out of loop
+            if self._shut_down_loop:
+                break
+
+            # This log message may be noisy when we are replaying, but hopefully we only see it
+            # once every 30 seconds.
+            logger.info("Offsets are being reset. Sleeping instead of consuming events.")
+
+            # We are calling poll here because we believe the offsets will not be set
+            # correctly until poll is called, despite the offsets being reset in a different call.
+            # This is because we don't believe that the partitions for the current consumer are assigned
+            # until the first poll happens. Because we are not trying to consume any messages in this mode,
+            # we are deliberately calling poll without processing the message it returns
+            # or commiting the new offset.
+            self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
+
+            time.sleep(30)
+            continue
+
+    def _consume_indefinitely(self):
+        """
+        Consume events from a topic in an infinite loop.
+        """
+
         # This is already checked at the Command level, but it's possible this loop
         # could get called some other way, so check it here too.
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
@@ -205,7 +237,7 @@ class KafkaEventConsumer:
                 'consumer_group': self.group_id,
                 'expected_signal': self.signal,
             }
-            self.consumer.subscribe([full_topic], on_assign=reset_offsets)
+            self.consumer.subscribe([full_topic])
             logger.info(f"Running consumer for {run_context!r}")
 
             # How many errors have we seen in a row? If this climbs too high, exit with error.
@@ -219,23 +251,6 @@ class KafkaEventConsumer:
                 # Allow unit tests to break out of loop
                 if self._shut_down_loop:
                     break
-
-                # If offsets are set, do not consume events.
-                if offset_timestamp is not None:
-                    # This log message may be noisy when we are replaying, but hopefully we only see it
-                    # once every 30 seconds.
-                    logger.info("Offsets are being reset. Sleeping instead of consuming events.")
-
-                    # We are calling poll here because we believe the offsets will not be set
-                    # correctly until poll is called, despite the offsets being reset in a different call.
-                    # This is because we don't believe that the partitions for the current consumer are assigned
-                    # until the first poll happens. Because we are not trying to consume any messages in this mode,
-                    # we are deliberately calling poll without processing the message it returns
-                    # or commiting the new offset.
-                    self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
-
-                    time.sleep(30)
-                    continue
 
                 # Detect probably-broken consumer and exit with error.
                 if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
@@ -273,6 +288,27 @@ class KafkaEventConsumer:
                     self.consumer.commit(message=msg)
         finally:
             self.consumer.close()
+
+    def consume_indefinitely(self, offset_timestamp=None):
+        """
+        Consume events from a topic in an infinite loop.
+
+        Arguments:
+            offset_timestamp (datetime): Optional and deprecated; if supplied, calls
+                ``reset_offsets_and_sleep_indefinitely`` instead. Relying code should
+                switch to calling that method directly.
+        """
+        # TODO: Once this deprecated argument can be removed, just
+        # remove this delegation method entirely and rename
+        # `_consume_indefinitely` to no longer have the `_` prefix.
+        if offset_timestamp is None:
+            self._consume_indefinitely()
+        else:
+            warnings.warn(
+                "Calling consume_indefinitely with offset_timestamp is deprecated; "
+                "please call reset_offsets_and_sleep_indefinitely directly instead."
+            )
+            self.reset_offsets_and_sleep_indefinitely(offset_timestamp)
 
     def emit_signals_from_message(self, msg):
         """
@@ -540,6 +576,9 @@ class ConsumeEventsCommand(BaseCommand):
                 group_id=options['group_id'][0],
                 signal=signal,
             )
-            event_consumer.consume_indefinitely(offset_timestamp=offset_timestamp)
+            if offset_timestamp is None:
+                event_consumer.consume_indefinitely()
+            else:
+                event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=offset_timestamp)
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")
