@@ -149,7 +149,7 @@ class KafkaEventConsumer:
         Reset any assigned partitions to the given offset, and sleep indefinitely.
 
         Arguments:
-            offset_timestamp(datetime): reset the offsets of the consumer partitions to this timestamp
+            offset_timestamp (datetime): Reset the offsets of the consumer partitions to this timestamp.
         """
 
         def reset_offsets(consumer, partitions):
@@ -180,6 +180,9 @@ class KafkaEventConsumer:
             consumer.commit(offsets=partitions_with_offsets)
 
         full_topic = get_full_topic(self.topic)
+        # Partition assignment will trigger the reset logic. This should happen on the first poll call,
+        # but will also happen any time the broker needs to rebalance partitions among the consumer
+        # group, which could happen repeatedly over the lifetime of this process.
         self.consumer.subscribe([full_topic], on_assign=reset_offsets)
 
         while True:
@@ -290,8 +293,9 @@ class KafkaEventConsumer:
         """
         Consume events from a topic in an infinite loop.
 
-        Or, if timestamp supplied, call ``reset_offsets_indefinitely`` instead and do not consume.
-        This option is deprecated, and that method should be called directly instead.
+        Arguments:
+            offset_timestamp (datetime): Optional and deprecated; if supplied, call ``reset_offsets_indefinitely``
+                instead. Relying code should switch to calling that method directly.
         """
         # TODO: Once this deprecated argument can be removed, just
         # remove this delegation method entirely and rename
