@@ -27,7 +27,7 @@ The repository works together with the openedx/openedx-events repository to make
 Documentation
 *************
 
-To use this implementation of the Event Bus with openedx-events, set the following Django settings::
+To use this implementation of the Event Bus with openedx-events, you'll need to ensure that you include the dependency ``confluent_kafka[avro,schema-registry]`` (see `ADR 5 <https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst>`_ for an explanation) and set the following Django settings::
 
     EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS: ...
     EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL: ...

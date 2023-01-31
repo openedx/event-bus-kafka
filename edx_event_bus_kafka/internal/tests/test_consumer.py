@@ -605,6 +605,16 @@ class TestCommand(TestCase):
         assert not mock_create_consumer.called
         mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
 
+    @patch.dict('edx_event_bus_kafka.internal.consumer.__dict__', {'confluent_kafka': None})
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
+    def test_kafka_consumers_no_lib(self, mock_create_consumer, mock_logger):
+        call_command(Command(), topic='test', group_id='test', signal='')
+        assert not mock_create_consumer.called
+        mock_logger.error.assert_called_once_with(
+            "Cannot consume events because confluent_kafka dependency (or one of its extras) was not installed"
+        )
+
     @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
