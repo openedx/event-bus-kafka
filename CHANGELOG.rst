@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.7.1] - 2023-01-31
+********************
+Fixed
+=====
+* Consumer management command exits with useful error message if confluent-kafka library not available.
+
 [3.7.0] - 2023-01-30
 ********************
 Changed
