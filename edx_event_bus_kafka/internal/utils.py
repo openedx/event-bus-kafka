@@ -3,7 +3,6 @@ Utilities for converting between message headers and EventsMetadata
 """
 
 import logging
-import re
 from collections import defaultdict
 from datetime import datetime
 from typing import List, Tuple
@@ -41,8 +40,10 @@ HEADER_KEY_TO_EVENTSMETADATA_FIELD = {
     SOURCELIB_HEADER_KEY: 'sourcelib'
 }
 
+
 def _sourcelib_tuple_to_str(sourcelib: Tuple):
-    return ".".join(map(str,sourcelib))
+    return ".".join(map(str, sourcelib))
+
 
 def _sourcelib_str_to_tuple(sourcelib_as_str: str):
     return tuple(map(int, sourcelib_as_str.split(".")))
@@ -72,11 +73,11 @@ def _get_metadata_from_headers(headers: List[Tuple]):
         if len(header_values) == 0:
             # the id is required, everything else we make optional for now
             if header_key == ID_HEADER_KEY:
-                raise UnusableMessageError(f"Missing \"{header_key}\" header on message, cannot continue")
+                raise Exception(f"Missing \"{header_key}\" header on message, cannot continue")
             logger.warning(f"Missing \"{header_key}\" header on message, will use EventMetadata default")
             continue
         if len(header_values) > 1:
-            raise UnusableMessageError(
+            raise Exception(
                 f"Multiple \"{header_key}\" headers on message. Cannot determine correct metadata."
             )
         header_value = header_values[0].decode("utf-8")

@@ -356,7 +356,7 @@ class KafkaEventConsumer:
                                     # and will raise if it's present
                                     filter=filters.exclude(fields(EventsMetadata).event_type))
         except Exception as e:
-            raise UnusableMessageError(f"Error determining metadata from message headers: {e}")
+            raise UnusableMessageError(f"Error determining metadata from message headers: {e}") from e
         send_results = self.signal.send_event_with_custom_metadata(**event_metadata, **msg.value())
         # Raise an exception if any receivers errored out. This allows logging of the receivers
         # along with partition, offset, etc. in record_event_consuming_error. Hopefully the

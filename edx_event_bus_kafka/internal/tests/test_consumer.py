@@ -5,7 +5,7 @@ Tests for event_consumer module.
 import copy
 from datetime import datetime
 from typing import Optional
-from unittest.mock import ANY, Mock, call, patch
+from unittest.mock import Mock, call, patch
 from uuid import uuid1
 
 import ddt

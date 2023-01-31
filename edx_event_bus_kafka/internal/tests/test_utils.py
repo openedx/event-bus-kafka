@@ -8,16 +8,12 @@ from uuid import uuid1
 import attr
 import ddt
 import pytest
-from attrs import asdict, fields, filters
 from django.test import TestCase, override_settings
 from openedx_events.data import EventsMetadata
 
 from edx_event_bus_kafka.internal.utils import (
     EVENT_TYPE_HEADER_KEY,
     ID_HEADER_KEY,
-    MINORVERSION_HEADER_KEY,
-    SOURCE_HEADER_KEY,
-    SOURCEHOST_HEADER_KEY,
     SOURCELIB_HEADER_KEY,
     TIME_HEADER_KEY,
     _get_headers_from_metadata,
