@@ -563,9 +563,16 @@ class ConsumeEventsCommand(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if confluent_kafka is None:
+            logger.error(
+                "Cannot consume events because confluent_kafka dependency (or one of its extras) was not installed"
+            )
+            return
+
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
             logger.error("Kafka consumers not enabled, exiting.")
             return
+
         try:
             signal = OpenEdxPublicSignal.get_signal_by_type(options['signal'][0])
             if options['offset_time'] and options['offset_time'][0] is not None:
