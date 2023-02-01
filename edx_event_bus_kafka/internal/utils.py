@@ -10,35 +10,7 @@ from uuid import UUID
 
 import openedx_events.data as oed
 
-EVENT_TYPE_HEADER_KEY = "ce_type"
-ID_HEADER_KEY = "ce_id"
-SOURCE_HEADER_KEY = "ce_source"
-SPEC_VERSION_HEADER_KEY = "ce_specversion"
-TIME_HEADER_KEY = "ce_time"
-MINORVERSION_HEADER_KEY = "ce_minorversion"
-
-# not CloudEvent headers, so no "ce" prefix
-SOURCEHOST_HEADER_KEY = "sourcehost"
-SOURCELIB_HEADER_KEY = "sourcelib"
-
-# The documentation is unclear as to which of the following two headers to use for content type, so for now
-# use both
-CONTENT_TYPE_HEADER_KEY = "content-type"
-DATA_CONTENT_TYPE_HEADER_KEY = "ce_datacontenttype"
-
 logger = logging.getLogger(__name__)
-
-# We don't use the ce_type header when creating the EventsMetadata object because that is dealt with separately in the
-# consumer loop
-HEADER_KEY_TO_EVENTSMETADATA_FIELD = {
-    EVENT_TYPE_HEADER_KEY: 'event_type',
-    ID_HEADER_KEY: 'id',
-    MINORVERSION_HEADER_KEY: 'minorversion',
-    SOURCE_HEADER_KEY: 'source',
-    SOURCEHOST_HEADER_KEY: 'sourcehost',
-    TIME_HEADER_KEY: 'time',
-    SOURCELIB_HEADER_KEY: 'sourcelib'
-}
 
 
 def _sourcelib_tuple_to_str(sourcelib: Tuple):
@@ -47,6 +19,39 @@ def _sourcelib_tuple_to_str(sourcelib: Tuple):
 
 def _sourcelib_str_to_tuple(sourcelib_as_str: str):
     return tuple(map(int, sourcelib_as_str.split(".")))
+
+
+class MessageHeader:
+    _mapping = {}
+    instances = []
+
+    def __init__(self, message_header_key, event_metadata_field=None, to_metadata=None, from_metadata=None):
+        self.message_header_key = message_header_key
+        self.event_metadata_field = event_metadata_field
+        self.to_metadata = to_metadata or (lambda x: x)
+        self.from_metadata = from_metadata or (lambda x: x)
+        self.__class__.instances.append(self)
+        self.__class__._mapping[self.message_header_key] = self
+
+
+HEADER_EVENT_TYPE = MessageHeader("ce_type", event_metadata_field="event_type")
+HEADER_ID = MessageHeader("ce_id", event_metadata_field="id", from_metadata=str, to_metadata=UUID)
+HEADER_SOURCE = MessageHeader("ce_source", event_metadata_field="source")
+HEADER_SPEC_VERSION = MessageHeader("ce_specversion")
+HEADER_TIME = MessageHeader("ce_time", event_metadata_field="time",
+                            to_metadata=lambda x: datetime.fromisoformat(x), from_metadata=lambda x: x.isoformat())
+HEADER_MINORVERSION = MessageHeader("ce_minorversion", event_metadata_field="minorversion", to_metadata=int,
+                                    from_metadata=str)
+
+# not CloudEvent headers, so no "ce" prefix
+HEADER_SOURCEHOST = MessageHeader("sourcehost", event_metadata_field="sourcehost")
+HEADER_SOURCELIB = MessageHeader("sourcelib", event_metadata_field="sourcelib",
+                                 to_metadata=_sourcelib_str_to_tuple, from_metadata=_sourcelib_tuple_to_str)
+
+# The documentation is unclear as to which of the following two headers to use for content type, so for now
+# use both
+HEADER_CONTENT_TYPE = MessageHeader("content-type")
+HEADER_DATA_CONTENT_TYPE = MessageHeader("ce_datacontenttype")
 
 
 def _get_metadata_from_headers(headers: List[Tuple]):
@@ -68,11 +73,15 @@ def _get_metadata_from_headers(headers: List[Tuple]):
         headers_as_dict[key].append(value)
 
     # go through all the headers we care about and set the appropriate field
-    for header_key, metadata_field in HEADER_KEY_TO_EVENTSMETADATA_FIELD.items():
+    for header in MessageHeader.instances:
+        metadata_field = header.event_metadata_field
+        if not metadata_field:
+            continue
+        header_key = header.message_header_key
         header_values = headers_as_dict[header_key]
         if len(header_values) == 0:
             # the id is required, everything else we make optional for now
-            if header_key == ID_HEADER_KEY:
+            if header_key == HEADER_ID.message_header_key:
                 raise Exception(f"Missing \"{header_key}\" header on message, cannot continue")
             logger.warning(f"Missing \"{header_key}\" header on message, will use EventMetadata default")
             continue
@@ -81,16 +90,7 @@ def _get_metadata_from_headers(headers: List[Tuple]):
                 f"Multiple \"{header_key}\" headers on message. Cannot determine correct metadata."
             )
         header_value = header_values[0].decode("utf-8")
-        # some headers require conversion to the expected type
-        if header_key == ID_HEADER_KEY:
-            metadata_kwargs[metadata_field] = UUID(header_value)
-        elif header_key == TIME_HEADER_KEY:
-            metadata_kwargs[metadata_field] = datetime.fromisoformat(header_value)
-        elif header_key == SOURCELIB_HEADER_KEY:
-            metadata_kwargs[metadata_field] = _sourcelib_str_to_tuple(header_value)
-        else:
-            # these are all string values and don't need any conversion step
-            metadata_kwargs[metadata_field] = header_value
+        metadata_kwargs[header.event_metadata_field] = header.to_metadata(header_value)
     return oed.EventsMetadata(**metadata_kwargs)
 
 
@@ -108,19 +108,15 @@ def _get_headers_from_metadata(event_metadata: oed.EventsMetadata):
     """
     # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
     # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
-    return {
-        # The way EventMetadata is initialized none of these should ever be null.
-        # If it is we want the error to be raised.
-        EVENT_TYPE_HEADER_KEY: event_metadata.event_type.encode("utf-8"),
-        ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
-        SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
-        SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
-        TIME_HEADER_KEY: event_metadata.time.isoformat().encode("utf-8"),
-        MINORVERSION_HEADER_KEY: str(event_metadata.minorversion).encode("utf-8"),
-        SOURCELIB_HEADER_KEY: _sourcelib_tuple_to_str(event_metadata.sourcelib).encode("utf-8"),
-
+    values = {
         # Always 1.0. See "Fields" in OEP-41
-        SPEC_VERSION_HEADER_KEY: b'1.0',
-        CONTENT_TYPE_HEADER_KEY: b'application/avro',
-        DATA_CONTENT_TYPE_HEADER_KEY: b'application/avro',
+        HEADER_SPEC_VERSION.message_header_key: b'1.0',
+        HEADER_CONTENT_TYPE.message_header_key: b'application/avro',
+        HEADER_DATA_CONTENT_TYPE.message_header_key: b'application/avro',
     }
+    for header in MessageHeader.instances:
+        if not header.event_metadata_field:
+            continue
+        values[header.message_header_key] = header.from_metadata(getattr(event_metadata, header.event_metadata_field)).encode("utf8")
+
+    return values

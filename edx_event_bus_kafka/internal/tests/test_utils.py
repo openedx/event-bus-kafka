@@ -12,10 +12,10 @@ from django.test import TestCase, override_settings
 from openedx_events.data import EventsMetadata
 
 from edx_event_bus_kafka.internal.utils import (
-    EVENT_TYPE_HEADER_KEY,
-    ID_HEADER_KEY,
-    SOURCELIB_HEADER_KEY,
-    TIME_HEADER_KEY,
+    HEADER_EVENT_TYPE,
+    HEADER_ID,
+    HEADER_SOURCELIB,
+    HEADER_TIME,
     _get_headers_from_metadata,
     _get_metadata_from_headers,
 )
@@ -66,7 +66,8 @@ class TestUtils(TestCase):
             ('content-type', b'application/avro'),
             ('ce_datacontenttype', b'application/avro'),
             ('ce_time', b'2023-01-01T14:00:00+00:00'),
-            ('sourcelib', b'1.2.3')
+            ('sourcelib', b'1.2.3'),
+            ('minorversion', b'0')
         ]
         generated_metadata = _get_metadata_from_headers(headers)
         expected_metadata = EventsMetadata(
@@ -98,10 +99,10 @@ class TestUtils(TestCase):
         now = datetime.now(timezone.utc)
         mock_dt.now = Mock(return_value=now)
         headers = filter(lambda x: x[1] is not None, [
-            (ID_HEADER_KEY, msg_id),
-            (TIME_HEADER_KEY, msg_time),
-            (SOURCELIB_HEADER_KEY, source_lib),
-            (EVENT_TYPE_HEADER_KEY, b'abc')
+            (HEADER_ID.message_header_key, msg_id),
+            (HEADER_TIME.message_header_key, msg_time),
+            (HEADER_SOURCELIB.message_header_key, source_lib),
+            (HEADER_EVENT_TYPE.message_header_key, b'abc')
         ])
         if should_raise:
             with pytest.raises(Exception):
@@ -118,9 +119,9 @@ class TestUtils(TestCase):
         Check that we raise if there are duplicate headers
         """
         headers = [
-            (ID_HEADER_KEY, str(TEST_UUID).encode("utf-8")),
-            (ID_HEADER_KEY, str(uuid1()).encode("utf-8")),
-            (EVENT_TYPE_HEADER_KEY, b'abc')
+            (HEADER_ID.message_header_key, str(TEST_UUID).encode("utf-8")),
+            (HEADER_ID.message_header_key, str(uuid1()).encode("utf-8")),
+            (HEADER_EVENT_TYPE.message_header_key, b'abc')
         ]
         with pytest.raises(Exception) as exc_info:
             _get_metadata_from_headers(headers)
