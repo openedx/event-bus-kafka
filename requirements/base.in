@@ -3,6 +3,6 @@
 
 Django                                  # Web application framework
 # openedx-events 3.1.0 defines producer interface
-openedx-events>=4.2.0                   # Events API
+openedx-events>=4.2.0                   # EventsMetadata default fields
 edx_django_utils
 edx_toggles
