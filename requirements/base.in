@@ -2,7 +2,7 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# openedx-events 3.1.0 defines producer interface
-openedx-events>=4.2.0                   # EventsMetadata default fields
+# openedx-events 4.2.0 allows sending signals with custom metadata
+openedx-events>=4.2.0                   # Events API
 edx_django_utils
 edx_toggles
