@@ -22,6 +22,9 @@ def _sourcelib_str_to_tuple(sourcelib_as_str: str):
 
 
 class MessageHeader:
+    """
+    Utility class for converting between message headers and EventsMetadata objects
+    """
     _mapping = {}
     instances = []
 
@@ -39,7 +42,8 @@ HEADER_ID = MessageHeader("ce_id", event_metadata_field="id", from_metadata=str,
 HEADER_SOURCE = MessageHeader("ce_source", event_metadata_field="source")
 HEADER_SPEC_VERSION = MessageHeader("ce_specversion")
 HEADER_TIME = MessageHeader("ce_time", event_metadata_field="time",
-                            to_metadata=lambda x: datetime.fromisoformat(x), from_metadata=lambda x: x.isoformat())
+                            to_metadata=lambda x: datetime.fromisoformat(x),  # pylint: disable=unnecessary-lambda
+                            from_metadata=lambda x: x.isoformat())
 HEADER_MINORVERSION = MessageHeader("ce_minorversion", event_metadata_field="minorversion", to_metadata=int,
                                     from_metadata=str)
 
@@ -117,6 +121,7 @@ def _get_headers_from_metadata(event_metadata: oed.EventsMetadata):
     for header in MessageHeader.instances:
         if not header.event_metadata_field:
             continue
-        values[header.message_header_key] = header.from_metadata(getattr(event_metadata, header.event_metadata_field)).encode("utf8")
+        event_metadata_value = getattr(event_metadata, header.event_metadata_field)
+        values[header.message_header_key] = header.from_metadata(event_metadata_value).encode("utf8")
 
     return values
