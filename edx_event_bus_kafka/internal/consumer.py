@@ -81,6 +81,11 @@ class ReceiverError(Exception):
 def _reconnect_to_db_if_needed():
     """
     Reconnects the db connection if needed.
+
+    This is important because Django only does connection validity/age checks as part of
+    its request/response cycle, which isn't in effect for the consume-loop. If we don't
+    force these checks, a broken connection will remain broken indefinitely. For most
+    consumers, this will cause event processing to fail.
     """
     has_connection = bool(connection.connection)
     requires_reconnect = has_connection and not connection.is_usable()
@@ -560,8 +565,9 @@ class ConsumeEventsCommand(BaseCommand):
             nargs=1,
             required=False,
             default=None,
-            help='The timestamp (in ISO format) that we would like to set the consumers to read from on startup. '
-                  'Overrides existing offsets.'
+            help='The timestamp (in ISO format) that we would like to reset the consumers to. '
+                 'If this is used, the consumers will only reset the offsets of the topic '
+                 'but will not actually consume and process any messages.'
         )
 
     def handle(self, *args, **options):
