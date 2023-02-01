@@ -15,7 +15,7 @@ attrs==22.2.0
     #   -r requirements/test.txt
     #   openedx-events
     #   pytest
-avro==1.10.0
+avro==1.11.1
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -47,9 +47,9 @@ code-annotations==1.3.0
     # via
     #   -r requirements/test.txt
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==1.9.2
+confluent-kafka[avro,schema-registry]==2.0.2
     # via -r requirements/test.txt
-coverage[toml]==7.0.5
+coverage[toml]==7.1.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -99,7 +99,7 @@ exceptiongroup==1.1.0
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.7.0
+fastavro==1.7.1
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -148,7 +148,7 @@ newrelic==8.5.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-openedx-events==4.1.1
+openedx-events==4.2.0
     # via -r requirements/test.txt
 packaging==23.0
     # via
@@ -199,7 +199,7 @@ pytest-cov==4.0.0
     # via -r requirements/test.txt
 pytest-django==4.5.2
     # via -r requirements/test.txt
-python-slugify==7.0.0
+python-slugify==8.0.0
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -227,7 +227,7 @@ restructuredtext-lint==1.4.0
     # via doc8
 rfc3986==2.0.0
     # via twine
-rich==13.2.0
+rich==13.3.1
     # via twine
 secretstorage==3.3.3
     # via keyring
@@ -288,7 +288,7 @@ urllib3==1.26.14
     #   twine
 webencodings==0.5.1
     # via bleach
-zipp==3.11.0
+zipp==3.12.0
     # via
     #   importlib-metadata
     #   importlib-resources
