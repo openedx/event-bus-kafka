@@ -28,6 +28,9 @@ class TestUtils(TestCase):
     """ Tests for header conversion utils """
 
     def test_headers_from_event_metadata(self):
+        """
+        Check we can generate message headers from an EventsMetadata object
+        """
         with override_settings(SERVICE_VARIANT='test'):
             metadata = EventsMetadata(event_type="org.openedx.learning.auth.session.login.completed.v1",
                                       id=TEST_UUID,
@@ -50,6 +53,9 @@ class TestUtils(TestCase):
             })
 
     def test_metadata_from_headers(self):
+        """
+        Check we can generate an EventsMetadata object from valid message headers
+        """
         uuid = uuid1()
         headers = [
             ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
@@ -78,14 +84,17 @@ class TestUtils(TestCase):
 
     @patch('edx_event_bus_kafka.internal.utils.oed.datetime')
     @ddt.data(
-        (TEST_UUID_BYTES, None, None, False),
-        (b'bad-id', None, None, True),
-        (TEST_UUID_BYTES, b'0000', None, True),
-        (TEST_UUID_BYTES, None, b'bananas', True),
+        (TEST_UUID_BYTES, None, None, False),  # As long as we have a ce_id header, we can continue
+        (b'bad', None, None, True),  # bad uuid
+        (TEST_UUID_BYTES, b'bad', None, True),  # badly-formatted ce_time
+        (TEST_UUID_BYTES, None, b'bad', True),  # badly-formatted sourcelib
         (None, None, None, True),
     )
     @ddt.unpack
-    def test_metadata_from_missing_or_bad_headers(self, msg_id, msg_time, source_lib, should_raise, mock_dt):
+    def test_generate_metadata_from_missing_or_bad_headers(self, msg_id, msg_time, source_lib, should_raise, mock_dt):
+        """
+        Check that we raise an exception iff there are missing required headers, or some of them are unparseable
+        """
         now = datetime.now(timezone.utc)
         mock_dt.now = Mock(return_value=now)
         headers = filter(lambda x: x[1] is not None, [
@@ -103,3 +112,19 @@ class TestUtils(TestCase):
             expected_metadata = EventsMetadata(event_type="abc", id=TEST_UUID)
             generated_metadata = _get_metadata_from_headers(headers)
             self.assertDictEqual(attr.asdict(generated_metadata), attr.asdict(expected_metadata))
+
+    def test_generate_metadata_fails_with_duplicate_headers(self):
+        """
+        Check that we raise if there are duplicate headers
+        """
+        headers = [
+            (ID_HEADER_KEY, str(TEST_UUID).encode("utf-8")),
+            (ID_HEADER_KEY, str(uuid1()).encode("utf-8")),
+            (EVENT_TYPE_HEADER_KEY, b'abc')
+        ]
+        with pytest.raises(Exception) as exc_info:
+            _get_metadata_from_headers(headers)
+
+        assert exc_info.value.args == (
+            "Multiple \"ce_id\" headers on message. Cannot determine correct metadata.",
+        )
