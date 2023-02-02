@@ -87,7 +87,7 @@ def _get_metadata_from_headers(headers: List[Tuple]):
             # the id is required, everything else we make optional for now
             if header_key == HEADER_ID.message_header_key:
                 raise Exception(f"Missing \"{header_key}\" header on message, cannot continue")
-            logger.warning(f"Missing \"{header_key}\" header on message, will use EventMetadata default")
+            logger.warning(f"Missing \"{header_key}\" header on message, will use EventsMetadata default")
             continue
         if len(header_values) > 1:
             raise Exception(
@@ -102,16 +102,14 @@ def _get_headers_from_metadata(event_metadata: oed.EventsMetadata):
     """
     Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object.
 
-    This method assumes the EventMetadata object was the one sent with the event data to the original signal handler.
+    This method assumes the EventsMetadata object was the one sent with the event data to the original signal handler.
 
     Arguments:
         event_metadata: An EventsMetadata object sent by an OpenEdxPublicSignal
 
     Returns:
-        A dictionary of headers
+        A dictionary of headers where the keys are strings and values are binary
     """
-    # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
-    # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
     values = {
         # Always 1.0. See "Fields" in OEP-41
         HEADER_SPEC_VERSION.message_header_key: b'1.0',
@@ -122,6 +120,7 @@ def _get_headers_from_metadata(event_metadata: oed.EventsMetadata):
         if not header.event_metadata_field:
             continue
         event_metadata_value = getattr(event_metadata, header.event_metadata_field)
+        # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
         values[header.message_header_key] = header.from_metadata(event_metadata_value).encode("utf8")
 
     return values

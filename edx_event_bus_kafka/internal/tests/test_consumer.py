@@ -599,13 +599,12 @@ class TestEmitSignals(TestCase):
 
         The various kinds of bad headers are more fully tested in test_utils
         """
-        msg = copy.copy(self.normal_message)
-        msg._headers = [  # pylint: disable=protected-access
+        self.normal_message._headers = [  # pylint: disable=protected-access
             ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
             ('ce_id', b'bad_id')
         ]
         with pytest.raises(UnusableMessageError) as excinfo:
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.emit_signals_from_message(self.normal_message)
 
         assert excinfo.value.args == (
             "Error determining metadata from message headers: badly formed hexadecimal UUID string",
