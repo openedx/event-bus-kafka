@@ -23,6 +23,7 @@ from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
+from .utils import _get_headers_from_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +35,6 @@ try:
     from confluent_kafka.serialization import MessageField, SerializationContext
 except ImportError:  # pragma: no cover
     confluent_kafka = None
-
-# CloudEvent standard names for the event headers, see
-# https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
-EVENT_TYPE_HEADER_KEY = "ce_type"
-ID_HEADER_KEY = "ce_id"
-SOURCE_HEADER_KEY = "ce_source"
-SOURCEHOST_HEADER_KEY = "sourcehost"
-SPEC_VERSION_HEADER_KEY = "ce_specversion"
-# The documentation is unclear as to which of the following two headers to use for content type, so for now
-# use both
-CONTENT_TYPE_HEADER_KEY = "content-type"
-DATA_CONTENT_TYPE_HEADER_KEY = "ce_datacontenttype"
 
 
 def record_producing_error(error, context):
@@ -184,34 +173,6 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     )
 
     return key_serializer, value_serializer
-
-
-def _get_headers_from_metadata(event_metadata: EventsMetadata):
-    """
-    Create a dictionary of CloudEvent-compliant Kafka headers from an EventsMetadata object.
-
-    This method assumes the EventMetadata object was the one sent with the event data to the original signal handler.
-
-    Arguments:
-        event_metadata: An EventsMetadata object sent by an OpenEdxPublicSignal
-
-    Returns:
-        A dictionary of headers
-    """
-    # Dictionary (or list of key/value tuples) where keys are strings and values are binary.
-    # CloudEvents specifies using UTF-8; that should be the default, but let's make it explicit.
-    return {
-        # The way EventMetadata is initialized none of these should ever be null.
-        # If it is we want the error to be raised.
-        EVENT_TYPE_HEADER_KEY: event_metadata.event_type.encode("utf-8"),
-        ID_HEADER_KEY: str(event_metadata.id).encode("utf-8"),
-        SOURCE_HEADER_KEY: event_metadata.source.encode("utf-8"),
-        SOURCEHOST_HEADER_KEY: event_metadata.sourcehost.encode("utf-8"),
-        # Always 1.0. See "Fields" in OEP-41
-        SPEC_VERSION_HEADER_KEY: b'1.0',
-        CONTENT_TYPE_HEADER_KEY: b'application/avro',
-        DATA_CONTENT_TYPE_HEADER_KEY: b'application/avro',
-    }
 
 
 @attr.s(kw_only=True, repr=False)
