@@ -3,6 +3,7 @@
 
 Django                                  # Web application framework
 # openedx-events 5.0.0 has a breaking API change that requires code changes in this library
-openedx-events>=5.0.0                   # Events API
+#openedx-events>=5.0.0                   # Events API
+git+https://github.com/openedx/openedx-events.git@timmc/custom2#egg=openedx-events==5.0.0
 edx_django_utils
 edx_toggles

@@ -151,7 +151,7 @@ newrelic==8.5.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-openedx-events==4.2.0
+openedx-events @ git+https://github.com/openedx/openedx-events.git@timmc/custom2
     # via -r requirements/test.txt
 packaging==23.0
     # via
