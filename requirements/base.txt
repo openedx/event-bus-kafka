@@ -48,7 +48,7 @@ markupsafe==2.1.2
     # via jinja2
 newrelic==8.5.0
     # via edx-django-utils
-openedx-events==4.2.0
+openedx-events==5.0.0
     # via -r requirements/base.in
 pbr==5.11.1
     # via stevedore

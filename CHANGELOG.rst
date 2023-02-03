@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.8.1] - 2023-02-03
+********************
+Changed
+=======
+* Require and use openedx-events 5.0.0, which has a breaking API change that affects event bus consumers.
+
 [3.8.0] - 2023-01-31
 ********************
 Added
