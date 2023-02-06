@@ -44,6 +44,10 @@ except ImportError:  # pragma: no cover
 # .. toggle_creation_date: 2022-01-31
 KAFKA_CONSUMERS_ENABLED = SettingToggle('EVENT_BUS_KAFKA_CONSUMERS_ENABLED', default=True)
 
+# .. setting_name: EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT
+# .. setting_default: 1.0
+# .. setting_description: How long the consumer should wait, in seconds, for the Kafka broker
+#   to respond to a poll() call.
 CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT', 1.0)
 
 # .. setting_name: EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP

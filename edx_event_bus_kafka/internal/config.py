@@ -38,12 +38,27 @@ def get_schema_registry_client():
         warnings.warn('Library confluent-kafka not available. Cannot create schema registry client.')
         return None
 
+    # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL
+    # .. setting_default: None
+    # .. setting_description: URL of the Avro schema registry, required for managing the evolution
+    #   of event bus data and ensuring that consumers are able to decode the events that
+    #   are produced. This URL is required for both producers and consumers and must point
+    #   to an instance of Confluent Schema Registry:
+    #   https://docs.confluent.io/platform/current/schema-registry/index.html
     url = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL', None)
     if url is None:
         warnings.warn("Cannot configure event-bus-kafka: Missing setting EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL")
         return None
 
+    # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY
+    # .. setting_default: None
+    # .. setting_description: API key for talking to the Avro schema registry specified in
+    #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``.
     key = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY', '')
+    # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET
+    # .. setting_default: None
+    # .. setting_description: API secret for talking to the Avro schema registry specified in
+    #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``.
     secret = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET', '')
 
     return SchemaRegistryClient({
@@ -58,6 +73,11 @@ def load_common_settings() -> Optional[dict]:
 
     Warns and returns None if essential settings are missing.
     """
+    # .. setting_name: EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS
+    # .. setting_default: None
+    # .. setting_description: List of one or more Kafka bootstrap servers, a comma-separated
+    #   list of hosts and optional ports, and is required for both producers and consumers.
+    #   See https://kafka.apache.org/documentation/ for more info.
     bootstrap_servers = getattr(settings, 'EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS', None)
     if bootstrap_servers is None:
         warnings.warn("Cannot configure event-bus-kafka: Missing setting EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS")
@@ -67,7 +87,17 @@ def load_common_settings() -> Optional[dict]:
         'bootstrap.servers': bootstrap_servers,
     }
 
+    # .. setting_name: EVENT_BUS_KAFKA_API_KEY
+    # .. setting_default: None
+    # .. setting_description: Optional API key for connecting to the Kafka cluster
+    #   via SASL/PLAIN over TLS. Used as the SASL username. If not specified, no
+    #   authentication will be attempted.
     key = getattr(settings, 'EVENT_BUS_KAFKA_API_KEY', None)
+    # .. setting_name: EVENT_BUS_KAFKA_API_SECRET
+    # .. setting_default: None
+    # .. setting_description: Optional API secret for connecting to the Kafka cluster
+    #   via SASL/PLAIN over TLS. Used as the SASL password. If not specified, no
+    #   authentication will be attempted.
     secret = getattr(settings, 'EVENT_BUS_KAFKA_API_SECRET', None)
 
     if key and secret:

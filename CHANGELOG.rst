@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.9.2] - 2023-02-07
+********************
+Fixed
+=====
+* Added documentation to all Django settings used in consumer and producer
+
 [3.9.1] - 2023-02-07
 ********************
 There was no version 3.9.0, due to a release issue. (Ignore any ``v3.9.0`` tag.)
