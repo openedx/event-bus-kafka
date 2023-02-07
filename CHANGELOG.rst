@@ -14,8 +14,10 @@ Change Log
 Unreleased
 **********
 
-[3.9.0] - 2023-02-07
+[3.9.1] - 2023-02-07
 ********************
+There was no version 3.9.0, due to a release issue. (Ignore any ``v3.9.0`` tag.)
+
 Added
 =====
 * Added logging of successful message production, consumption, and processing (not just errors)
