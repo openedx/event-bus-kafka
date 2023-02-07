@@ -15,14 +15,21 @@ from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
-from .utils import _get_metadata_from_headers
+from .utils import (
+    AUDIT_LOGGING_ENABLED,
+    HEADER_EVENT_TYPE,
+    HEADER_ID,
+    _get_metadata_from_headers,
+    get_message_header_values,
+    last_message_header_value,
+)
 
 logger = logging.getLogger(__name__)
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import DeserializingConsumer
+    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, DeserializingConsumer
     from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
 except ImportError:  # pragma: no cover
@@ -47,11 +54,6 @@ CONSUMER_POLL_TIMEOUT = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_TIMEOUT
 #   involve receiving an unreadable event, but this could change in the future to be more
 #   specific to "no event received from broker".
 POLL_FAILURE_SLEEP = getattr(settings, 'EVENT_BUS_KAFKA_CONSUMER_POLL_FAILURE_SLEEP', 1.0)
-
-# CloudEvent standard name for the event type header, see
-# https://github.com/cloudevents/spec/blob/v1.0.1/kafka-protocol-binding.md#325-example
-EVENT_ID_HEADER = "ce_id"
-EVENT_TYPE_HEADER = "ce_type"
 
 
 class UnusableMessageError(Exception):
@@ -95,6 +97,8 @@ class KafkaEventConsumer:
     """
     Construct consumer for the given topic, group, and signal. The consumer can then
     emit events from the event bus using the configured signal.
+
+    Note that the topic should be specified here *without* the optional environment prefix.
 
     Can also consume messages indefinitely off the queue.
     """
@@ -322,6 +326,8 @@ class KafkaEventConsumer:
         Arguments:
             msg (Message): Consumed message.
         """
+        self._log_message_received(msg)
+
         # DeserializingConsumer.poll() always returns either a valid message
         # or None, and raises an exception in all other cases. This means
         # we don't need to check msg.error() ourselves. But... check it here
@@ -333,25 +339,21 @@ class KafkaEventConsumer:
 
         headers = msg.headers() or []  # treat None as []
 
-        event_types = [value for key, value in headers if key == EVENT_TYPE_HEADER]
+        event_types = get_message_header_values(headers, HEADER_EVENT_TYPE)
         if len(event_types) == 0:
             raise UnusableMessageError(
-                f"Missing {EVENT_TYPE_HEADER} header on message, cannot determine signal"
+                "Missing ce_type header on message, cannot determine signal"
             )
         if len(event_types) > 1:
             raise UnusableMessageError(
-                f"Multiple {EVENT_TYPE_HEADER} headers found on message, cannot determine signal"
+                "Multiple ce_type headers found on message, cannot determine signal"
             )
-
         event_type = event_types[0]
 
-        # CloudEvents specifies using UTF-8 for header values, so let's be explicit.
-        event_type_str = event_type.decode("utf-8")
-
-        if event_type_str != self.signal.event_type:
+        if event_type != self.signal.event_type:
             raise UnusableMessageError(
                 f"Signal types do not match. Expected {self.signal.event_type}. "
-                f"Received message of type {event_type_str}."
+                f"Received message of type {event_type}."
             )
         try:
             event_metadata = _get_metadata_from_headers(headers)
@@ -362,6 +364,13 @@ class KafkaEventConsumer:
         # along with partition, offset, etc. in record_event_consuming_error. Hopefully the
         # receiver code is idempotent and we can just replay any messages that were involved.
         self._check_receiver_results(send_results)
+
+        # At the very end, log that a message was processed successfully.
+        # Since we're single-threaded, no other information is needed;
+        # we just need the logger to spit this out with a timestamp.
+        # See ADR: docs/decisions/0010_audit_logging.rst
+        if AUDIT_LOGGING_ENABLED.is_enabled():
+            logger.info('Message from Kafka processed successfully')
 
     def _check_receiver_results(self, send_results: list):
         """
@@ -394,6 +403,39 @@ class KafkaEventConsumer:
                 f"when handling signal {self.signal}: {', '.join(error_descriptions)}",
                 errors
             )
+
+    def _log_message_received(self, msg):
+        """
+        Log that a message was received, for audit log purposes.
+
+        See ADR: docs/decisions/0010_audit_logging.rst
+
+        This will not be sufficient to reconstruct the message; it will just
+        be enough to establish a timeline during debugging and to find a message
+        by offset.
+        """
+        if not AUDIT_LOGGING_ENABLED.is_enabled():
+            return
+
+        try:
+            message_id = last_message_header_value(msg.headers(), HEADER_ID)
+
+            (ts_type, timestamp_ms) = msg.timestamp()
+            if ts_type == TIMESTAMP_NOT_AVAILABLE:
+                timestamp_info = "none"
+            else:
+                # Could be produce time or broker receive time; not going to bother to specify here.
+                timestamp_info = str(timestamp_ms)
+
+            # See ADR for details on why certain fields were included or omitted.
+            logger.info(
+                f'Message received from Kafka: topic={msg.topic()}, partition={msg.partition()}, '
+                f'offset={msg.offset()}, message_id={message_id}, key={msg.key()}, '
+                f'event_timestamp_ms={timestamp_info}'
+            )
+        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
+            # Use this to fix any bugs in what should be benign logging code
+            set_custom_attribute('kafka_logging_error', repr(e))
 
     def record_event_consuming_error(self, run_context, error, maybe_message):
         """
@@ -458,14 +500,13 @@ class KafkaEventConsumer:
                 # .. custom_attribute_description: The offset of the message.
                 set_custom_attribute('kafka_offset', kafka_message.offset())
                 headers = kafka_message.headers() or []  # treat None as []
-                # header is list of tuples, so handle case with duplicate headers for same key
-                message_ids = [value.decode("utf-8") for key, value in headers if key == EVENT_ID_HEADER]
+                message_ids = get_message_header_values(headers, HEADER_ID)
                 if len(message_ids) > 0:
                     # .. custom_attribute_name: kafka_message_id
                     # .. custom_attribute_description: The message id which can be matched to the logs. Note that the
                     #   header in the logs will use 'ce_id'.
                     set_custom_attribute('kafka_message_id', ",".join(message_ids))
-                event_types = [value.decode("utf-8") for key, value in headers if key == EVENT_TYPE_HEADER]
+                event_types = get_message_header_values(headers, HEADER_EVENT_TYPE)
                 if len(event_types) > 0:
                     # .. custom_attribute_name: kafka_event_type
                     # .. custom_attribute_description: The event type of the message. Note that the header in the logs

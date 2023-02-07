@@ -9,6 +9,7 @@ import warnings
 from unittest import TestCase
 from unittest.mock import ANY, Mock, call, patch
 
+import ddt
 import openedx_events.event_bus
 import openedx_events.learning.signals
 import pytest
@@ -27,6 +28,7 @@ except ImportError:  # pragma: no cover
     pass
 
 
+@ddt.ddt
 class TestEventProducer(TestCase):
     """Test producer."""
 
@@ -106,11 +108,20 @@ class TestEventProducer(TestCase):
             assert isinstance(openedx_events.event_bus.get_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
-    def test_on_event_deliver(self, mock_logger):
+    @ddt.data(
+        (True, [('ce_id', b'id7890')], 'id7890'),
+        (True, None, 'None'),
+        (False, 'N/A', 'N/A'),
+    )
+    @ddt.unpack
+    def test_on_event_deliver(self, audit_logging, headers, exp_msg_id, mock_logger):
+        # TODO: Move FakeMessage from test_consumer to common module and use it here
         fake_event = Mock()
         fake_event.topic.return_value = 'some_topic'
-        fake_event.key.return_value = 'some_key'
         fake_event.partition.return_value = 'some_partition'
+        fake_event.offset.return_value = 12345
+        fake_event.headers.return_value = headers
+        fake_event.key.return_value = 'some_key'
 
         # simple producing context, we check the full object in other tests
         context = ep.ProducingContext(full_topic='some_topic')
@@ -124,10 +135,16 @@ class TestEventProducer(TestCase):
         assert "full_topic='some_topic'" in error_string
         assert "error=problem!" in error_string
 
-        context.on_event_deliver(None, fake_event)
-        mock_logger.info.assert_called_once_with(
-            'Event delivered to topic some_topic; key=some_key; partition=some_partition'
-        )
+        with override_settings(EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED=audit_logging):
+            context.on_event_deliver(None, fake_event)
+
+        if audit_logging:
+            mock_logger.info.assert_called_once_with(
+                'Message delivered to Kafka event bus: topic=some_topic, partition=some_partition, '
+                f'offset=12345, message_id={exp_msg_id}, key=some_key'
+            )
+        else:
+            mock_logger.info.assert_not_called()
 
     # Mock out the serializers for this one so we don't have to deal
     # with expected Avro bytes -- and they can't call their schema server.

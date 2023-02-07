@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.9.0] - 2023-02-07
+********************
+Added
+=====
+* Added logging of successful message production, consumption, and processing (not just errors)
+
 [3.8.1] - 2023-02-03
 ********************
 Changed
