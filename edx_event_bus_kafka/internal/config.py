@@ -51,12 +51,12 @@ def get_schema_registry_client():
         return None
 
     # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY
-    # .. setting_default: None
+    # .. setting_default: ''
     # .. setting_description: API key for talking to the Avro schema registry specified in
     #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``.
     key = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY', '')
     # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET
-    # .. setting_default: None
+    # .. setting_default: ''
     # .. setting_description: API secret for talking to the Avro schema registry specified in
     #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``.
     secret = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET', '')
