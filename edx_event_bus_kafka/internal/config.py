@@ -45,6 +45,8 @@ def get_schema_registry_client():
     #   are produced. This URL is required for both producers and consumers and must point
     #   to an instance of Confluent Schema Registry:
     #   https://docs.confluent.io/platform/current/schema-registry/index.html
+    #   If needed, auth information must be added to ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY``
+    #   and ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET``.
     url = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL', None)
     if url is None:
         warnings.warn("Cannot configure event-bus-kafka: Missing setting EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL")
@@ -53,12 +55,12 @@ def get_schema_registry_client():
     # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY
     # .. setting_default: ''
     # .. setting_description: API key for talking to the Avro schema registry specified in
-    #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``.
+    #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``. Optional.
     key = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY', '')
     # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET
     # .. setting_default: ''
     # .. setting_description: API secret for talking to the Avro schema registry specified in
-    #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``.
+    #   ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL``. Optional.
     secret = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET', '')
 
     return SchemaRegistryClient({
