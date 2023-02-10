@@ -14,7 +14,13 @@ Change Log
 Unreleased
 **********
 
-[3.9.2] - 2023-02-07
+[3.9.3] - 2023-02-10
+********************
+Fixed
+=====
+* Include ``message_id`` in audit log when message is produced (was ``None``)
+
+[3.9.2] - 2023-02-08
 ********************
 Fixed
 =====
