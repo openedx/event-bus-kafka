@@ -53,11 +53,11 @@ coverage[toml]==7.1.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==39.0.0
+cryptography==39.0.1
     # via secretstorage
 ddt==1.6.0
     # via -r requirements/test.txt
-django==3.2.16
+django==3.2.17
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/test.txt
@@ -144,7 +144,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==9.0.0
     # via jaraco-classes
-newrelic==8.5.0
+newrelic==8.6.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -246,7 +246,7 @@ sphinxcontrib-applehelp==1.0.4
     # via sphinx
 sphinxcontrib-devhelp==1.0.2
     # via sphinx
-sphinxcontrib-htmlhelp==2.0.0
+sphinxcontrib-htmlhelp==2.0.1
     # via sphinx
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
@@ -288,7 +288,7 @@ urllib3==1.26.14
     #   twine
 webencodings==0.5.1
     # via bleach
-zipp==3.12.0
+zipp==3.13.0
     # via
     #   importlib-metadata
     #   importlib-resources
