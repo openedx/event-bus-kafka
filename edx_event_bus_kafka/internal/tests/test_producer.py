@@ -20,6 +20,7 @@ from openedx_events.event_bus.avro.tests.test_utilities import SubTestData0, cre
 from openedx_events.learning.data import UserData, UserPersonalData
 
 import edx_event_bus_kafka.internal.producer as ep
+from edx_event_bus_kafka.internal.tests.test_utils import FakeMessage
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -108,23 +109,28 @@ class TestEventProducer(TestCase):
             assert isinstance(openedx_events.event_bus.get_producer(), ep.KafkaEventProducer)
 
     @patch('edx_event_bus_kafka.internal.producer.logger')
-    @ddt.data(
-        (True, [('ce_id', b'id7890')], 'id7890'),
-        (True, None, 'None'),
-        (False, 'N/A', 'N/A'),
-    )
-    @ddt.unpack
-    def test_on_event_deliver(self, audit_logging, headers, exp_msg_id, mock_logger):
-        # TODO: Move FakeMessage from test_consumer to common module and use it here
-        fake_event = Mock()
-        fake_event.topic.return_value = 'some_topic'
-        fake_event.partition.return_value = 'some_partition'
-        fake_event.offset.return_value = 12345
-        fake_event.headers.return_value = headers
-        fake_event.key.return_value = 'some_key'
+    @ddt.data(True, False)
+    def test_on_event_deliver(self, audit_logging, mock_logger):
+        metadata = EventsMetadata(
+            event_type=self.signal.event_type,
+            time=datetime.datetime.now(datetime.timezone.utc),
+            sourcelib=(1, 2, 3),
+        )
 
-        # simple producing context, we check the full object in other tests
-        context = ep.ProducingContext(full_topic='some_topic')
+        context = ep.ProducingContext(
+            full_topic='some_topic',
+            event_key='foobob',
+            signal=self.signal,
+            initial_topic='bare_topic',
+            event_key_field='a.key.field',
+            event_data=self.event_data,
+            event_metadata=metadata,
+        )
+
+        fake_event = FakeMessage(
+            topic=context.full_topic, partition='some_partition', offset=12345,
+            key=b'\x00\x00\x00\x00\x01\x0cfoobob',
+        )
 
         # ensure on_event_deliver reports the entire calling context if there was an error
         context.on_event_deliver(Exception("problem!"), fake_event)
@@ -135,13 +141,20 @@ class TestEventProducer(TestCase):
         assert "full_topic='some_topic'" in error_string
         assert "error=problem!" in error_string
 
-        with override_settings(EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED=audit_logging):
-            context.on_event_deliver(None, fake_event)
+        # Now check behavior with a delivered event
+        with patch.object(FakeMessage, 'headers') as mock_headers:
+            with override_settings(EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED=audit_logging):
+                context.on_event_deliver(None, fake_event)
+
+        # We know that headers() is not implemented yet for the delivery
+        # callback, so fail early in unit tests if someone tries to use it.
+        # https://github.com/confluentinc/confluent-kafka-python/issues/574
+        mock_headers.assert_not_called()
 
         if audit_logging:
             mock_logger.info.assert_called_once_with(
                 'Message delivered to Kafka event bus: topic=some_topic, partition=some_partition, '
-                f'offset=12345, message_id={exp_msg_id}, key=some_key'
+                f'offset=12345, message_id={metadata.id}, key=b\'\\x00\\x00\\x00\\x00\\x01\\x0cfoobob\''
             )
         else:
             mock_logger.info.assert_not_called()

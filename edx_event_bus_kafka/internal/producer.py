@@ -23,7 +23,7 @@ from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
 from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
-from .utils import AUDIT_LOGGING_ENABLED, HEADER_ID, _get_headers_from_metadata, last_message_header_value
+from .utils import AUDIT_LOGGING_ENABLED, _get_headers_from_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +211,9 @@ class ProducingContext:
             if not AUDIT_LOGGING_ENABLED.is_enabled():
                 return
 
-            message_id = last_message_header_value(evt.headers() or [], HEADER_ID)
+            # `evt.headers()` is None in this callback, so we need to use the bound data.
+            # https://github.com/confluentinc/confluent-kafka-python/issues/574
+            message_id = self.event_metadata.id
             # See ADR for details on why certain fields were included or omitted.
             logger.info(
                 f"Message delivered to Kafka event bus: topic={evt.topic()}, partition={evt.partition()}, "
