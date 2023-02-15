@@ -8,7 +8,7 @@ asgiref==3.6.0
     # via
     #   -r requirements/test.txt
     #   django
-astroid==2.13.3
+astroid==2.14.2
     # via
     #   pylint
     #   pylint-celery
@@ -56,13 +56,13 @@ coverage[toml]==7.1.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==39.0.0
+cryptography==39.0.1
     # via secretstorage
 ddt==1.6.0
     # via -r requirements/test.txt
 dill==0.3.6
     # via pylint
-django==3.2.16
+django==3.2.17
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/test.txt
@@ -147,7 +147,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==9.0.0
     # via jaraco-classes
-newrelic==8.5.0
+newrelic==8.6.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -163,7 +163,7 @@ pbr==5.11.1
     #   stevedore
 pkginfo==1.9.6
     # via twine
-platformdirs==2.6.2
+platformdirs==3.0.0
     # via pylint
 pluggy==1.0.0
     # via
@@ -185,7 +185,7 @@ pygments==2.14.0
     # via
     #   readme-renderer
     #   rich
-pylint==2.15.10
+pylint==2.16.2
     # via
     #   edx-lint
     #   pylint-celery
@@ -254,7 +254,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/test.txt
     #   django
-stevedore==4.1.1
+stevedore==5.0.0
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -288,7 +288,7 @@ webencodings==0.5.1
     # via bleach
 wrapt==1.14.1
     # via astroid
-zipp==3.12.0
+zipp==3.13.0
     # via
     #   importlib-metadata
     #   importlib-resources

@@ -8,7 +8,7 @@ asgiref==3.6.0
     # via
     #   -r requirements/quality.txt
     #   django
-astroid==2.13.3
+astroid==2.14.2
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -75,7 +75,7 @@ coverage[toml]==7.1.0
     #   -r requirements/quality.txt
     #   codecov
     #   pytest-cov
-cryptography==39.0.0
+cryptography==39.0.1
     # via
     #   -r requirements/quality.txt
     #   secretstorage
@@ -91,7 +91,7 @@ distlib==0.3.6
     # via
     #   -r requirements/ci.txt
     #   virtualenv
-django==3.2.16
+django==3.2.17
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/quality.txt
@@ -206,7 +206,7 @@ more-itertools==9.0.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
-newrelic==8.5.0
+newrelic==8.6.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
@@ -226,13 +226,13 @@ pbr==5.11.1
     # via
     #   -r requirements/quality.txt
     #   stevedore
-pip-tools==6.12.1
+pip-tools==6.12.2
     # via -r requirements/pip-tools.txt
 pkginfo==1.9.6
     # via
     #   -r requirements/quality.txt
     #   twine
-platformdirs==2.6.2
+platformdirs==3.0.0
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -269,7 +269,7 @@ pygments==2.14.0
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.15.10
+pylint==2.16.2
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -366,7 +366,7 @@ sqlparse==0.4.3
     # via
     #   -r requirements/quality.txt
     #   django
-stevedore==4.1.1
+stevedore==5.0.0
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -412,7 +412,7 @@ urllib3==1.26.14
     #   -r requirements/quality.txt
     #   requests
     #   twine
-virtualenv==20.17.1
+virtualenv==20.19.0
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -428,7 +428,7 @@ wrapt==1.14.1
     # via
     #   -r requirements/quality.txt
     #   astroid
-zipp==3.12.0
+zipp==3.13.0
     # via
     #   -r requirements/quality.txt
     #   importlib-metadata
