@@ -187,7 +187,7 @@ class TestEventProducer(TestCase):
                 'ce_time': now.isoformat().encode("utf8"),
                 'ce_minorversion': b'0',
                 'sourcelib': b'1.2.3',
-        }
+            }
 
         mock_producer.produce.assert_called_once_with(
             'prod-user-stuff', key=b'key-bytes-here', value=b'value-bytes-here', on_delivery=ANY,
@@ -239,10 +239,10 @@ class TestEventProducer(TestCase):
     def test_full_event_data_present_in_kafka_error(self, mock_logger, *args):
         simple_signal = create_simple_signal({'test_data': SubTestData0})
         with override_settings(
-            EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-            EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
-            EVENT_BUS_TOPIC_PREFIX='dev',
-            SERVICE_VARIANT='test',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                EVENT_BUS_TOPIC_PREFIX='dev',
+                SERVICE_VARIANT='test',
         ):
             producer_api = ep.create_producer()
             metadata = EventsMetadata(event_type=simple_signal.event_type, minorversion=0)
