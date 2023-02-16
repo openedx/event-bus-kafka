@@ -13,6 +13,7 @@ import ddt
 import openedx_events.event_bus
 import openedx_events.learning.signals
 import pytest
+from django.core.management import call_command
 from django.test import override_settings
 from openedx_events.data import EventsMetadata
 from openedx_events.event_bus.avro.serializer import AvroSignalSerializer
@@ -21,6 +22,7 @@ from openedx_events.learning.data import UserData, UserPersonalData
 
 import edx_event_bus_kafka.internal.producer as ep
 from edx_event_bus_kafka.internal.tests.test_utils import FakeMessage
+from edx_event_bus_kafka.management.commands.produce_event import Command
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -355,3 +357,36 @@ class TestEventProducer(TestCase):
             # headers are tested elsewhere, we just want to verify the topics
             headers=ANY,
         )
+
+
+class TestCommand(TestCase):
+    """
+    Test produce_event management command
+    """
+    @override_settings(
+      EVENT_BUS_TOPIC_PREFIX='dev',
+      EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+      EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+    )
+    @patch('edx_event_bus_kafka.management.commands.produce_event.logger')
+    @patch('edx_event_bus_kafka.internal.producer.SerializationContext')
+    def test_command(self, _, fake_logger):
+        producer_api = ep.create_producer()
+        mocked_producer = Mock(autospec=True)
+        producer_api.producer = mocked_producer
+
+        with patch('edx_event_bus_kafka.management.commands.produce_event.create_producer') as mock_create_producer:
+            with patch('edx_event_bus_kafka.internal.producer.AvroSerializer',
+                       return_value=lambda _x, _y: b'bytes-here'):
+                mock_create_producer.return_value = producer_api
+                call_command(Command(),
+                             topic=['test'],
+                             signal=['openedx_events.learning.signals.SESSION_LOGIN_COMPLETED'],
+                             data=['{"user": {"id": 123, "is_active": true,'
+                                   ' "pii":{"username": "foobob", "email": "bob@foo.example", "name": "Bob Foo"}}}'],
+                             key_field=['user.pii.username'],
+                             )
+        # Actual event producing is tested elsewhere, this is just to make sure the command produces *something*
+        mocked_producer.produce.assert_called_once_with('dev-test', key=b'bytes-here', value=b'bytes-here',
+                                                        on_delivery=ANY, headers=ANY,)
+        fake_logger.exception.assert_not_called()
