@@ -98,14 +98,14 @@ class TestEventProducer(TestCase):
         Also tests basic compliance with the implementation-loader API in openedx-events.
         """
         with override_settings(
-            EVENT_BUS_PRODUCER='edx_event_bus_kafka.create_producer',
-            EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-            EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
-            EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
-            EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
-            # include these just to maximize code coverage
-            EVENT_BUS_KAFKA_API_KEY='some_other_key',
-            EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
+                EVENT_BUS_PRODUCER='edx_event_bus_kafka.create_producer',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY='some_key',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET='some_secret',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                # include these just to maximize code coverage
+                EVENT_BUS_KAFKA_API_KEY='some_other_key',
+                EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
         ):
             assert isinstance(openedx_events.event_bus.get_producer(), ep.KafkaEventProducer)
 
@@ -159,10 +159,10 @@ class TestEventProducer(TestCase):
     )
     def test_send_to_event_bus(self, mock_get_serializers):
         with override_settings(
-            EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-            EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
-            EVENT_BUS_TOPIC_PREFIX='prod',
-            SERVICE_VARIANT='test',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                EVENT_BUS_TOPIC_PREFIX='prod',
+                SERVICE_VARIANT='test',
         ):
             now = datetime.datetime.now(datetime.timezone.utc)
             metadata = EventsMetadata(event_type=self.signal.event_type,
@@ -177,16 +177,16 @@ class TestEventProducer(TestCase):
         mock_get_serializers.assert_called_once_with(self.signal, 'user.id')
 
         expected_headers = {
-            'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
-            'ce_id': str(metadata.id).encode("utf8"),
-            'ce_source': b'openedx/test/web',
-            'sourcehost': metadata.sourcehost.encode("utf8"),
-            'ce_specversion': b'1.0',
-            'content-type': b'application/avro',
-            'ce_datacontenttype': b'application/avro',
-            'ce_time': now.isoformat().encode("utf8"),
-            'ce_minorversion': b'0',
-            'sourcelib': b'1.2.3',
+                'ce_type': b'org.openedx.learning.auth.session.login.completed.v1',
+                'ce_id': str(metadata.id).encode("utf8"),
+                'ce_source': b'openedx/test/web',
+                'sourcehost': metadata.sourcehost.encode("utf8"),
+                'ce_specversion': b'1.0',
+                'content-type': b'application/avro',
+                'ce_datacontenttype': b'application/avro',
+                'ce_time': now.isoformat().encode("utf8"),
+                'ce_minorversion': b'0',
+                'sourcelib': b'1.2.3',
         }
 
         mock_producer.produce.assert_called_once_with(
@@ -205,10 +205,10 @@ class TestEventProducer(TestCase):
     def test_full_event_data_present_in_key_extraction_error(self, mock_logger, *args):
         simple_signal = create_simple_signal({'test_data': SubTestData0})
         with override_settings(
-            EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
-            EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
-            EVENT_BUS_TOPIC_PREFIX='dev',
-            SERVICE_VARIANT='test',
+                EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+                EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+                EVENT_BUS_TOPIC_PREFIX='dev',
+                SERVICE_VARIANT='test',
         ):
             metadata = EventsMetadata(event_type=simple_signal.event_type, minorversion=0)
             producer_api = ep.create_producer()
