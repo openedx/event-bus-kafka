@@ -363,10 +363,12 @@ class TestCommand(TestCase):
     """
     Test produce_event management command
     """
+    @override_settings(
+      EVENT_BUS_TOPIC_PREFIX='dev',
+      EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+      EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+    )
     @patch('edx_event_bus_kafka.management.commands.produce_event.logger')
-    @override_settings(EVENT_BUS_TOPIC_PREFIX='dev')
-    @override_settings(EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345')
-    @override_settings(EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321')
     @patch('edx_event_bus_kafka.internal.producer.SerializationContext')
     def test_command(self, _, fake_logger):
         producer_api = ep.create_producer()
