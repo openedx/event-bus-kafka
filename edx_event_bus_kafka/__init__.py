@@ -9,4 +9,4 @@ See ADR ``docs/decisions/0006-public-api-and-app-organization.rst`` for the reas
 from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer
 from edx_event_bus_kafka.internal.producer import KafkaEventProducer, create_producer
 
-__version__ = '3.9.1'
+__version__ = '3.9.2'

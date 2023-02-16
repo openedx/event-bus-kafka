@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[3.9.2] - 2023-02-16
+********************
+
+Fixed
+=====
+* produce_event management command fixed to pass required events_metadata parameter
+
 [3.9.1] - 2023-02-07
 ********************
 There was no version 3.9.0, due to a release issue. (Ignore any ``v3.9.0`` tag.)

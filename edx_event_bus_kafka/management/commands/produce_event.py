@@ -9,6 +9,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 from django.utils.module_loading import import_string
+from openedx_events.data import EventsMetadata
 
 from edx_event_bus_kafka.internal.producer import create_producer
 
@@ -52,12 +53,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
+            signal = import_string(options['signal'][0])
+            event_type = signal.event_type
             producer = create_producer()
             producer.send(
-                signal=import_string(options['signal'][0]),
+                signal=signal,
                 topic=options['topic'][0],
                 event_key_field=options['key_field'][0],
                 event_data=json.loads(options['data'][0]),
+                event_metadata=EventsMetadata(event_type=event_type),
             )
             producer.prepare_for_shutdown()  # otherwise command may exit before delivery is complete
         except Exception:  # pylint: disable=broad-except
