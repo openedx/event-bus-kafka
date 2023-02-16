@@ -7,7 +7,7 @@ import gc
 import time
 import warnings
 from unittest import TestCase
-from unittest.mock import ANY, MagicMock, Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import ddt
 import openedx_events.event_bus
@@ -357,7 +357,7 @@ class TestCommand(TestCase):
     @patch('edx_event_bus_kafka.internal.producer.SerializationContext')
     def test_command(self, _, fake_logger):
         producer_api = ep.create_producer()
-        mocked_producer = MagicMock(autospec=True)
+        mocked_producer = Mock(autospec=True)
         producer_api.producer = mocked_producer
 
         with patch('edx_event_bus_kafka.management.commands.produce_event.create_producer') as mock_create_producer:
