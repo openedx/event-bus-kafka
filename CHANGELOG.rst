@@ -14,12 +14,24 @@ Change Log
 Unreleased
 **********
 
-[3.9.2] - 2023-02-16
+[3.9.4] - 2023-02-16
 ********************
 
 Fixed
 =====
 * produce_event management command fixed to pass required events_metadata parameter
+
+[3.9.3] - 2023-02-10
+********************
+Fixed
+=====
+* Include ``message_id`` in audit log when message is produced (was ``None``)
+
+[3.9.2] - 2023-02-08
+********************
+Fixed
+=====
+* Added documentation to all Django settings used in consumer and producer
 
 [3.9.1] - 2023-02-07
 ********************

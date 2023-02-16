@@ -4,7 +4,6 @@ Tests for event_consumer module.
 
 import copy
 from datetime import datetime
-from typing import Optional
 from unittest.mock import Mock, call, patch
 from uuid import uuid1
 
@@ -17,6 +16,7 @@ from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 
 from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer, ReceiverError, UnusableMessageError
+from edx_event_bus_kafka.internal.tests.test_utils import FakeMessage, side_effects
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
@@ -31,86 +31,6 @@ try:
     from confluent_kafka.error import ConsumeError
 except ImportError as e:  # pragma: no cover
     pass
-
-
-def side_effects(functions: list):
-    """
-    Given a list of functions, return a new function that will call each one in turn
-    on successive invocations. (The returned function ignores any arguments it is
-    called with.) Each function's return value will be returned. Behavior is
-    undefined if insufficient functions are supplied.
-    """
-    f_iter = iter(functions)
-
-    def inner(*_args, **_kwargs):
-        nonlocal f_iter
-        return next(f_iter)()
-
-    return inner
-
-
-class TestUtils(TestCase):
-    """Tests for local unit test utilities."""
-
-    def test_side_effects(self):
-        f = side_effects([
-            lambda: 5,
-            lambda: 1/0,
-            lambda: 6,
-        ])
-        assert f() == 5
-        with pytest.raises(ArithmeticError):
-            f()
-        assert f(1, 2, 3, a=4, b=5) == 6
-
-
-class FakeMessage:
-    """
-    A fake confluent_kafka.cimpl.Message that we can actually construct for mocking.
-
-    See https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#message
-    """
-
-    def __init__(
-            self, topic: Optional[str] = None, partition: Optional[int] = None, offset: Optional[int] = None,
-            headers: Optional[list] = None, key: Optional[bytes] = None, value=None,
-            error=None, timestamp=None
-    ):
-        self._topic = topic
-        self._partition = partition
-        self._offset = offset
-        self._headers = headers
-        self._key = key
-        self._value = value
-        self._error = error
-        self._timestamp = timestamp
-
-    def topic(self) -> Optional[str]:
-        return self._topic
-
-    def partition(self) -> Optional[int]:
-        return self._partition
-
-    def offset(self) -> Optional[int]:
-        return self._offset
-
-    def headers(self) -> Optional[list]:
-        """List of str/bytes key/value pairs."""
-        return self._headers
-
-    def key(self) -> Optional[bytes]:
-        """Bytes (Avro)."""
-        return self._key
-
-    def value(self):
-        """Deserialized event value."""
-        return self._value
-
-    def error(self):
-        return self._error
-
-    def timestamp(self):
-        return self._timestamp
 
 
 def fake_receiver_returns_quietly(**kwargs):
