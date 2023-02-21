@@ -85,11 +85,11 @@ markupsafe==2.1.2
     # via
     #   -r requirements/base.txt
     #   jinja2
-newrelic==8.6.0
+newrelic==8.7.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==5.0.0
+openedx-events==5.1.0
     # via -r requirements/base.txt
 packaging==23.0
     # via pytest
