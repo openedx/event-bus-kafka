@@ -653,16 +653,3 @@ class TestCommand(TestCase):
         call_command(Command(), topic='test', group_id='test', signal='openedx', offset_time=['notatimestamp'])
         mock_logger.exception.assert_any_call("Could not parse the offset timestamp.")
         mock_logger.exception.assert_called_with("Error consuming Kafka events")
-
-    def test_all_signals_loaded_before_lookup(self):
-        """
-        Test that all signals are loaded before get_signal_by_type
-
-        This is a little fragile because it assumes that
-        """
-        call_command(
-            Command(),
-            topic='test',
-            group_id='test',
-            signal='openedx',
-        )
