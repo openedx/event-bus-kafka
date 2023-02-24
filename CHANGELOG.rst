@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[3.9.5] - 2023-02-24
+********************
+
+Fixed
+=====
+* load all signals in consume_events command before running the consumer
+
 [3.9.4] - 2023-02-16
 ********************
 
