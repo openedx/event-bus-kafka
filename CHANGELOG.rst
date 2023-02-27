@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[3.9.5] - 2023-02-24
+********************
+
+Fixed
+=====
+* ``consume_events`` command now loads all public signals so that the consumer can load signals by ``event_type`` even if their modules were not already imported
+
 [3.9.4] - 2023-02-16
 ********************
 

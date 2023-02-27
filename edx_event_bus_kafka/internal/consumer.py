@@ -12,7 +12,7 @@ from django.db import connection
 from edx_django_utils.monitoring import record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
-from openedx_events.tooling import OpenEdxPublicSignal
+from openedx_events.tooling import OpenEdxPublicSignal, load_all_signals
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
 from .utils import (
@@ -622,6 +622,7 @@ class ConsumeEventsCommand(BaseCommand):
             return
 
         try:
+            load_all_signals()
             signal = OpenEdxPublicSignal.get_signal_by_type(options['signal'][0])
             if options['offset_time'] and options['offset_time'][0] is not None:
                 try:
