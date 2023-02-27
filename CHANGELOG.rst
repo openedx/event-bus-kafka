@@ -19,7 +19,7 @@ Unreleased
 
 Fixed
 =====
-* load all signals in consume_events command before running the consumer
+* ``consume_events`` command now loads all public signals so that the consumer can load signals by ``event_type`` even if their modules were not already imported
 
 [3.9.4] - 2023-02-16
 ********************
