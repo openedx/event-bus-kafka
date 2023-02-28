@@ -9,7 +9,7 @@ from datetime import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
-from edx_django_utils.monitoring import record_exception, set_custom_attribute
+from edx_django_utils.monitoring import function_trace, record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
 from openedx_events.tooling import OpenEdxPublicSignal, load_all_signals
@@ -273,11 +273,12 @@ class KafkaEventConsumer:
                 try:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
-                        # Before processing, make sure our db connection is still active
-                        _reconnect_to_db_if_needed()
+                        with function_trace('_consume_indefinitely_consume_single_message'):
+                            # Before processing, make sure our db connection is still active
+                            _reconnect_to_db_if_needed()
 
-                        self.emit_signals_from_message(msg)
-                        consecutive_errors = 0
+                            self.emit_signals_from_message(msg)
+                            consecutive_errors = 0
 
                     self._add_message_monitoring(run_context=run_context, message=msg)
                 except Exception as e:  # pylint: disable=broad-except
@@ -323,6 +324,7 @@ class KafkaEventConsumer:
             )
             self.reset_offsets_and_sleep_indefinitely(offset_timestamp)
 
+    @function_trace('emit_signals_from_message')
     def emit_signals_from_message(self, msg):
         """
         Determine the correct signal and send the event from the message.
@@ -363,7 +365,10 @@ class KafkaEventConsumer:
             event_metadata = _get_metadata_from_headers(headers)
         except Exception as e:
             raise UnusableMessageError(f"Error determining metadata from message headers: {e}") from e
-        send_results = self.signal.send_event_with_custom_metadata(event_metadata, **msg.value())
+
+        with function_trace('emit_signals_from_message_send_event_with_custom_metadata'):
+            send_results = self.signal.send_event_with_custom_metadata(event_metadata, **msg.value())
+
         # Raise an exception if any receivers errored out. This allows logging of the receivers
         # along with partition, offset, etc. in record_event_consuming_error. Hopefully the
         # receiver code is idempotent and we can just replay any messages that were involved.

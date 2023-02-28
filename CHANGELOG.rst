@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[3.9.6] - 2023-02-24
+********************
+Added
+=====
+* Add function tracing to the event consumption workflow for better monitoring.
+
 [3.9.5] - 2023-02-24
 ********************
 
