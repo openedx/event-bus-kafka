@@ -69,7 +69,7 @@ codecov==2.1.12
     # via -r requirements/ci.txt
 confluent-kafka[avro,schema-registry]==2.0.2
     # via -r requirements/quality.txt
-coverage[toml]==7.1.0
+coverage[toml]==7.2.1
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -81,7 +81,7 @@ cryptography==39.0.1
     #   secretstorage
 ddt==1.6.0
     # via -r requirements/quality.txt
-diff-cover==7.4.0
+diff-cover==7.5.0
     # via -r requirements/dev.in
 dill==0.3.6
     # via
@@ -132,7 +132,7 @@ exceptiongroup==1.1.0
     # via
     #   -r requirements/quality.txt
     #   pytest
-fastavro==1.7.1
+fastavro==1.7.2
     # via
     #   -r requirements/quality.txt
     #   confluent-kafka
@@ -186,7 +186,7 @@ lazy-object-proxy==1.9.0
     # via
     #   -r requirements/quality.txt
     #   astroid
-markdown-it-py==2.1.0
+markdown-it-py==2.2.0
     # via
     #   -r requirements/quality.txt
     #   rich
@@ -202,7 +202,7 @@ mdurl==0.1.2
     # via
     #   -r requirements/quality.txt
     #   markdown-it-py
-more-itertools==9.0.0
+more-itertools==9.1.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
@@ -210,7 +210,7 @@ newrelic==8.7.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
-openedx-events==5.1.0
+openedx-events==6.0.0
     # via -r requirements/quality.txt
 packaging==23.0
     # via
@@ -245,7 +245,7 @@ pluggy==1.0.0
     #   diff-cover
     #   pytest
     #   tox
-polib==1.1.1
+polib==1.2.0
     # via edx-i18n-tools
 psutil==5.9.4
     # via
@@ -310,7 +310,7 @@ pytest-cov==4.0.0
     # via -r requirements/quality.txt
 pytest-django==4.5.2
     # via -r requirements/quality.txt
-python-slugify==8.0.0
+python-slugify==8.0.1
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -424,11 +424,11 @@ wheel==0.38.4
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
-wrapt==1.14.1
+wrapt==1.15.0
     # via
     #   -r requirements/quality.txt
     #   astroid
-zipp==3.14.0
+zipp==3.15.0
     # via
     #   -r requirements/quality.txt
     #   importlib-metadata
