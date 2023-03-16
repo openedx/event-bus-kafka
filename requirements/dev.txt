@@ -128,11 +128,11 @@ edx-opaque-keys[django]==2.3.0
     #   openedx-events
 edx-toggles==5.0.0
     # via -r requirements/quality.txt
-exceptiongroup==1.1.0
+exceptiongroup==1.1.1
     # via
     #   -r requirements/quality.txt
     #   pytest
-fastavro==1.7.2
+fastavro==1.7.3
     # via
     #   -r requirements/quality.txt
     #   confluent-kafka
@@ -210,7 +210,7 @@ newrelic==8.7.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
-openedx-events==6.0.0
+openedx-events==7.0.0
     # via -r requirements/quality.txt
 packaging==23.0
     # via
@@ -232,7 +232,7 @@ pkginfo==1.9.6
     # via
     #   -r requirements/quality.txt
     #   twine
-platformdirs==3.1.0
+platformdirs==3.1.1
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -269,7 +269,7 @@ pygments==2.14.0
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.16.4
+pylint==2.17.0
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -406,13 +406,13 @@ typing-extensions==4.5.0
     #   astroid
     #   pylint
     #   rich
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   requests
     #   twine
-virtualenv==20.20.0
+virtualenv==20.21.0
     # via
     #   -r requirements/ci.txt
     #   tox

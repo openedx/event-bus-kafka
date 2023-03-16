@@ -95,11 +95,11 @@ edx-sphinx-theme==3.1.0
     # via -r requirements/doc.in
 edx-toggles==5.0.0
     # via -r requirements/test.txt
-exceptiongroup==1.1.0
+exceptiongroup==1.1.1
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.7.2
+fastavro==1.7.3
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -148,7 +148,7 @@ newrelic==8.7.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-openedx-events==6.0.0
+openedx-events==7.0.0
     # via -r requirements/test.txt
 packaging==23.0
     # via
@@ -281,7 +281,7 @@ twine==4.0.2
     # via -r requirements/doc.in
 typing-extensions==4.5.0
     # via rich
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   -r requirements/test.txt
     #   requests
