@@ -8,7 +8,7 @@ asgiref==3.6.0
     # via
     #   -r requirements/quality.txt
     #   django
-astroid==2.15.0
+astroid==2.15.2
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -69,13 +69,13 @@ codecov==2.1.12
     # via -r requirements/ci.txt
 confluent-kafka[avro,schema-registry]==2.0.2
     # via -r requirements/quality.txt
-coverage[toml]==7.2.1
+coverage[toml]==7.2.2
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   codecov
     #   pytest-cov
-cryptography==39.0.2
+cryptography==40.0.1
     # via
     #   -r requirements/quality.txt
     #   secretstorage
@@ -114,13 +114,13 @@ docutils==0.19
     # via
     #   -r requirements/quality.txt
     #   readme-renderer
-edx-django-utils==5.2.0
+edx-django-utils==5.3.0
     # via
     #   -r requirements/quality.txt
     #   edx-toggles
 edx-i18n-tools==0.9.2
     # via -r requirements/dev.in
-edx-lint==5.3.2
+edx-lint==5.3.4
     # via -r requirements/quality.txt
 edx-opaque-keys[django]==2.3.0
     # via
@@ -137,7 +137,7 @@ fastavro==1.7.3
     #   -r requirements/quality.txt
     #   confluent-kafka
     #   openedx-events
-filelock==3.9.0
+filelock==3.10.7
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -147,7 +147,7 @@ idna==3.4
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   requests
-importlib-metadata==6.0.0
+importlib-metadata==6.1.0
     # via
     #   -r requirements/quality.txt
     #   keyring
@@ -206,7 +206,7 @@ more-itertools==9.1.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
-newrelic==8.7.0
+newrelic==8.8.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
@@ -232,7 +232,7 @@ pkginfo==1.9.6
     # via
     #   -r requirements/quality.txt
     #   twine
-platformdirs==3.1.1
+platformdirs==3.2.0
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -269,7 +269,7 @@ pygments==2.14.0
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.17.0
+pylint==2.17.2
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -314,7 +314,7 @@ python-slugify==8.0.1
     # via
     #   -r requirements/quality.txt
     #   code-annotations
-pytz==2022.7.1
+pytz==2023.3
     # via
     #   -r requirements/quality.txt
     #   django
@@ -343,7 +343,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements/quality.txt
     #   twine
-rich==13.3.2
+rich==13.3.3
     # via
     #   -r requirements/quality.txt
     #   twine
@@ -387,7 +387,7 @@ tomli==2.0.1
     #   pyproject-hooks
     #   pytest
     #   tox
-tomlkit==0.11.6
+tomlkit==0.11.7
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -420,7 +420,7 @@ webencodings==0.5.1
     # via
     #   -r requirements/quality.txt
     #   bleach
-wheel==0.38.4
+wheel==0.40.0
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
