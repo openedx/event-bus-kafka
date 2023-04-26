@@ -2,7 +2,7 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# openedx-events 6.0.0 has load_all_signals()
-openedx-events>=6.0.0                   # Events API
+# TODO: update as soon as https://github.com/openedx/openedx-events/pull/200 is merged
+git+https://github.com/open-craft/openedx-events@navin/load-consumer
 edx_django_utils
 edx_toggles

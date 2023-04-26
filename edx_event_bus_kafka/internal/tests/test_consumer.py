@@ -9,7 +9,6 @@ from uuid import uuid1
 
 import ddt
 import pytest
-from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
@@ -23,7 +22,6 @@ from edx_event_bus_kafka.internal.consumer import (
     get_deserializer,
 )
 from edx_event_bus_kafka.internal.tests.test_utils import FakeMessage, side_effects
-from edx_event_bus_kafka.management.commands.consume_events import Command
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -136,7 +134,8 @@ class TestEmitSignals(TestCase):
         test_time = datetime.now()
         self.event_consumer.consumer = Mock()
         self.event_consumer._shut_down()  # pylint: disable=protected-access
-        self.event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=test_time)
+        self.event_consumer.offset_time = test_time
+        self.event_consumer.reset_offsets_and_sleep_indefinitely()
         reset_offsets = self.event_consumer.consumer.subscribe.call_args[1]['on_assign']
         partitions = [TopicPartition('dummy_topic', 0, 0), TopicPartition('dummy_topic', 1, 0)]
         self.event_consumer.consumer.offsets_for_times.return_value = partitions
@@ -298,10 +297,23 @@ class TestEmitSignals(TestCase):
     def test_no_consume_with_offsets(self, mock_sleep, mock_logger):
         mock_consumer = Mock(**{'poll.return_value': self.normal_message}, autospec=True)
         self.event_consumer.consumer = mock_consumer
+        self.event_consumer.offset_time = datetime.now()
         mock_sleep.side_effect = side_effects([self.event_consumer._shut_down])  # pylint: disable=protected-access
-        self.event_consumer.consume_indefinitely(offset_timestamp=0)
+        self.event_consumer.consume_indefinitely()
         mock_sleep.assert_called_with(30)
         mock_logger.info.assert_any_call('Offsets are being reset. Sleeping instead of consuming events.')
+
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
+    )
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_no_consume_with_bad_offset_timestamp(self, mock_logger):
+        with pytest.raises(Exception) as exc_info:
+            KafkaEventConsumer('some-topic', 'test_group_id', offset_time="12345")
+        assert exc_info.value.args == ("Invalid isoformat string: '12345'",)
+        mock_logger.exception.assert_any_call('Could not parse the offset timestamp.')
 
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
@@ -659,61 +671,3 @@ class TestEmitSignals(TestCase):
         assert excinfo.value.args == (
             "Cannot create Kafka deserializer -- missing library or settings",
         )
-
-
-class TestCommand(TestCase):
-    """
-    Tests for the consume_events management command
-    """
-
-    @override_settings(EVENT_BUS_KAFKA_CONSUMERS_ENABLED=False)
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    def test_kafka_consumers_disabled(self, mock_create_consumer, mock_logger):
-        call_command(Command(), topic='test', group_id='test')
-        assert not mock_create_consumer.called
-        mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
-
-    @patch.dict('edx_event_bus_kafka.internal.consumer.__dict__', {'confluent_kafka': None})
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    def test_kafka_consumers_no_lib(self, mock_create_consumer, mock_logger):
-        call_command(Command(), topic='test', group_id='test')
-        assert not mock_create_consumer.called
-        mock_logger.error.assert_called_once_with(
-            "Cannot consume events because confluent_kafka dependency (or one of its extras) was not installed"
-        )
-
-    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
-    def test_kafka_consumers_normal(self, mock_consume, mock_create_consumer, _gsbt):
-        call_command(
-            Command(),
-            topic='test',
-            group_id='test',
-        )
-        assert mock_create_consumer.called
-        assert mock_consume.called
-
-    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.reset_offsets_and_sleep_indefinitely')
-    def test_kafka_consumers_with_timestamp(self, mock_reset_offsets, mock_create_consumer, _gsbt):
-        call_command(
-            Command(),
-            topic='test',
-            group_id='test',
-            offset_time=['2019-05-18T15:17:08.132263']
-        )
-        assert mock_create_consumer.called
-        assert mock_reset_offsets.called
-
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
-    @patch('edx_event_bus_kafka.internal.consumer.OpenEdxPublicSignal.get_signal_by_type')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
-    @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
-    def test_kafka_consumers_with_bad_timestamp(self, _ci, _cc, _gsbt, mock_logger):
-        call_command(Command(), topic='test', group_id='test', offset_time=['notatimestamp'])
-        mock_logger.exception.assert_any_call("Could not parse the offset timestamp.")
-        mock_logger.exception.assert_called_with("Error consuming Kafka events")
