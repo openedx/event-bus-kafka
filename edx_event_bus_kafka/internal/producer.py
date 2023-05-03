@@ -170,7 +170,10 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
         schema_str=signal_serializer.schema_string(),
         schema_registry_client=client,
         to_dict=inner_to_dict,
+        conf={'auto.register.schemas':False, 'use.latest.version':True}
     )
+
+    logger.info(f"schema: {signal_serializer.schema_string()}")
 
     return key_serializer, value_serializer
 
@@ -272,6 +275,7 @@ class KafkaEventProducer(EventBusProducer):
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
             value_bytes = value_serializer(event_data, SerializationContext(full_topic, MessageField.VALUE, headers))
+            logger.info("Producing event, internal")
             self.producer.produce(
                 full_topic, key=key_bytes, value=value_bytes, headers=headers,
                 on_delivery=context.on_event_deliver,
@@ -349,7 +353,7 @@ def create_producer() -> Optional[KafkaEventProducer]:
     producer_settings = load_common_settings()
     if producer_settings is None:
         return None
-
+    logger.info("Creating producer")
     return KafkaEventProducer(Producer(producer_settings))
 
 
