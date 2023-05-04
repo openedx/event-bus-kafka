@@ -101,7 +101,6 @@ class TestEmitSignals(TestCase):
             timestamp=(TIMESTAMP_CREATE_TIME, 1675114920123),
         )
 
-
         self.mock_receiver = Mock()
         self.signal = SESSION_LOGIN_COMPLETED
         self.signal.connect(fake_receiver_returns_quietly)
@@ -483,9 +482,10 @@ class TestEmitSignals(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit_success_tolerates_missing_timestamp(self, mock_logger, mock_set_attribute):
         self.signal.disconnect(fake_receiver_raises_error)  # just successes for this one!
-        self.deserialized_normal_message._timestamp = (TIMESTAMP_NOT_AVAILABLE, None)  # pylint: disable=protected-access
+        deserialized_message = self.deserialized_normal_message
+        deserialized_message._timestamp = (TIMESTAMP_NOT_AVAILABLE, None)  # pylint: disable=protected-access
 
-        self.event_consumer.emit_signals_from_deserialized_message(self.deserialized_normal_message, self.signal)
+        self.event_consumer.emit_signals_from_deserialized_message(deserialized_message, self.signal)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         # Specifically, not called with 'kafka_logging_error'
         mock_set_attribute.assert_not_called()

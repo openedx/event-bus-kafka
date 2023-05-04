@@ -29,10 +29,10 @@ logger = logging.getLogger(__name__)
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, DeserializingConsumer, Consumer
+    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, Consumer
     from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
-    from confluent_kafka.serialization import SerializationContext, MessageField
+    from confluent_kafka.serialization import MessageField, SerializationContext
 except ImportError:  # pragma: no cover
     confluent_kafka = None
 
@@ -260,6 +260,8 @@ class KafkaEventConsumer:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         with function_trace('_consume_indefinitely_consume_single_message'):
+                            # Before processing, make sure our db connection is still active
+                            _reconnect_to_db_if_needed()
                             self.consume_single_message(msg, run_context)
                             consecutive_errors = 0
                         self._add_message_monitoring(run_context=run_context, message=msg)
@@ -287,8 +289,13 @@ class KafkaEventConsumer:
             self.consumer.close()
 
     def consume_single_message(self, msg, run_context):
-        # Before processing, make sure our db connection is still active
-        _reconnect_to_db_if_needed()
+        """
+        Deserialize a single message and emit the associated signal with the message data
+
+        Parameters:
+            msg: A raw message from Kafka
+            run_context: A dictionary of information about the consumer, for logging
+        """
 
         # determine the event type of the message and use it to create a deserializer
         all_msg_headers = msg.headers()
@@ -297,7 +304,6 @@ class KafkaEventConsumer:
         try:
             signal = OpenEdxPublicSignal.get_signal_by_type(event_type)
         except KeyError as ke:
-            breakpoint()
             raise UnusableMessageError(f"Unrecognized event_type {event_type}, cannot determine signal") from ke
         run_context['expected_signal'] = signal
 
@@ -346,10 +352,13 @@ class KafkaEventConsumer:
     @function_trace('emit_signals_from_deserialized_message')
     def emit_signals_from_deserialized_message(self, msg, signal):
         """
-        Determine the correct signal and send the event from the message.
+        Send the event from the message.
+
+        This method expects that the caller has already determined the correct signal from the message headers
 
         Arguments:
-            msg (Message): Consumed message with the value deserialized
+            msg (Message): Deserialized message
+            signal (OpenEdxPublicSignal): The signal determined by the message headers.
         """
         self._log_message_received(msg)
 
@@ -369,7 +378,7 @@ class KafkaEventConsumer:
         except Exception as e:
             raise UnusableMessageError(f"Error determining metadata from message headers: {e}") from e
 
-        with function_trace('emit_signals_from_message_send_event_with_custom_metadata'):
+        with function_trace('emit_signals_from_deserialized_message_send_event_with_custom_metadata'):
             send_results = signal.send_event_with_custom_metadata(event_metadata, **msg.value())
 
         # Raise an exception if any receivers errored out. This allows logging of the receivers
@@ -538,6 +547,12 @@ class KafkaEventConsumer:
             set_custom_attribute('kafka_monitoring_error', repr(e))
 
     def _determine_event_type(self, headers):
+        """
+        Get event type from message headers
+
+        Arguments:
+            headers: List of key/value tuples. Keys are strings, values are bytestrings.
+        """
         event_types = get_message_header_values(headers, HEADER_EVENT_TYPE)
         if len(event_types) == 0:
             raise UnusableMessageError(
