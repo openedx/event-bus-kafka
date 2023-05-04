@@ -92,8 +92,11 @@ class FakeMessage:
         return self._key
 
     def value(self):
-        """Deserialized event value."""
+        """Event value (in bytes(Avro) or JSON)"""
         return self._value
+
+    def set_value(self, new_value):
+        self._value = new_value
 
     def error(self):
         return self._error

@@ -275,6 +275,7 @@ class KafkaEventProducer(EventBusProducer):
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
             key_bytes = key_serializer(event_key, SerializationContext(full_topic, MessageField.KEY, headers))
             value_bytes = value_serializer(event_data, SerializationContext(full_topic, MessageField.VALUE, headers))
+            logger.info(f"{value_bytes=}")
             self.producer.produce(
                 full_topic, key=key_bytes, value=value_bytes, headers=headers,
                 on_delivery=context.on_event_deliver,

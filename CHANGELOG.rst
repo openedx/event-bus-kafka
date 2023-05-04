@@ -14,6 +14,11 @@ Change Log
 Unreleased
 **********
 
+[4.0.0] - 2023-05-04
+********************
+Changed
+=======
+* **BREAKING CHANGE**: consume_events no longer takes the signal as an argument. Consumers determine how to deserialize based on the signal type in the message header.
 * Switch from ``edx-sphinx-theme`` to ``sphinx-book-theme`` since the former is
   deprecated
 

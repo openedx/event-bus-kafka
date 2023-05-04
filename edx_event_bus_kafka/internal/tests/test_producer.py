@@ -358,7 +358,6 @@ class TestEventProducer(TestCase):
             headers=ANY,
         )
 
-
 class TestCommand(TestCase):
     """
     Test produce_event management command
@@ -390,3 +389,4 @@ class TestCommand(TestCase):
         mocked_producer.produce.assert_called_once_with('dev-test', key=b'bytes-here', value=b'bytes-here',
                                                         on_delivery=ANY, headers=ANY,)
         fake_logger.exception.assert_not_called()
+

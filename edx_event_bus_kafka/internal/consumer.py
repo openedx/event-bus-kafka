@@ -117,19 +117,17 @@ class KafkaEventConsumer:
         self.consumer = self._create_consumer()
         self._shut_down_loop = False
 
-    # return type (Optional[DeserializingConsumer]) removed from signature to avoid error on import
+    # return type (Optional[Consumer]) removed from signature to avoid error on import
     def _create_consumer(self):
         """
-        Create a DeserializingConsumer for events of the given signal instance.
+        Create a new Consumer in the consumer group.
 
         Returns
             None if confluent_kafka is not available.
-            DeserializingConsumer if it is.
+            Consumer if it is.
         """
         consumer_config = load_common_settings()
 
-        # We do not deserialize the key because we don't need it for anything yet.
-        # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
         consumer_config.update({
             'group.id': self.group_id,
             # Turn off auto commit. Auto commit will commit offsets for the entire batch of messages received,
@@ -262,31 +260,10 @@ class KafkaEventConsumer:
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         with function_trace('_consume_indefinitely_consume_single_message'):
-                            # Before processing, make sure our db connection is still active
-                            _reconnect_to_db_if_needed()
-                            ctx = SerializationContext(msg.topic(), MessageField.VALUE, msg.headers())
-                            value = msg.value()
-                            event_type = get_message_header_values(msg.headers(), HEADER_EVENT_TYPE)[0]
-                            the_signal = OpenEdxPublicSignal.get_signal_by_type(event_type)
-                            signal_deserializer = AvroSignalDeserializer(the_signal)
-
-                            schema_registry_client = get_schema_registry_client()
-
-
-                            def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
-                                return signal_deserializer.from_dict(event_data_dict)
-
-                            full_deserializer = AvroDeserializer(schema_str=signal_deserializer.schema_string(),
-                                                                 schema_registry_client=schema_registry_client,
-                                                                from_dict=inner_from_dict)
-                            logger.info(f"{full_deserializer=}")
-                            new_value = full_deserializer(value, ctx)
-                            msg.set_value(new_value)
-
-                            self.emit_signals_from_message(msg, the_signal)
+                            self.consume_single_message(msg, run_context)
                             consecutive_errors = 0
+                        self._add_message_monitoring(run_context=run_context, message=msg)
 
-                    self._add_message_monitoring(run_context=run_context, message=msg)
                 except Exception as e:  # pylint: disable=broad-except
                     consecutive_errors += 1
                     self.record_event_consuming_error(run_context, e, msg)
@@ -309,6 +286,42 @@ class KafkaEventConsumer:
         finally:
             self.consumer.close()
 
+    def consume_single_message(self, msg, run_context):
+        # Before processing, make sure our db connection is still active
+        _reconnect_to_db_if_needed()
+
+        # determine the event type of the message and use it to create a deserializer
+        all_msg_headers = msg.headers()
+        event_type = self._determine_event_type(all_msg_headers)
+        signal = None
+        try:
+            signal = OpenEdxPublicSignal.get_signal_by_type(event_type)
+        except KeyError as ke:
+            breakpoint()
+            raise UnusableMessageError(f"Unrecognized event_type {event_type}, cannot determine signal") from ke
+        run_context['expected_signal'] = signal
+
+        ctx = SerializationContext(msg.topic(), MessageField.VALUE, all_msg_headers)
+        value = msg.value()
+        signal_deserializer = AvroSignalDeserializer(signal)
+        schema_registry_client = get_schema_registry_client()
+
+        def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
+            return signal_deserializer.from_dict(event_data_dict)
+
+        # We do not deserialize the key because we don't need it for anything yet.
+        # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on
+        # determining key schema.
+        value_deserializer = AvroDeserializer(schema_str=signal_deserializer.schema_string(),
+                                              schema_registry_client=schema_registry_client,
+                                              from_dict=inner_from_dict)
+        deserialized_value = value_deserializer(value, ctx)
+
+        # set the value of the message to the new deserialized version
+        msg.set_value(deserialized_value)
+
+        self.emit_signals_from_deserialized_message(msg, signal)
+
     def consume_indefinitely(self, offset_timestamp=None):
         """
         Consume events from a topic in an infinite loop.
@@ -330,13 +343,13 @@ class KafkaEventConsumer:
             )
             self.reset_offsets_and_sleep_indefinitely(offset_timestamp)
 
-    @function_trace('emit_signals_from_message')
-    def emit_signals_from_message(self, msg, signal):
+    @function_trace('emit_signals_from_deserialized_message')
+    def emit_signals_from_deserialized_message(self, msg, signal):
         """
         Determine the correct signal and send the event from the message.
 
         Arguments:
-            msg (Message): Consumed message.
+            msg (Message): Consumed message with the value deserialized
         """
         self._log_message_received(msg)
 
@@ -362,7 +375,7 @@ class KafkaEventConsumer:
         # Raise an exception if any receivers errored out. This allows logging of the receivers
         # along with partition, offset, etc. in record_event_consuming_error. Hopefully the
         # receiver code is idempotent and we can just replay any messages that were involved.
-        self._check_receiver_results(send_results)
+        self._check_receiver_results(send_results, signal)
 
         # At the very end, log that a message was processed successfully.
         # Since we're single-threaded, no other information is needed;
@@ -371,7 +384,7 @@ class KafkaEventConsumer:
         if AUDIT_LOGGING_ENABLED.is_enabled():
             logger.info('Message from Kafka processed successfully')
 
-    def _check_receiver_results(self, send_results: list):
+    def _check_receiver_results(self, send_results: list, signal: OpenEdxPublicSignal):
         """
         Raises exception if any of the receivers produced an exception.
 
@@ -399,7 +412,7 @@ class KafkaEventConsumer:
             raise ReceiverError(
                 f"{len(error_descriptions)} receiver(s) out of {len(send_results)} "
                 "produced errors (stack trace elsewhere in logs) "
-                f"when handling signal {self.signal}: {', '.join(error_descriptions)}",
+                f"when handling signal {signal}: {', '.join(error_descriptions)}",
                 errors
             )
 
@@ -524,6 +537,18 @@ class KafkaEventConsumer:
             # Use this to fix any bugs in what should be benign monitoring code
             set_custom_attribute('kafka_monitoring_error', repr(e))
 
+    def _determine_event_type(self, headers):
+        event_types = get_message_header_values(headers, HEADER_EVENT_TYPE)
+        if len(event_types) == 0:
+            raise UnusableMessageError(
+                "Missing ce_type header on message, cannot determine signal"
+            )
+        if len(event_types) > 1:
+            raise UnusableMessageError(
+                "Multiple ce_type headers found on message, cannot determine signal"
+            )
+        return event_types[0]
+
     def _get_kafka_message_and_error(self, message, error):
         """
         Returns tuple of (kafka_message, kafka_error), if they can be found.
@@ -566,12 +591,11 @@ class ConsumeEventsCommand(BaseCommand):
     Management command for Kafka consumer workers in the event bus.
     """
     help = """
-    Consume messages of specified signal type from a Kafka topic and send their data to that signal.
+    Consume messages of from a Kafka topic and emit the relevant signals.
 
     Example::
 
-        python3 manage.py cms consume_events -t user-login -g user-activity-service \
-            -s org.openedx.learning.auth.session.login.completed.v1
+        python3 manage.py cms consume_events -t user-login -g user-activity-service
     """
 
     def add_arguments(self, parser):
