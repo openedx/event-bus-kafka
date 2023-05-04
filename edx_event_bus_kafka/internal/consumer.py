@@ -29,9 +29,10 @@ logger = logging.getLogger(__name__)
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, DeserializingConsumer
+    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, Consumer
     from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
+    from confluent_kafka.serialization import MessageField, SerializationContext
 except ImportError:  # pragma: no cover
     confluent_kafka = None
 
@@ -117,39 +118,27 @@ class KafkaEventConsumer:
         self.consumer = self._create_consumer()
         self._shut_down_loop = False
 
-    # return type (Optional[DeserializingConsumer]) removed from signature to avoid error on import
+    # return type (Optional[Consumer]) removed from signature to avoid error on import
     def _create_consumer(self):
         """
-        Create a DeserializingConsumer for events of the given signal instance.
+        Create a Consumer in the correct consumer group for events of the associated topic.
 
         Returns
             None if confluent_kafka is not available.
             DeserializingConsumer if it is.
         """
 
-        schema_registry_client = get_schema_registry_client()
-
-        signal_deserializer = AvroSignalDeserializer(self.signal)
-
-        def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
-            return signal_deserializer.from_dict(event_data_dict)
-
         consumer_config = load_common_settings()
 
-        # We do not deserialize the key because we don't need it for anything yet.
-        # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
         consumer_config.update({
             'group.id': self.group_id,
-            'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
-                                                   schema_registry_client=schema_registry_client,
-                                                   from_dict=inner_from_dict),
             # Turn off auto commit. Auto commit will commit offsets for the entire batch of messages received,
             # potentially resulting in data loss if some of those messages are not fully processed. See
             # https://newrelic.com/blog/best-practices/kafka-consumer-config-auto-commit-data-loss
             'enable.auto.commit': False,
         })
 
-        return DeserializingConsumer(consumer_config)
+        return Consumer(consumer_config)
 
     def _shut_down(self):
         """
@@ -276,7 +265,7 @@ class KafkaEventConsumer:
                         with function_trace('_consume_indefinitely_consume_single_message'):
                             # Before processing, make sure our db connection is still active
                             _reconnect_to_db_if_needed()
-
+                            msg.set_value(self.deserialize_message_value(msg))
                             self.emit_signals_from_message(msg)
                             consecutive_errors = 0
 
@@ -380,6 +369,31 @@ class KafkaEventConsumer:
         # See ADR: docs/decisions/0010_audit_logging.rst
         if AUDIT_LOGGING_ENABLED.is_enabled():
             logger.info('Message from Kafka processed successfully')
+
+    def deserialize_message_value(self, msg):
+        """
+        Deserialize an Avro message value
+
+        Arguments:
+            msg (Message): the raw message from the consumer
+
+        Returns:
+            The deserialized message value
+        """
+        schema_registry_client = get_schema_registry_client()
+
+        signal_deserializer = AvroSignalDeserializer(self.signal)
+
+        def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
+            return signal_deserializer.from_dict(event_data_dict)
+
+        # We do not deserialize the key because we don't need it for anything yet.
+        # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
+        avro_deserializer = AvroDeserializer(schema_str=signal_deserializer.schema_string(),
+                                             schema_registry_client=schema_registry_client,
+                                             from_dict=inner_from_dict)
+        ctx = SerializationContext(msg.topic(), MessageField.VALUE, msg.headers())
+        return avro_deserializer(msg.value(), ctx)
 
     def _check_receiver_results(self, send_results: list):
         """
