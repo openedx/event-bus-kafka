@@ -2,7 +2,6 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# TODO: update as soon as https://github.com/openedx/openedx-events/pull/200 is merged
-git+https://github.com/open-craft/openedx-events@navin/load-consumer
+openedx-events>=7.1.0                   # consumer api and consume_events command is provided
 edx_django_utils
 edx_toggles
