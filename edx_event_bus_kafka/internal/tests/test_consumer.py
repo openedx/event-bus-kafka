@@ -157,6 +157,18 @@ class TestEmitSignals(TestCase):
         assert partition_1.topic == 'dummy_topic'
         assert partition_1.partition == 1
 
+    def test_reset_offsets_and_sleep_indefinitely_with_none_offset(self):
+        self.event_consumer.consumer = Mock()
+        self.event_consumer._shut_down()  # pylint: disable=protected-access
+        self.event_consumer.offset_time = None
+        self.event_consumer.reset_offsets_and_sleep_indefinitely()
+        reset_offsets = self.event_consumer.consumer.subscribe.call_args[1]['on_assign']
+
+        # This is usually called by Kafka after assignment of partitions. For testing, we are calling
+        # it directly.
+        reset_offsets(self.event_consumer.consumer, [])
+        self.event_consumer.consumer.offsets_for_times.assert_not_called()
+
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
