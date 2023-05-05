@@ -16,6 +16,7 @@ Unreleased
 
 * Switch from ``edx-sphinx-theme`` to ``sphinx-book-theme`` since the former is
   deprecated
+* Refactored consumer to manually deserialize messages instead of using DeserializingConsumer
 
 [3.9.6] - 2023-02-24
 ********************

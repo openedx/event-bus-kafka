@@ -5,10 +5,13 @@ import logging
 import time
 import warnings
 from datetime import datetime
+from functools import lru_cache
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
+from django.dispatch import receiver
+from django.test.signals import setting_changed
 from edx_django_utils.monitoring import function_trace, record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
@@ -29,9 +32,10 @@ logger = logging.getLogger(__name__)
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
     import confluent_kafka
-    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, DeserializingConsumer
+    from confluent_kafka import TIMESTAMP_NOT_AVAILABLE, Consumer
     from confluent_kafka.error import KafkaError
     from confluent_kafka.schema_registry.avro import AvroDeserializer
+    from confluent_kafka.serialization import MessageField, SerializationContext
 except ImportError:  # pragma: no cover
     confluent_kafka = None
 
@@ -116,40 +120,28 @@ class KafkaEventConsumer:
         self.signal = signal
         self.consumer = self._create_consumer()
         self._shut_down_loop = False
+        self.schema_registry_client = get_schema_registry_client()
 
-    # return type (Optional[DeserializingConsumer]) removed from signature to avoid error on import
+    # return type Consumer removed from signature to avoid error on import
     def _create_consumer(self):
         """
-        Create a DeserializingConsumer for events of the given signal instance.
+        Create a Consumer in the correct consumer group
 
         Returns
-            None if confluent_kafka is not available.
-            DeserializingConsumer if it is.
+            Consumer in the configured consumer group
         """
-
-        schema_registry_client = get_schema_registry_client()
-
-        signal_deserializer = AvroSignalDeserializer(self.signal)
-
-        def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
-            return signal_deserializer.from_dict(event_data_dict)
 
         consumer_config = load_common_settings()
 
-        # We do not deserialize the key because we don't need it for anything yet.
-        # Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
         consumer_config.update({
             'group.id': self.group_id,
-            'value.deserializer': AvroDeserializer(schema_str=signal_deserializer.schema_string(),
-                                                   schema_registry_client=schema_registry_client,
-                                                   from_dict=inner_from_dict),
             # Turn off auto commit. Auto commit will commit offsets for the entire batch of messages received,
             # potentially resulting in data loss if some of those messages are not fully processed. See
             # https://newrelic.com/blog/best-practices/kafka-consumer-config-auto-commit-data-loss
             'enable.auto.commit': False,
         })
 
-        return DeserializingConsumer(consumer_config)
+        return Consumer(consumer_config)
 
     def _shut_down(self):
         """
@@ -276,7 +268,7 @@ class KafkaEventConsumer:
                         with function_trace('_consume_indefinitely_consume_single_message'):
                             # Before processing, make sure our db connection is still active
                             _reconnect_to_db_if_needed()
-
+                            msg.set_value(self._deserialize_message_value(msg))
                             self.emit_signals_from_message(msg)
                             consecutive_errors = 0
 
@@ -381,6 +373,20 @@ class KafkaEventConsumer:
         if AUDIT_LOGGING_ENABLED.is_enabled():
             logger.info('Message from Kafka processed successfully')
 
+    def _deserialize_message_value(self, msg):
+        """
+        Deserialize an Avro message value
+
+        Arguments:
+            msg (Message): the raw message from the consumer
+
+        Returns:
+            The deserialized message value
+        """
+        signal_deserializer = get_deserializer(self.signal, self.schema_registry_client)
+        ctx = SerializationContext(msg.topic(), MessageField.VALUE, msg.headers())
+        return signal_deserializer(msg.value(), ctx)
+
     def _check_receiver_results(self, send_results: list):
         """
         Raises exception if any of the receivers produced an exception.
@@ -390,16 +396,16 @@ class KafkaEventConsumer:
         """
         error_descriptions = []
         errors = []
-        for receiver, response in send_results:
+        for signal_receiver, response in send_results:
             if not isinstance(response, BaseException):
                 continue
 
             # Probably every receiver will be a regular function or even a lambda with
             # these attrs, so this check is just to be safe.
             try:
-                receiver_name = f"{receiver.__module__}.{receiver.__qualname__}"
+                receiver_name = f"{signal_receiver.__module__}.{signal_receiver.__qualname__}"
             except AttributeError:
-                receiver_name = str(receiver)
+                receiver_name = str(signal_receiver)
 
             # The stack traces are already logged by django.dispatcher, so just the error message is fine.
             error_descriptions.append(f"{receiver_name}={response!r}")
@@ -649,3 +655,39 @@ class ConsumeEventsCommand(BaseCommand):
                 event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=offset_timestamp)
         except Exception:  # pylint: disable=broad-except
             logger.exception("Error consuming Kafka events")
+
+
+# argument type SchemaRegistryClient for schema_registry_client removed from signature to avoid error on import
+@lru_cache
+def get_deserializer(signal: OpenEdxPublicSignal, schema_registry_client):
+    """
+    Get the value deserializer for a signal.
+
+    This is cached in order to save work re-transforming classes into Avro schemas.
+    We do not deserialize the key because we don't need it for anything yet.
+    Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
+
+    Arguments:
+        signal: The OpenEdxPublicSignal to make a deserializer for.
+        schema_registry_client: The SchemaRegistryClient instance for the consumer
+
+    Returns:
+        AvroSignalDeserializer for event value
+    """
+    if schema_registry_client is None:
+        raise Exception('Cannot create Kafka deserializer -- missing library or settings')
+
+    signal_deserializer = AvroSignalDeserializer(signal)
+
+    def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
+        return signal_deserializer.from_dict(event_data_dict)
+
+    return AvroDeserializer(schema_str=signal_deserializer.schema_string(),
+                            schema_registry_client=schema_registry_client,
+                            from_dict=inner_from_dict)
+
+
+@receiver(setting_changed)
+def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
+    """Reset caches when settings change during unit tests."""
+    get_deserializer.cache_clear()

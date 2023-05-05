@@ -92,8 +92,11 @@ class FakeMessage:
         return self._key
 
     def value(self):
-        """Deserialized event value."""
+        """Event value (bytes or object)"""
         return self._value
+
+    def set_value(self, value):
+        self._value = value
 
     def error(self):
         return self._error
