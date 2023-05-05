@@ -122,19 +122,14 @@ class KafkaEventConsumer:
         self._shut_down_loop = False
         self.schema_registry_client = get_schema_registry_client()
 
-    # return type (Optional[Consumer]) removed from signature to avoid error on import
+    # return type Consumer removed from signature to avoid error on import
     def _create_consumer(self):
         """
         Create a Consumer in the correct consumer group for events of the associated topic.
 
         Returns
-            None if confluent_kafka is not available.
-            DeserializingConsumer if it is.
+            Consumer in the configured consumer group
         """
-
-        if not confluent_kafka:   # pragma: no cover
-            logger.warning('Library confluent-kafka not available. Cannot create event consumer.')
-            return None
 
         consumer_config = load_common_settings()
 
@@ -273,7 +268,7 @@ class KafkaEventConsumer:
                         with function_trace('_consume_indefinitely_consume_single_message'):
                             # Before processing, make sure our db connection is still active
                             _reconnect_to_db_if_needed()
-                            msg.set_value(self.deserialize_message_value(msg))
+                            msg.set_value(self._deserialize_message_value(msg))
                             self.emit_signals_from_message(msg)
                             consecutive_errors = 0
 
@@ -378,7 +373,7 @@ class KafkaEventConsumer:
         if AUDIT_LOGGING_ENABLED.is_enabled():
             logger.info('Message from Kafka processed successfully')
 
-    def deserialize_message_value(self, msg):
+    def _deserialize_message_value(self, msg):
         """
         Deserialize an Avro message value
 
