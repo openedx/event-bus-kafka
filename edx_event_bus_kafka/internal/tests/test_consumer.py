@@ -621,7 +621,6 @@ class TestEmitSignals(TestCase):
 
         assert not self.mock_receiver.called
 
-    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_no_deserializer_if_no_registry_client(self, mock_logger):
         with pytest.raises(Exception) as excinfo:
             get_deserializer(self.signal, None)
