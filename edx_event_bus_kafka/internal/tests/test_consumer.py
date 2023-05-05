@@ -46,6 +46,7 @@ def fake_receiver_raises_error(**kwargs):
     EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='bootstrap-servers',
     EVENT_BUS_KAFKA_API_KEY='test-key',
     EVENT_BUS_KAFKA_API_SECRET='test-secret',
+    EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=10,  # prevent infinite looping if tests are broken
 )
 @ddt.ddt
 class TestEmitSignals(TestCase):
@@ -155,7 +156,6 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='local',
-        EVENT_BUS_KAFKA_CONSUMER_CONSECUTIVE_ERRORS_LIMIT=4,
     )
     @patch('edx_event_bus_kafka.internal.consumer.set_custom_attribute', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
@@ -445,12 +445,11 @@ class TestEmitSignals(TestCase):
     @ddt.data(True, False)
     def test_emit_success(self, audit_logging, mock_logger, mock_set_attribute):
         self.signal.disconnect(fake_receiver_raises_error)  # just successes for this one!
-        msg = copy.copy(self.normal_message)
         # assume we've already deserialized the data
-        msg.set_value(self.normal_event_data)
+        self.normal_message.set_value(self.normal_event_data)
 
         with override_settings(EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED=audit_logging):
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.emit_signals_from_message(self.normal_message)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         # Specifically, not called with 'kafka_logging_error'
         mock_set_attribute.assert_not_called()
@@ -473,12 +472,11 @@ class TestEmitSignals(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     def test_emit_success_tolerates_missing_timestamp(self, mock_logger, mock_set_attribute):
         self.signal.disconnect(fake_receiver_raises_error)  # just successes for this one!
-        msg = copy.copy(self.normal_message)
         # assume we've already deserialized the data
-        msg.set_value(self.normal_event_data)
-        msg._timestamp = (TIMESTAMP_NOT_AVAILABLE, None)  # pylint: disable=protected-access
+        self.normal_message.set_value(self.normal_event_data)
+        self.normal_message._timestamp = (TIMESTAMP_NOT_AVAILABLE, None)  # pylint: disable=protected-access
 
-        self.event_consumer.emit_signals_from_message(msg)
+        self.event_consumer.emit_signals_from_message(self.normal_message)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         # Specifically, not called with 'kafka_logging_error'
         mock_set_attribute.assert_not_called()
@@ -493,11 +491,10 @@ class TestEmitSignals(TestCase):
 
     @patch('django.dispatch.dispatcher.logger', autospec=True)
     def test_emit(self, mock_logger):
-        msg = copy.copy(self.normal_message)
         # assume we've already deserialized the data
-        msg.set_value(self.normal_event_data)
+        self.normal_message.set_value(self.normal_event_data)
         with pytest.raises(ReceiverError) as exc_info:
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.emit_signals_from_message(self.normal_message)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         assert exc_info.value.args == (
             "1 receiver(s) out of 3 produced errors (stack trace elsewhere in logs) "
