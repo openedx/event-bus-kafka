@@ -15,7 +15,12 @@ from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 
-from edx_event_bus_kafka.internal.consumer import get_deserializer, KafkaEventConsumer, ReceiverError, UnusableMessageError
+from edx_event_bus_kafka.internal.consumer import (
+    KafkaEventConsumer,
+    ReceiverError,
+    UnusableMessageError,
+    get_deserializer,
+)
 from edx_event_bus_kafka.internal.tests.test_utils import FakeMessage, side_effects
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
