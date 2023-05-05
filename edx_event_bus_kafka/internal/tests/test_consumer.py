@@ -14,6 +14,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
+from openedx_events.tooling import OpenEdxPublicSignal
 
 from edx_event_bus_kafka.internal.consumer import (
     KafkaEventConsumer,
@@ -98,7 +99,7 @@ class TestEmitSignals(TestCase):
         self.signal.connect(fake_receiver_returns_quietly)
         self.signal.connect(fake_receiver_raises_error)
         self.signal.connect(self.mock_receiver)
-        self.event_consumer = KafkaEventConsumer('some-topic', 'test_group_id', self.signal)
+        self.event_consumer = KafkaEventConsumer('some-topic', 'test_group_id')
 
     def tearDown(self):
         self.signal.disconnect(fake_receiver_returns_quietly)
@@ -195,7 +196,7 @@ class TestEmitSignals(TestCase):
         # Check that each of the mocked out methods got called as expected.
         mock_consumer.subscribe.assert_called_once_with(['local-some-topic'])
         # Check that emit was called the expected number of times
-        assert mock_emit.call_args_list == [call(self.normal_message)] * len(mock_emit_side_effects)
+        assert mock_emit.call_args_list == [call(self.normal_message, self.signal)] * len(mock_emit_side_effects)
 
         # Check that there was one error log message and that it contained all the right parts,
         # in some order.
@@ -204,8 +205,6 @@ class TestEmitSignals(TestCase):
         assert "Error consuming event from Kafka: Exception('something broke') in context" in exc_log_msg
         assert "full_topic='local-some-topic'" in exc_log_msg
         assert "consumer_group='test_group_id'" in exc_log_msg
-        assert ("expected_signal=<OpenEdxPublicSignal: "
-                "org.openedx.learning.auth.session.login.completed.v1>") in exc_log_msg
         assert "-- event details: " in exc_log_msg
         assert "'partition': 2" in exc_log_msg
         assert "'offset': 12345" in exc_log_msg
@@ -254,7 +253,7 @@ class TestEmitSignals(TestCase):
                 with pytest.raises(Exception) as exc_info:
                     self.event_consumer.consume_indefinitely()
 
-        assert mock_emit.call_args_list == [call(self.normal_message)] * exception_count
+        assert mock_emit.call_args_list == [call(self.normal_message, self.signal)] * exception_count
         assert exc_info.value.args == ("Too many consecutive errors, exiting (4 in a row)",)
 
     @override_settings(
@@ -332,7 +331,7 @@ class TestEmitSignals(TestCase):
                 self.event_consumer.consumer = mock_consumer
                 self.event_consumer.consume_indefinitely()  # exits normally
 
-        assert mock_emit.call_args_list == [call(self.normal_message)] * len(mock_emit_side_effects)
+        assert mock_emit.call_args_list == [call(self.normal_message, self.signal)] * len(mock_emit_side_effects)
 
     TEST_FAILED_MESSAGE = FakeMessage(
         partition=7,
@@ -396,8 +395,6 @@ class TestEmitSignals(TestCase):
         assert f"Error consuming event from Kafka: {repr(exception)} in context" in exc_log_msg
         assert "full_topic='local-some-topic'" in exc_log_msg
         assert "consumer_group='test_group_id'" in exc_log_msg
-        assert ("expected_signal=<OpenEdxPublicSignal: "
-                "org.openedx.learning.auth.session.login.completed.v1>") in exc_log_msg
         if has_message:
             assert "-- event details" in exc_log_msg
         else:
@@ -425,20 +422,18 @@ class TestEmitSignals(TestCase):
         mock_consumer.commit.assert_not_called()
 
     def test_check_event_error(self):
-        """
-        DeserializingConsumer.poll() should never return a Message with an error() object,
-        but we check it anyway as a safeguard. This test exercises that branch.
-        """
         with pytest.raises(Exception) as exc_info:
             self.event_consumer.emit_signals_from_message(
                 FakeMessage(
                     partition=2,
                     error=KafkaError(123, "done broke"),
-                )
+                    headers=[{'ce_type': 'org.openedx.learning.auth.session.login.completed.v1'}]
+                ),
+                self.signal
             )
 
         assert exc_info.value.args == (
-            "Polled message had error object (shouldn't happen): "
+            "Polled message had error object: "
             "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}",
         )
 
@@ -454,7 +449,7 @@ class TestEmitSignals(TestCase):
         self.normal_message.set_value(self.normal_event_data)
 
         with override_settings(EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED=audit_logging):
-            self.event_consumer.emit_signals_from_message(self.normal_message)
+            self.event_consumer.emit_signals_from_message(self.normal_message, self.signal)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         # Specifically, not called with 'kafka_logging_error'
         mock_set_attribute.assert_not_called()
@@ -481,7 +476,7 @@ class TestEmitSignals(TestCase):
         self.normal_message.set_value(self.normal_event_data)
         self.normal_message._timestamp = (TIMESTAMP_NOT_AVAILABLE, None)  # pylint: disable=protected-access
 
-        self.event_consumer.emit_signals_from_message(self.normal_message)
+        self.event_consumer.emit_signals_from_message(self.normal_message, self.signal)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         # Specifically, not called with 'kafka_logging_error'
         mock_set_attribute.assert_not_called()
@@ -499,7 +494,7 @@ class TestEmitSignals(TestCase):
         # assume we've already deserialized the data
         self.normal_message.set_value(self.normal_event_data)
         with pytest.raises(ReceiverError) as exc_info:
-            self.event_consumer.emit_signals_from_message(self.normal_message)
+            self.event_consumer.emit_signals_from_message(self.normal_message, self.signal)
         self.assert_signal_sent_with(self.signal, self.normal_event_data)
         assert exc_info.value.args == (
             "1 receiver(s) out of 3 produced errors (stack trace elsewhere in logs) "
@@ -520,6 +515,34 @@ class TestEmitSignals(TestCase):
             exc_info=receiver_error,
         )
 
+    def test_emit_type_mismatch(self):
+        # assume we've already deserialized the data
+        self.normal_message.set_value(self.normal_event_data)
+        self.normal_message._headers = [('ce_type', b'xxxx')]  # pylint: disable=protected-access
+
+        with pytest.raises(Exception) as excinfo:
+            self.event_consumer.emit_signals_from_message(self.normal_message, self.signal)
+
+        assert excinfo.value.args == (
+            "Error emitting event from Kafka: (UNEXPECTED) message event type xxxx "
+            "does not match signal org.openedx.learning.auth.session.login.completed.v1",
+        )
+        assert not self.mock_receiver.called
+
+    def test_deserialize_type_mismatch(self):
+        self.normal_message._headers = [('ce_type', b'xxxx')]  # pylint: disable=protected-access
+
+        with pytest.raises(Exception) as excinfo:
+            self.event_consumer._deserialize_message_value(  # pylint: disable=protected-access
+                                                           self.normal_message, self.signal
+                                                          )
+
+        assert excinfo.value.args == (
+            "Error deserializing event from Kafka: (UNEXPECTED) message event type xxxx "
+            "does not match signal org.openedx.learning.auth.session.login.completed.v1",
+        )
+        assert not self.mock_receiver.called
+
     def test_malformed_receiver_errors(self):
         """
         Ensure that even a really messed-up receiver is still reported correctly.
@@ -529,7 +552,7 @@ class TestEmitSignals(TestCase):
                 (lambda x:x, Exception("for lambda")),
                 # This would actually raise an error inside send_robust(), but it will serve well enough for testing...
                 ("not even a function", Exception("just plain bad")),
-            ])
+            ], self.signal)
         assert exc_info.value.args == (
             "2 receiver(s) out of 2 produced errors (stack trace elsewhere in logs) "
             "when handling signal <OpenEdxPublicSignal: "
@@ -541,6 +564,11 @@ class TestEmitSignals(TestCase):
             "not even a function=Exception('just plain bad')",
         )
 
+    def test_determine_signal_success(self):
+        determined_signal = self.event_consumer.determine_signal(self.normal_message)
+        assert isinstance(determined_signal, OpenEdxPublicSignal)
+        assert determined_signal.event_type == self.signal_type
+
     def test_no_type(self):
         msg = copy.copy(self.normal_message)
         # assume we've already deserialized the data
@@ -548,7 +576,7 @@ class TestEmitSignals(TestCase):
         msg._headers = []  # pylint: disable=protected-access
 
         with pytest.raises(UnusableMessageError) as excinfo:
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.determine_signal(msg)
 
         assert excinfo.value.args == (
             "Missing ce_type header on message, cannot determine signal",
@@ -565,7 +593,7 @@ class TestEmitSignals(TestCase):
         msg._headers = [['ce_type', b'abc'], ['ce_type', b'def']]  # pylint: disable=protected-access
 
         with pytest.raises(UnusableMessageError) as excinfo:
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.determine_signal(msg)
 
         assert excinfo.value.args == (
             "Multiple ce_type headers found on message, cannot determine signal",
@@ -580,11 +608,10 @@ class TestEmitSignals(TestCase):
             ['ce_type', b'xxxx']
         ]
         with pytest.raises(UnusableMessageError) as excinfo:
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.determine_signal(msg)
 
         assert excinfo.value.args == (
-            "Signal types do not match. Expected org.openedx.learning.auth.session.login.completed.v1. "
-            "Received message of type xxxx.",
+            "Unrecognized type xxxx found on message, cannot determine signal",
         )
         assert not self.mock_receiver.called
 
@@ -618,7 +645,7 @@ class TestEmitSignals(TestCase):
             ('ce_id', b'bad_id')
         ]
         with pytest.raises(UnusableMessageError) as excinfo:
-            self.event_consumer.emit_signals_from_message(msg)
+            self.event_consumer.emit_signals_from_message(msg, self.signal)
 
         assert excinfo.value.args == (
             "Error determining metadata from message headers: badly formed hexadecimal UUID string",
@@ -643,7 +670,7 @@ class TestCommand(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     def test_kafka_consumers_disabled(self, mock_create_consumer, mock_logger):
-        call_command(Command(), topic='test', group_id='test', signal='')
+        call_command(Command(), topic='test', group_id='test')
         assert not mock_create_consumer.called
         mock_logger.error.assert_called_once_with("Kafka consumers not enabled, exiting.")
 
@@ -651,7 +678,7 @@ class TestCommand(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     def test_kafka_consumers_no_lib(self, mock_create_consumer, mock_logger):
-        call_command(Command(), topic='test', group_id='test', signal='')
+        call_command(Command(), topic='test', group_id='test')
         assert not mock_create_consumer.called
         mock_logger.error.assert_called_once_with(
             "Cannot consume events because confluent_kafka dependency (or one of its extras) was not installed"
@@ -665,7 +692,6 @@ class TestCommand(TestCase):
             Command(),
             topic='test',
             group_id='test',
-            signal='openedx',
         )
         assert mock_create_consumer.called
         assert mock_consume.called
@@ -678,7 +704,6 @@ class TestCommand(TestCase):
             Command(),
             topic='test',
             group_id='test',
-            signal='openedx',
             offset_time=['2019-05-18T15:17:08.132263']
         )
         assert mock_create_consumer.called
@@ -689,6 +714,6 @@ class TestCommand(TestCase):
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer._create_consumer')
     @patch('edx_event_bus_kafka.internal.consumer.KafkaEventConsumer.consume_indefinitely')
     def test_kafka_consumers_with_bad_timestamp(self, _ci, _cc, _gsbt, mock_logger):
-        call_command(Command(), topic='test', group_id='test', signal='openedx', offset_time=['notatimestamp'])
+        call_command(Command(), topic='test', group_id='test', offset_time=['notatimestamp'])
         mock_logger.exception.assert_any_call("Could not parse the offset timestamp.")
         mock_logger.exception.assert_called_with("Error consuming Kafka events")
