@@ -626,7 +626,7 @@ class TestEmitSignals(TestCase):
 
         assert not self.mock_receiver.called
 
-    def test_no_deserializer_if_no_registry_client(self, mock_logger):
+    def test_no_deserializer_if_no_registry_client(self):
         with pytest.raises(Exception) as excinfo:
             get_deserializer(self.signal, None)
         assert excinfo.value.args == (
