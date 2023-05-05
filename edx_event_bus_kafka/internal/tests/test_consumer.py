@@ -15,7 +15,7 @@ from django.test.utils import override_settings
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 
-from edx_event_bus_kafka.internal.consumer import KafkaEventConsumer, ReceiverError, UnusableMessageError
+from edx_event_bus_kafka.internal.consumer import get_deserializer, KafkaEventConsumer, ReceiverError, UnusableMessageError
 from edx_event_bus_kafka.internal.tests.test_utils import FakeMessage, side_effects
 from edx_event_bus_kafka.management.commands.consume_events import Command
 
@@ -620,6 +620,15 @@ class TestEmitSignals(TestCase):
         )
 
         assert not self.mock_receiver.called
+
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    def test_no_deserializer_if_no_registry_client(self, mock_logger):
+        with pytest.raises(Exception) as excinfo:
+            get_deserializer(self.signal, None)
+        assert excinfo.value.args == (
+            "Cannot create Kafka deserializer -- missing library or settings",
+        )
+
 
 
 class TestCommand(TestCase):
