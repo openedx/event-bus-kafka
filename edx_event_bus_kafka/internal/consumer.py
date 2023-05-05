@@ -125,7 +125,7 @@ class KafkaEventConsumer:
     # return type Consumer removed from signature to avoid error on import
     def _create_consumer(self):
         """
-        Create a Consumer in the correct consumer group for events of the associated topic.
+        Create a Consumer in the correct consumer group
 
         Returns
             Consumer in the configured consumer group
