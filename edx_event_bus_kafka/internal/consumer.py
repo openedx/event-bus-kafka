@@ -132,7 +132,7 @@ class KafkaEventConsumer:
             DeserializingConsumer if it is.
         """
 
-        if not confluent_kafka:
+        if not confluent_kafka:   # pragma: no cover
             logger.warning('Library confluent-kafka not available. Cannot create event consumer.')
             return None
 
