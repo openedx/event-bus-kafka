@@ -672,7 +672,7 @@ def get_deserializer(signal: OpenEdxPublicSignal, schema_registry_client):
         schema_registry_client: The SchemaRegistryClient instance for the consumer
 
     Returns:
-        AvroSignalDeserializers for event value
+        AvroSignalDeserializer for event value
     """
     if schema_registry_client is None:
         raise Exception('Cannot create Kafka deserializer -- missing library or settings')
