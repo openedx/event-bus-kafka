@@ -634,7 +634,6 @@ class TestEmitSignals(TestCase):
         )
 
 
-
 class TestCommand(TestCase):
     """
     Tests for the consume_events management command
