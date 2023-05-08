@@ -14,9 +14,14 @@ Change Log
 Unreleased
 **********
 
+[3.10.0] - 2023-05-05
+*********************
+Changed
+=======
 * Switch from ``edx-sphinx-theme`` to ``sphinx-book-theme`` since the former is
   deprecated
 * Refactored consumer to manually deserialize messages instead of using DeserializingConsumer
+* Make signal argument optional in consumer command (take signal from message headers)
 
 [3.9.6] - 2023-02-24
 ********************
