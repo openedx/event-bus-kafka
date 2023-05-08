@@ -1,6 +1,6 @@
 .PHONY: clean compile_translations coverage diff_cover docs dummy_translations \
         extract_translations fake_translations help pii_check pull_translations push_translations \
-        quality requirements selfcheck test test-all upgrade validate
+        quality requirements selfcheck test test-all upgrade upgrade-package validate
 
 .DEFAULT_GOAL := help
 
@@ -49,6 +49,10 @@ upgrade: ## update the requirements/*.txt files with the latest packages satisfy
 	# Let tox control the Django version for tests
 	sed '/^[dD]jango==/d' requirements/test.txt > requirements/test.tmp
 	mv requirements/test.tmp requirements/test.txt
+
+upgrade-package: ## update just one package to the latest usable release
+	@test -n "$(package)" || { echo "\nUsage: make upgrade_package package=...\n"; exit 1; }
+	$(MAKE) compile-requirements COMPILE_OPTS="--upgrade-package $(package)"
 
 quality: ## check coding style with pycodestyle and pylint
 	tox -e quality

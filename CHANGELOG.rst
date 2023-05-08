@@ -13,6 +13,7 @@ Change Log
 
 Unreleased
 **********
+* Add upgrade-package make target and workflow
 
 [3.10.0] - 2023-05-05
 *********************
