@@ -55,7 +55,11 @@ Avro Unions
 Avro unions are a datatype representing the possibility of multiple different schemas for a single field or record. They often contain references to other registered schemas. For example, setting a topic schema to [my.signal.CloudEvent, my.other.signal.CloudEvent] would allow events with either the my.signal.CloudEvent or my.other.signal.CloudEvent schema, but no others. This has the advantage of being configurable by topic and allowing greater control over which events are allowed on a topic.
 Using Avro unions is currently not feasible because of a bug in the confluent-kafka-python library. It would also require schemas to be created and registered independently of event-producing code, requiring separate updates to configurations every time a new event type was added to a topic.
 
-
+References
+**********
+https://www.confluent.io/blog/put-several-event-types-kafka-topic/
+https://www.confluent.io/blog/multiple-event-types-in-the-same-kafka-topic/
+https://github.com/confluentinc/confluent-kafka-python/issues/1562
 
 
 
