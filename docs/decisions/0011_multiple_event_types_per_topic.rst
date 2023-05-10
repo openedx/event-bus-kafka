@@ -53,9 +53,13 @@ Setting the subject name strategy on the topic rather than the client
 =====================================================================
 This option is only available for locally-hosted or Dedicated Confluent Cloud clusters, and thus not a feasible solution for the whole community.
 
-Using a setting toggle
+Using a SettingsToggle
 ======================
 Usually we would put this sort of feature behind a SettingsToggle so deployers could enable it and disable it as they chose. However, because the subject name strategy is set at the client rather than topic or cluster level, all clients who produce to the same topic(s) must have the same subject name strategy set. While the consequences of having multiple clients with different subject name strategies writing to the same topic are not 100% clear, at the very least it would result in a proliferation of confusing schemas in the registry. 
+
+Using different serializers based on the topic
+==============================================
+We could refactor the code to configure the AvroSerializer differently based on the topic, only changing the subjec name strategy when the topic should allow multiple event types. This would be a significant amount of work and would require some list of which topics accept multiple event types, which would have to be maintained and would reduce the flexibility of the event bus.
 
 Require related event types to have the same schema
 ===================================================
@@ -64,7 +68,7 @@ In theory we could avoid the issue of event types with different schemas on the 
 Avro Unions
 ===========
 Avro unions are a datatype representing the possibility of multiple different schemas for a single field or record. They often contain references to other registered schemas. For example, setting a topic schema to [my.signal.CloudEvent, my.other.signal.CloudEvent] would allow events with either the my.signal.CloudEvent or my.other.signal.CloudEvent schema, but no others. This has the advantage of being configurable by topic and allowing greater control over which events are allowed on a topic.
-Using Avro unions is currently not feasible because of `a bug`_ in the confluent-kafka-python library. It would also require schemas to be created, evolved, registered independently of event-producing code, requiring separate updates to configurations every time a new event type was added to a topic or we wanted to update an event schema.
+Using Avro unions is currently not feasible because of `a bug`_ in the confluent-kafka-python library. It would also require all schemas, not just the union ones, to be created, evolved, registered independently of event-producing code, requiring separate updates to configurations every time a new event type was added to a topic or we wanted to update an event schema. This is because, in order to use unions, auto-registration of schemas must be disabled, which is done on a per-serializer basis. As mentioned previously, all serializers have the same configurations. Changing this would be a significant lift. 
 
 .. _a bug: https://github.com/confluentinc/confluent-kafka-python/issues/1562
 
