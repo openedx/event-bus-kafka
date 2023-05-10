@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.sessions',
     'edx_event_bus_kafka',
+    'openedx_events',
 )
 
 LOCALE_PATHS = [
@@ -59,3 +60,5 @@ TEMPLATES = [{
         ],
     },
 }]
+
+EVENT_BUS_CONSUMER = 'edx_event_bus_kafka.KafkaEventConsumer'
