@@ -72,10 +72,3 @@ Avro unions are a datatype representing the possibility of multiple different sc
 Using Avro unions is currently not feasible because of `a bug`_ in the confluent-kafka-python library. It would also require all schemas, not just the union ones, to be created, evolved, registered independently of event-producing code, requiring separate updates to configurations every time a new event type was added to a topic or we wanted to update an event schema. This is because, in order to use unions, auto-registration of schemas must be disabled, which is done on a per-serializer basis. As mentioned previously, all serializers have the same configurations. Changing this would be a significant lift. 
 
 .. _a bug: https://github.com/confluentinc/confluent-kafka-python/issues/1562
-
-
-
-
-
-
-
