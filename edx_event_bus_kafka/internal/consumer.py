@@ -118,7 +118,7 @@ class KafkaEventConsumer(EventBusConsumer):
             consumers will only reset the offsets of the topic but will not actually consume and process any messages.
     """
 
-    def __init__(self, topic, group_id, signal=None, offset_time=None):
+    def __init__(self, topic, group_id, signal=None, offset_time=None):  # pylint: disable=unused-argument
         if confluent_kafka is None:  # pragma: no cover
             raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
