@@ -22,7 +22,7 @@ TopicRecordName Strategy
 ========================
 The Confluent Schema Registry stores schemas according to one of three strategies, referring to the identifiers under which the schemas are stored. When an event is serialized using an AvroSerializer, the serializer checks the schema against the registry, looking up the existing schema using the configured strategy. If the new schema is not allowable under the schema evolution rules, serialization will fail.
 
-The default strategy the TopicName strategy. Under this strategy, the serializer will determine the existing schema by looking for a schema registered as ``<topic-name>-value`` (``<topic-name>-key`` when serializing the key), the topic name having been passed in the SerializationContext object. Therefore, if the serializer is given a new event type with the same topic, unless the new event type schema happens to be a valid evolution of the existing one, it will fail.
+The default strategy is the TopicName strategy. Under this strategy, the serializer will determine the existing schema by looking for a schema registered as ``<topic-name>-value`` (``<topic-name>-key`` when serializing the key), the topic name having been passed in the SerializationContext object. Therefore, if the serializer is given a new event type with the same topic, unless the new event type schema happens to be a valid evolution of the existing one, it will fail.
 
 Using the TopicRecordName strategy, schemas are registered by topic and record name. The record name is set from the schema as ``<namespace>.<name>`` (or just ``<name>`` if no namespace is provided). On serializing an event, the serializer looks for a schema registered as ``<topic-name>-<record-name>``.
 For example, given a schema like::
@@ -41,7 +41,7 @@ Consequences
 ************
 * The record names for each event type will need to be distinct from each other. Originally, they were all just "CloudEvent." We needed to add namespaces to ensure that they were unique. Note that this will be necessary regardless of which solution we choose.
 * Any event type will be able to be written to any topic
-* Schema evolution rules will be enforced for event types but not for topics.
+* Schema evolution rules will be enforced separately for each event type on a topic.
 * The event-bus-kafka consumer will need to be updated to determine the signal from the message headers rather than taking a signal as a passed argument in the management command. This will also be necessary regardless of which solution we choose.
 
 
