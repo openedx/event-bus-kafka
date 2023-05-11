@@ -14,6 +14,16 @@ Change Log
 Unreleased
 **********
 
+[4.0.0] - 2023-05-10
+********************
+Changed
+=======
+* Implement openedx-events Event Bus Consumer API.
+* **BREAKING CHANGE**: Remove ``consume_events`` management command as this command will be provided by openedx_events. To replay events using the
+  openedx-events version of the management command, pass ``--extra '{"offset_time": "2023-01-08T06:46:22"}'`` instead of ``-o 2023-01-08T06:46:22``.
+* **BREAKING Change**: ``offset_timestamp`` argument has been removed from ``consume_indefinitely`` and ``reset_offsets_and_sleep_indefinitely`` methods.
+  It is now added as an optional argument named ``offset_time`` to ``KafkaEventConsumer`` constructor.
+
 [3.10.0] - 2023-05-05
 *********************
 Changed

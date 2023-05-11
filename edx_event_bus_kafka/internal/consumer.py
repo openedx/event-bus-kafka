@@ -3,19 +3,18 @@ Core consumer and event-loop code.
 """
 import logging
 import time
-import warnings
 from datetime import datetime
 from functools import lru_cache
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.db import connection
 from django.dispatch import receiver
 from django.test.signals import setting_changed
 from edx_django_utils.monitoring import function_trace, record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
+from openedx_events.event_bus import EventBusConsumer
 from openedx_events.event_bus.avro.deserializer import AvroSignalDeserializer
-from openedx_events.tooling import OpenEdxPublicSignal, load_all_signals
+from openedx_events.tooling import OpenEdxPublicSignal
 
 from .config import get_full_topic, get_schema_registry_client, load_common_settings
 from .utils import (
@@ -101,7 +100,7 @@ def _reconnect_to_db_if_needed():
         connection.connect()
 
 
-class KafkaEventConsumer:
+class KafkaEventConsumer(EventBusConsumer):
     """
     Construct consumer for the given topic and group. The consumer can then
     emit events from the event bus using the signal from the message headers.
@@ -109,15 +108,30 @@ class KafkaEventConsumer:
     Note that the topic should be specified here *without* the optional environment prefix.
 
     Can also consume messages indefinitely off the queue.
+
+    Attributes:
+        topic: Topic to consume (without environment prefix).
+        group_id: Consumer group id.
+        signal: Type of signal to emit from consumed messages.
+        consumer: Actual kafka consumer instance.
+        offset_time: The timestamp (in ISO format) that we would like to reset the consumers to. If this is used, the
+            consumers will only reset the offsets of the topic but will not actually consume and process any messages.
     """
 
-    def __init__(self, topic, group_id):
+    def __init__(self, topic, group_id, offset_time=None):
         if confluent_kafka is None:  # pragma: no cover
             raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
         self.topic = topic
         self.group_id = group_id
         self.consumer = self._create_consumer()
+        self.offset_time = None
+        if offset_time:
+            try:
+                self.offset_time = datetime.fromisoformat(str(offset_time))
+            except ValueError:
+                logger.exception('Could not parse the offset timestamp.')
+                raise
         self._shut_down_loop = False
         self.schema_registry_client = get_schema_registry_client()
 
@@ -148,25 +162,22 @@ class KafkaEventConsumer:
         """
         self._shut_down_loop = True
 
-    def reset_offsets_and_sleep_indefinitely(self, offset_timestamp):
+    def reset_offsets_and_sleep_indefinitely(self):
         """
         Reset any assigned partitions to the given offset, and sleep indefinitely.
-
-        Arguments:
-            offset_timestamp (datetime): Reset the offsets of the consumer partitions to this timestamp.
         """
 
         def reset_offsets(consumer, partitions):
             # This is a callback method used on consumer assignment to handle offset reset logic.
             # We do not want to attempt to change offsets if the offset is None.
-            if offset_timestamp is None:
+            if self.offset_time is None:
                 return
 
             # Get the offset from the epoch. Kafka expects offsets in milliseconds for offsets_for_times. Although
             # this is undocumented in the libraries we're using (confluent-kafka and librdkafa), for reference
             # see the docs for kafka-python:
             # https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.offsets_for_times
-            offset_timestamp_ms = int(offset_timestamp.timestamp()*1000)
+            offset_timestamp_ms = int(self.offset_time.timestamp()*1000)
             # We set the epoch timestamp in the offset position.
             for partition in partitions:
                 partition.offset = offset_timestamp_ms
@@ -178,7 +189,7 @@ class KafkaEventConsumer:
             if len(errors) > 0:
                 raise Exception("Error getting offsets for timestamps: {errors}")
 
-            logger.info(f'Found offsets for timestamp {offset_timestamp}: {partitions_with_offsets}')
+            logger.info(f'Found offsets for timestamp {self.offset_time}: {partitions_with_offsets}')
 
             # We need to commit these offsets to Kafka in order to ensure these offsets are persisted.
             consumer.commit(offsets=partitions_with_offsets)
@@ -214,8 +225,6 @@ class KafkaEventConsumer:
         Consume events from a topic in an infinite loop.
         """
 
-        # This is already checked at the Command level, but it's possible this loop
-        # could get called some other way, so check it here too.
         if not KAFKA_CONSUMERS_ENABLED.is_enabled():
             logger.error("Kafka consumers not enabled, exiting.")
             return
@@ -294,26 +303,15 @@ class KafkaEventConsumer:
         finally:
             self.consumer.close()
 
-    def consume_indefinitely(self, offset_timestamp=None):
+    def consume_indefinitely(self):
         """
-        Consume events from a topic in an infinite loop.
-
-        Arguments:
-            offset_timestamp (datetime): Optional and deprecated; if supplied, calls
-                ``reset_offsets_and_sleep_indefinitely`` instead. Relying code should
-                switch to calling that method directly.
+        Consume events from a topic in an infinite loop if offset_time is not set else reset any assigned partitions to
+        the given offset, and sleep indefinitely.
         """
-        # TODO: Once this deprecated argument can be removed, just
-        # remove this delegation method entirely and rename
-        # `_consume_indefinitely` to no longer have the `_` prefix.
-        if offset_timestamp is None:
+        if self.offset_time is None:
             self._consume_indefinitely()
         else:
-            warnings.warn(
-                "Calling consume_indefinitely with offset_timestamp is deprecated; "
-                "please call reset_offsets_and_sleep_indefinitely directly instead."
-            )
-            self.reset_offsets_and_sleep_indefinitely(offset_timestamp)
+            self.reset_offsets_and_sleep_indefinitely()
 
     @function_trace('emit_signals_from_message')
     def emit_signals_from_message(self, msg, signal):
@@ -610,87 +608,6 @@ class KafkaEventConsumer:
         kafka_message = message or kafka_message
 
         return kafka_message, kafka_error
-
-
-class ConsumeEventsCommand(BaseCommand):
-    """
-    Management command for Kafka consumer workers in the event bus.
-    """
-    help = """
-    Consume messages from a Kafka topic and send their data to the correct signal.
-
-    Example::
-
-        python3 manage.py cms consume_events -t user-login -g user-activity-service
-    """
-
-    def add_arguments(self, parser):
-
-        parser.add_argument(
-            '-t', '--topic',
-            nargs=1,
-            required=True,
-            help='Topic to consume (without environment prefix)'
-        )
-
-        parser.add_argument(
-            '-g', '--group_id',
-            nargs=1,
-            required=True,
-            help='Consumer group id'
-        )
-
-        # TODO: remove this once callers have been updated. Left optional to avoid the need for lockstep changes
-        parser.add_argument(
-            '-s', '--signal',
-            nargs=1,
-            required=False,
-            default=None,
-            help='Deprecated argument. Correct signal will be determined from event'
-        )
-
-        parser.add_argument(
-            '-o', '--offset_time',
-            nargs=1,
-            required=False,
-            default=None,
-            help='The timestamp (in ISO format) that we would like to reset the consumers to. '
-                 'If this is used, the consumers will only reset the offsets of the topic '
-                 'but will not actually consume and process any messages.'
-        )
-
-    def handle(self, *args, **options):
-        if confluent_kafka is None:
-            logger.error(
-                "Cannot consume events because confluent_kafka dependency (or one of its extras) was not installed"
-            )
-            return
-
-        if not KAFKA_CONSUMERS_ENABLED.is_enabled():
-            logger.error("Kafka consumers not enabled, exiting.")
-            return
-
-        try:
-            load_all_signals()
-            if options['offset_time'] and options['offset_time'][0] is not None:
-                try:
-                    offset_timestamp = datetime.fromisoformat(options['offset_time'][0])
-                except ValueError:
-                    logger.exception('Could not parse the offset timestamp.')
-                    raise
-            else:
-                offset_timestamp = None
-
-            event_consumer = KafkaEventConsumer(
-                topic=options['topic'][0],
-                group_id=options['group_id'][0],
-            )
-            if offset_timestamp is None:
-                event_consumer.consume_indefinitely()
-            else:
-                event_consumer.reset_offsets_and_sleep_indefinitely(offset_timestamp=offset_timestamp)
-        except Exception:  # pylint: disable=broad-except
-            logger.exception("Error consuming Kafka events")
 
 
 # argument type SchemaRegistryClient for schema_registry_client removed from signature to avoid error on import
