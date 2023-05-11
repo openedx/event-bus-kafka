@@ -4,7 +4,7 @@
 Status
 ******
 
-**Accepted** DATE TO BE ADDED BEFORE MERGING
+**Accepted** 2023-05-11
 
 Context
 *******
