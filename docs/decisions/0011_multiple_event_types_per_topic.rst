@@ -52,7 +52,6 @@ Consequences
 ************
 * The record names for each event type will need to be distinct from each other. Originally, they were all just "CloudEvent." We needed to add namespaces to ensure that they were unique. Note that this will be necessary regardless of which solution we choose.
 * All topics will accept any event type. This will be true even for topics where we only want a single event type.
-* Only one service should ever produce to a topic, otherwise there is a risk of clients using different strategies for the same topic. This is already considered a Kafka best practice.
 * Schema evolution rules will be enforced separately for each event type on a topic.
 * The event-bus-kafka consumer will need to be updated to determine the signal from the message headers rather than taking a signal as a passed argument in the management command. This will also be necessary regardless of which solution we choose.
 
