@@ -9,11 +9,10 @@ Status
 Context
 *******
 
-For the initial implementation of the event bus, we decided to limit each topic to use a single schema. This meant that every signal in openedx-events required a different topic. This worked for our initial use case, course catalog updates, because all changes were considered updates and could be emitted using the same signal.
-However, other types of events are not so easily grouped into a single signal. For example, there are different signals for ``XBLOCK_PUBLISHED``, ``XBLOCK_UPDATED``, and ``XBLOCK_DUPLICATED``, and indeed different schemas across the three signals. Routing these signals through different topics could lead to events being processed in a nonsensical order, for example an xblock being duplicated before it's been published. See `Should You Put Several Event Types in the Same Kafka Topic?`_ and `Putting Several Event Types in the Same Topic – Revisited`_ for more information on why it can be useful to group different event types on the same topic.
+Following `this ADR`_ in openedx-events, all implementations of event bus must support multiple event types on the same topic. This ADR explains how we will implement this using Kafka.
+**UPDATE LINK AFTER THAT ADR MERGES**
 
-.. _Should You Put Several Event Types in the Same Kafka Topic?: https://www.confluent.io/blog/put-several-event-types-kafka-topic/
-.. _Putting Several Event Types in the Same Topic – Revisited: https://www.confluent.io/blog/multiple-event-types-in-the-same-kafka-topic/
+.. _this ADR: https://github.com/openedx/openedx-events/pull/217
 
 Decision
 ********
