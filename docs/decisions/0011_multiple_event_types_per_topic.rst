@@ -16,7 +16,7 @@ Following `this ADR`_ in openedx-events, all implementations of event bus must s
 
 Decision
 ********
-We will update the code for event serializers, which are responsible for registering and validating schemas against the schema registry, to use the TopicRecordName strategy.
+To comply with the event bus requirements, we will use the TopicRecordName strategy in the event serializers, which are responsible for registering and validating schemas against the schema registry.
 
 TopicRecordName Strategy
 ========================
@@ -24,7 +24,7 @@ The Confluent Schema Registry stores schemas according to one of three strategie
 
 The default strategy the TopicName strategy. Under this strategy, the serializer will determine the existing schema by looking for a schema registered as ``<topic-name>-value`` (``<topic-name>-key`` when serializing the key), the topic name having been passed in the SerializationContext object. Therefore, if the serializer is given a new event type with the same topic, unless the new event type schema happens to be a valid evolution of the existing one, it will fail.
 
-Using the TopicRecordName strategy, schemas are registered by topic and record name. On serializing an event, the serializer looks for a schema registered as ``<topic-name>-<record-name>``.
+Using the TopicRecordName strategy, schemas are registered by topic and record name. The record name is set from the schema as ``<namespace>.<name>`` (or just ``<name>`` if no namespace is provided). On serializing an event, the serializer looks for a schema registered as ``<topic-name>-<record-name>``.
 For example, given a schema like::
 
     {
