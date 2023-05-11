@@ -4,15 +4,14 @@
 Status
 ******
 
-- **Accepted** DATE TO BE ADDED BEFORE MERGING
+**Accepted** DATE TO BE ADDED BEFORE MERGING
 
 Context
 *******
 
 Following `this ADR`_ in openedx-events, all implementations of event bus must support multiple event types on the same topic. This ADR explains how we will implement this using Kafka.
-**UPDATE LINK AFTER THAT ADR MERGES**
 
-.. _this ADR: https://github.com/openedx/openedx-events/pull/217
+.. _this ADR: https://openedx-events.readthedocs.io/en/latest/decisions/0010-multiple-event-types-per-topic.html
 
 Decision
 ********
@@ -59,10 +58,6 @@ Usually we would put this sort of feature behind a SettingsToggle so deployers c
 Using different serializers based on the topic
 ==============================================
 We could refactor the code to configure the AvroSerializer differently based on the topic, only changing the subjec name strategy when the topic should allow multiple event types. This would be a significant amount of work and would require some list of which topics accept multiple event types, which would have to be maintained and would reduce the flexibility of the event bus.
-
-Require related event types to have the same schema
-===================================================
-In theory we could avoid the issue of event types with different schemas on the same topic by simply not allowing them, requiring all event types that are intended to go on the same topic to have the same schema. This would require knowing in advance which event types will go to which topics and likely result in lots of extraneous fields which are only necessary for some of the event types and not others.
 
 Avro Unions
 ===========
