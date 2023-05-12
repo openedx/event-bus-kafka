@@ -8,7 +8,7 @@ Kafka implementation for Open edX event bus.
 
 Overview
 ********
-This package implements an event bus for Open EdX using Kafka.
+This package implements an event bus for Open edX using Kafka.
 
 The event bus acts as a broker between services publishing events and other services that consume these events.
 Implementing the event bus will allow for asynchronous messaging across services which greatly improves efficiency as we don't have to wait for scheduled batch synchronizations.
@@ -33,8 +33,12 @@ To use this implementation of the Event Bus with openedx-events, you'll need to 
     EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL: ...
     EVENT_BUS_TOPIC_PREFIX: ...
 
-    # Required, on the producing side only:
+    # On the producing side:
     EVENT_BUS_PRODUCER: edx_event_bus_kafka.create_producer
+
+    # On the consuming side:
+    EVENT_BUS_CONSUMER: edx_event_bus_kafka.KafkaEventConsumer
+
 
 Optional settings that are worth considering:
 
@@ -42,7 +46,10 @@ Optional settings that are worth considering:
 
 For manual testing, see `<docs/how_tos/manual_testing.rst>`__.
 
-Django management commands: ``edx_event_bus_kafka.management.commands.*`` expose ``Command`` classes
+Django management commands:
+
+- If you need to test event production, use the ``produce_event`` management command
+- To actually run the consumer, use openedx-events' ``consume_events`` management command
 
 OEP-52 documentation: https://open-edx-proposals.readthedocs.io/en/latest/architectural-decisions/oep-0052-arch-event-bus-architecture.html
 (TODO: `Set up documentation <https://openedx.atlassian.net/wiki/spaces/DOC/pages/21627535/Publish+Documentation+on+Read+the+Docs>`_)
