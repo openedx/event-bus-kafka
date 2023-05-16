@@ -18,7 +18,7 @@ Unreleased
 ********************
 Changed
 =======
-* Removed deprecated ``signal`` argument from consumer initialization
+* **BREAKING CHANGE**: Removed deprecated ``signal`` argument from consumer initialization
 
 [4.0.1] - 2023-05-10
 ********************
