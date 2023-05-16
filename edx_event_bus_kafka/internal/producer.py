@@ -161,31 +161,20 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
         """Tells Avro how to turn objects into dictionaries."""
         return signal_serializer.to_dict(event_data)
 
-    # .. setting_name: EVENT_BUS_KAFKA_ALLOW_MULTIPLE_EVENTS_PER_TOPIC
-    # .. setting_default: False
-    # .. setting_description: Boolean determining whether Kafka topics will be allowed to have
-    # more than one event type on them. Useful if you have multiple events representing the lifecycle
-    # of a single object (eg XBLOCK_CREATED, XBLOCK_UPDATED, XBLOCK_DELETED). If set to True, will configure
-    # the producer to use the TopicRecordName strategy when registering schemas. See "Subject Name Strategy" in
-    # https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html
-    allow_mutiple_events_per_topic = getattr(settings, 'EVENT_BUS_KAFKA_ALLOW_MULTIPLE_EVENTS_PER_TOPIC', None)
-
     # Serializers for key and value components of Kafka event
     key_serializer = AvroSerializer(
         schema_str=extract_key_schema(signal_serializer, event_key_field),
         schema_registry_client=client,
         to_dict=inner_to_dict,
+        conf={'subject.name.strategy': topic_record_subject_name_strategy}
     )
 
     value_serializer = AvroSerializer(
         schema_str=signal_serializer.schema_string(),
         schema_registry_client=client,
         to_dict=inner_to_dict,
+        conf={'subject.name.strategy': topic_record_subject_name_strategy}
     )
-
-    if allow_mutiple_events_per_topic:
-        key_serializer['conf'] = {'subject.name.strategy': topic_record_subject_name_strategy}
-        value_serializer['conf'] = {'subject.name.strategy': topic_record_subject_name_strategy}
 
     return key_serializer, value_serializer
 
