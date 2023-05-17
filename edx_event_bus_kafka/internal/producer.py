@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 try:
     import confluent_kafka
     from confluent_kafka import Producer
+    from confluent_kafka.schema_registry import topic_record_subject_name_strategy
     from confluent_kafka.schema_registry.avro import AvroSerializer
     from confluent_kafka.serialization import MessageField, SerializationContext
 except ImportError:  # pragma: no cover
@@ -165,11 +166,14 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
         schema_str=extract_key_schema(signal_serializer, event_key_field),
         schema_registry_client=client,
         to_dict=inner_to_dict,
+        conf={'subject.name.strategy': topic_record_subject_name_strategy}
     )
+
     value_serializer = AvroSerializer(
         schema_str=signal_serializer.schema_string(),
         schema_registry_client=client,
         to_dict=inner_to_dict,
+        conf={'subject.name.strategy': topic_record_subject_name_strategy}
     )
 
     return key_serializer, value_serializer

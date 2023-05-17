@@ -26,6 +26,7 @@ from edx_event_bus_kafka.management.commands.produce_event import Command
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
+    from confluent_kafka.schema_registry import topic_record_subject_name_strategy
     from confluent_kafka.schema_registry.avro import AvroSerializer
 except ImportError:  # pragma: no cover
     pass
@@ -79,6 +80,10 @@ class TestEventProducer(TestCase):
             # We can't actually call them because they want to talk to the schema server.
             assert isinstance(key_ser, AvroSerializer)
             assert isinstance(value_ser, AvroSerializer)
+            assert key_ser._subject_name_func ==\
+                   topic_record_subject_name_strategy  # pylint: disable=protected-access,comparison-with-callable
+            assert value_ser._subject_name_func ==\
+                   topic_record_subject_name_strategy  # pylint: disable=protected-access,comparison-with-callable
 
     def test_serializers_unconfigured(self):
         with pytest.raises(Exception, match="missing library or settings"):
