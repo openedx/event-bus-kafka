@@ -112,13 +112,12 @@ class KafkaEventConsumer(EventBusConsumer):
     Attributes:
         topic: Topic to consume (without environment prefix).
         group_id: Consumer group id.
-        signal: DEPRECATED Type of signal to emit from consumed messages. Will be removed in a future version
         consumer: Actual kafka consumer instance.
         offset_time: The timestamp (in ISO format) that we would like to reset the consumers to. If this is used, the
             consumers will only reset the offsets of the topic but will not actually consume and process any messages.
     """
 
-    def __init__(self, topic, group_id, signal=None, offset_time=None):  # pylint: disable=unused-argument
+    def __init__(self, topic, group_id, offset_time=None):
         if confluent_kafka is None:  # pragma: no cover
             raise Exception('Library confluent-kafka not available. Cannot create event consumer.')
 
