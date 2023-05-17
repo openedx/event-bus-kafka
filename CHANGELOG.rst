@@ -14,13 +14,13 @@ Change Log
 Unreleased
 **********
 
-[5.1.0] - 2023-05-16
+[5.1.0] - 2023-05-17
 ********************
 Changed
 =======
 * Reconfigured serializers to use topic_record_name_strategy, allowing multiple event types per topic
 
-[5.0.0] - 2023-05-16
+[5.0.0] - 2023-05-17
 ********************
 Changed
 =======
