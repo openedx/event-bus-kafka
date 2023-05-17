@@ -54,6 +54,7 @@ Consequences
 * All topics will accept any event type. This will be true even for topics where we only want a single event type.
 * Schema evolution rules will be enforced separately for each event type on a topic.
 * The event-bus-kafka consumer will need to be updated to determine the signal from the message headers rather than taking a signal as a passed argument in the management command. This will also be necessary regardless of which solution we choose.
+  * Consumers will continue to use event header details to determine the schema.
 
 
 Rejected Alternatives
