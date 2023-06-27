@@ -170,7 +170,7 @@ jinja2==3.1.2
     #   -r requirements/quality.txt
     #   code-annotations
     #   diff-cover
-keyring==24.0.0
+keyring==24.2.0
     # via
     #   -r requirements/quality.txt
     #   twine
@@ -198,11 +198,11 @@ more-itertools==9.1.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
-newrelic==8.8.0
+newrelic==8.8.1
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
-openedx-events==8.0.1
+openedx-events==8.2.0
     # via -r requirements/quality.txt
 packaging==23.1
     # via
@@ -224,13 +224,13 @@ pkginfo==1.9.6
     # via
     #   -r requirements/quality.txt
     #   twine
-platformdirs==3.6.0
+platformdirs==3.8.0
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   pylint
     #   virtualenv
-pluggy==1.0.0
+pluggy==1.2.0
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -293,7 +293,7 @@ pyproject-hooks==1.0.0
     # via
     #   -r requirements/pip-tools.txt
     #   build
-pytest==7.3.2
+pytest==7.4.0
     # via
     #   -r requirements/quality.txt
     #   pytest-cov
