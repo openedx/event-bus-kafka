@@ -12,7 +12,7 @@ attrs==23.1.0
     # via
     #   -r requirements/base.txt
     #   openedx-events
-avro==1.11.1
+avro==1.11.2
     # via confluent-kafka
 certifi==2023.5.7
     # via requests
@@ -65,7 +65,7 @@ edx-opaque-keys[django]==2.3.0
     #   openedx-events
 edx-toggles==5.0.0
     # via -r requirements/base.txt
-exceptiongroup==1.1.1
+exceptiongroup==1.1.2
     # via pytest
 fastavro==1.7.4
     # via
@@ -154,7 +154,7 @@ tomli==2.0.1
     # via
     #   coverage
     #   pytest
-typing-extensions==4.6.3
+typing-extensions==4.7.1
     # via
     #   -r requirements/base.txt
     #   asgiref
