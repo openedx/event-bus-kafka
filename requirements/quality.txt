@@ -8,7 +8,7 @@ asgiref==3.7.2
     # via
     #   -r requirements/test.txt
     #   django
-astroid==2.15.5
+astroid==2.15.6
     # via
     #   pylint
     #   pylint-celery
@@ -31,11 +31,11 @@ cffi==1.15.1
     #   -r requirements/test.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.1.0
+charset-normalizer==3.2.0
     # via
     #   -r requirements/test.txt
     #   requests
-click==8.1.3
+click==8.1.4
     # via
     #   -r requirements/test.txt
     #   click-log
@@ -97,7 +97,7 @@ exceptiongroup==1.1.2
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.7.4
+fastavro==1.8.0
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -106,11 +106,11 @@ idna==3.4
     # via
     #   -r requirements/test.txt
     #   requests
-importlib-metadata==6.7.0
+importlib-metadata==6.8.0
     # via
     #   keyring
     #   twine
-importlib-resources==5.12.0
+importlib-resources==6.0.0
     # via keyring
 iniconfig==2.0.0
     # via
@@ -120,7 +120,7 @@ isort==5.12.0
     # via
     #   -r requirements/quality.in
     #   pylint
-jaraco-classes==3.2.3
+jaraco-classes==3.3.0
     # via keyring
 jeepney==0.8.0
     # via
@@ -162,7 +162,7 @@ pbr==5.11.1
     #   stevedore
 pkginfo==1.9.6
     # via twine
-platformdirs==3.8.0
+platformdirs==3.8.1
     # via pylint
 pluggy==1.2.0
     # via
@@ -289,7 +289,7 @@ webencodings==0.5.1
     # via bleach
 wrapt==1.15.0
     # via astroid
-zipp==3.15.0
+zipp==3.16.0
     # via
     #   importlib-metadata
     #   importlib-resources
