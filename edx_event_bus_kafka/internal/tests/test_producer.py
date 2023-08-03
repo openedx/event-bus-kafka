@@ -245,6 +245,8 @@ class TestEventProducer(TestCase):
         assert "source='openedx/test/web'" in error_string
         assert f"id=UUID('{metadata.id}')" in error_string
         assert f"sourcehost='{metadata.sourcehost}'" in error_string
+        assert f"event_data_as_json='{{\"test_data\": {{\"course_id\": \"id\", \"sub_name\": \"name\"}}}}'"\
+               in error_string
 
     @patch(
         'edx_event_bus_kafka.internal.producer.get_serializers', autospec=True,
@@ -283,6 +285,8 @@ class TestEventProducer(TestCase):
         # since we didn't fail until after key extraction we should have an event_key to report
         assert "event_key='ABCx'" in error_string
         assert "error=bad!" in error_string
+        assert f"event_data_as_json='{{\"test_data\": {{\"course_id\": \"ABCx\", \"sub_name\": \"name\"}}}}'"\
+               in error_string
 
     @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
     def test_polling_loop_terminates(self):
