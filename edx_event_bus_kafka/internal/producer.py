@@ -135,6 +135,7 @@ def extract_key_schema(signal_serializer: AvroSignalSerializer, event_key_field:
     # Same as used by AvroSignalSerializer#schema_string in openedx-events
     return json.dumps(subschema, sort_keys=True)
 
+
 @lru_cache()
 def get_signal_serializer(signal: OpenEdxPublicSignal):
     """
@@ -149,6 +150,7 @@ def get_signal_serializer(signal: OpenEdxPublicSignal):
         An AvroSignalSerializer configured to serialize event data to dictionaries
     """
     return AvroSignalSerializer(signal)
+
 
 @lru_cache
 def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
@@ -238,6 +240,7 @@ class ProducingContext:
                 f"Message delivered to Kafka event bus: topic={evt.topic()}, partition={evt.partition()}, "
                 f"offset={evt.offset()}, message_id={message_id}, key={evt.key()}"
             )
+
 
 class KafkaEventProducer(EventBusProducer):
     """
