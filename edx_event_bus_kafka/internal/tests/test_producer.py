@@ -285,7 +285,7 @@ class TestEventProducer(TestCase):
         # since we didn't fail until after key extraction we should have an event_key to report
         assert "event_key='ABCx'" in error_string
         assert "error=bad!" in error_string
-        assert f"event_data_as_json='{{\"test_data\": {{\"course_id\": \"ABCx\", \"sub_name\": \"name\"}}}}'"\
+        assert "event_data_as_json='{{\"test_data\": {{\"course_id\": \"ABCx\", \"sub_name\": \"name\"}}}}'"\
                in error_string
 
     @override_settings(EVENT_BUS_KAFKA_POLL_INTERVAL_SEC=0.05)
