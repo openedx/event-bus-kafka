@@ -136,12 +136,28 @@ def extract_key_schema(signal_serializer: AvroSignalSerializer, event_key_field:
     return json.dumps(subschema, sort_keys=True)
 
 
+@lru_cache()
+def get_signal_serializer(signal: OpenEdxPublicSignal):
+    """
+    Get the AvroSignalSerializer for a signal
+
+    This is cached in order to save work re-transforming classes into Avro schemas.
+
+    Arguments:
+        signal: The OpenEdxPublicSignal to make a serializer for.
+
+    Returns:
+        An AvroSignalSerializer configured to serialize event data to dictionaries
+    """
+    return AvroSignalSerializer(signal)
+
+
 @lru_cache
 def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     """
-    Get the key and value serializers for a signal and a key field path.
+    Get the full key and value serializers for a signal and a key field path.
 
-    This is cached in order to save work re-transforming classes into Avro schemas.
+    This is cached in order to save work re-transforming AvroSignalSerializers into AvroSerializers.
 
     Arguments:
         signal: The OpenEdxPublicSignal to make a serializer for.
@@ -149,13 +165,13 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
           (period-delimited string naming the field names to descend).
 
     Returns:
-        2-tuple of AvroSignalSerializers, for event key and value
+        2-tuple of AvroSerializers, for event key and value
     """
     client = get_schema_registry_client()
     if client is None:
         raise Exception('Cannot create Kafka serializers -- missing library or settings')
 
-    signal_serializer = AvroSignalSerializer(signal)
+    signal_serializer = get_signal_serializer(signal)
 
     def inner_to_dict(event_data, ctx=None):  # pylint: disable=unused-argument
         """Tells Avro how to turn objects into dictionaries."""
@@ -191,6 +207,7 @@ class ProducingContext:
     event_key_field = attr.ib(type=str, default=None)
     event_data = attr.ib(type=dict, default=None)
     event_metadata = attr.ib(type=EventsMetadata, default=None)
+    event_data_as_json = attr.ib(type=str, default=None)
 
     def __repr__(self):
         """Create a logging-friendly string"""
@@ -266,6 +283,7 @@ class KafkaEventProducer(EventBusProducer):
         context = ProducingContext(signal=signal, initial_topic=topic, event_key_field=event_key_field,
                                    event_data=event_data, event_metadata=event_metadata)
         try:
+            context.event_data_as_json = json.dumps(get_signal_serializer(signal).to_dict(event_data))
             full_topic = get_full_topic(topic)
             context.full_topic = full_topic
 
@@ -361,3 +379,4 @@ def create_producer() -> Optional[KafkaEventProducer]:
 def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
     """Reset caches when settings change during unit tests."""
     get_serializers.cache_clear()
+    get_signal_serializer.cache_clear()
