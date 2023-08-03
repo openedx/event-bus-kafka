@@ -379,3 +379,4 @@ def create_producer() -> Optional[KafkaEventProducer]:
 def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
     """Reset caches when settings change during unit tests."""
     get_serializers.cache_clear()
+    get_signal_serializer.cache_clear()
