@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[5.3.0] - 2023-08-08
+********************
+Changed
+=======
+* Added event_metadata_as_dict to ProducingContext for easier replay from logs
+
 [5.2.0] - 2023-08-03
 ********************
 Changed
