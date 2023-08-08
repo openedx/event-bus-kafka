@@ -38,7 +38,7 @@ cffi==1.15.1
     #   -r requirements/quality.txt
     #   cryptography
     #   pynacl
-chardet==5.1.0
+chardet==5.2.0
     # via diff-cover
 charset-normalizer==3.2.0
     # via
@@ -68,7 +68,7 @@ coverage[toml]==7.2.7
     # via
     #   -r requirements/quality.txt
     #   pytest-cov
-cryptography==41.0.2
+cryptography==41.0.3
     # via
     #   -r requirements/quality.txt
     #   secretstorage
@@ -89,6 +89,7 @@ django==3.2.20
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/quality.txt
     #   django-crum
+    #   django-waffle
     #   edx-django-utils
     #   edx-i18n-tools
     #   edx-toggles
@@ -98,7 +99,7 @@ django-crum==0.7.9
     #   -r requirements/quality.txt
     #   edx-django-utils
     #   edx-toggles
-django-waffle==3.0.0
+django-waffle==4.0.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
@@ -107,11 +108,11 @@ docutils==0.20.1
     # via
     #   -r requirements/quality.txt
     #   readme-renderer
-edx-django-utils==5.6.0
+edx-django-utils==5.7.0
     # via
     #   -r requirements/quality.txt
     #   edx-toggles
-edx-i18n-tools==1.0.0
+edx-i18n-tools==1.1.0
     # via -r requirements/dev.in
 edx-lint==5.3.4
     # via -r requirements/quality.txt
@@ -119,7 +120,7 @@ edx-opaque-keys[django]==2.3.0
     # via
     #   -r requirements/quality.txt
     #   openedx-events
-edx-toggles==5.0.0
+edx-toggles==5.1.0
     # via -r requirements/quality.txt
 exceptiongroup==1.1.2
     # via
@@ -144,7 +145,7 @@ importlib-metadata==6.8.0
     #   -r requirements/quality.txt
     #   keyring
     #   twine
-importlib-resources==6.0.0
+importlib-resources==6.0.1
     # via
     #   -r requirements/quality.txt
     #   keyring
@@ -194,15 +195,15 @@ mdurl==0.1.2
     # via
     #   -r requirements/quality.txt
     #   markdown-it-py
-more-itertools==10.0.0
+more-itertools==10.1.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
-newrelic==8.8.1
+newrelic==8.9.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
-openedx-events==8.3.0
+openedx-events==8.4.0
     # via -r requirements/quality.txt
 packaging==23.1
     # via
@@ -218,13 +219,13 @@ pbr==5.11.1
     # via
     #   -r requirements/quality.txt
     #   stevedore
-pip-tools==7.1.0
+pip-tools==7.2.0
     # via -r requirements/pip-tools.txt
 pkginfo==1.9.6
     # via
     #   -r requirements/quality.txt
     #   twine
-platformdirs==3.9.1
+platformdirs==3.10.0
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -247,7 +248,7 @@ py==1.11.0
     # via
     #   -r requirements/ci.txt
     #   tox
-pycodestyle==2.10.0
+pycodestyle==2.11.0
     # via -r requirements/quality.txt
 pycparser==2.21
     # via
@@ -255,13 +256,13 @@ pycparser==2.21
     #   cffi
 pydocstyle==6.3.0
     # via -r requirements/quality.txt
-pygments==2.15.1
+pygments==2.16.1
     # via
     #   -r requirements/quality.txt
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.17.4
+pylint==2.17.5
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -333,7 +334,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements/quality.txt
     #   twine
-rich==13.4.2
+rich==13.5.2
     # via
     #   -r requirements/quality.txt
     #   twine
@@ -378,7 +379,7 @@ tomli==2.0.1
     #   pyproject-hooks
     #   pytest
     #   tox
-tomlkit==0.11.8
+tomlkit==0.12.1
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -411,7 +412,7 @@ webencodings==0.5.1
     # via
     #   -r requirements/quality.txt
     #   bleach
-wheel==0.41.0
+wheel==0.41.1
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
