@@ -208,6 +208,7 @@ class ProducingContext:
     event_data = attr.ib(type=dict, default=None)
     event_metadata = attr.ib(type=EventsMetadata, default=None)
     event_data_as_json = attr.ib(type=str, default=None)
+    event_metadata_as_json = attr.ib(type=str, default=None)
 
     def __repr__(self):
         """Create a logging-friendly string"""
@@ -284,6 +285,7 @@ class KafkaEventProducer(EventBusProducer):
                                    event_data=event_data, event_metadata=event_metadata)
         try:
             context.event_data_as_json = json.dumps(get_signal_serializer(signal).to_dict(event_data))
+            context.event_metadata_as_json = event_metadata.to_json()
             full_topic = get_full_topic(topic)
             context.full_topic = full_topic
 
