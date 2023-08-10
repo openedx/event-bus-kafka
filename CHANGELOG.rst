@@ -18,7 +18,7 @@ Unreleased
 ********************
 Fixed
 =====
-* Pinned openedx-events to 8.5.0 for EventsMetadata serialization
+* Constrain openedx-events version to at least 8.5.0 (for EventsMetadata serialization support)
 
 [5.3.0] - 2023-08-08
 ********************
