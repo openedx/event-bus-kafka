@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[5.3.1] - 2023-08-08
+********************
+Fixed
+=====
+* Pinned openedx-events to 8.5.0 for EventsMetadata serialization
+
 [5.3.0] - 2023-08-08
 ********************
 Changed

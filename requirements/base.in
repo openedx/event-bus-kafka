@@ -2,7 +2,7 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# openedx-events 8.0.0 removes an argument from consumer initialization
-openedx-events>=8.5.0                   # Events Metadata logging
+# openedx-events 8.5.0 adds serialization methods to EventsMetadata
+openedx-events>=8.5.0                   # Events API
 edx_django_utils
 edx_toggles
