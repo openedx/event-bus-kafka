@@ -54,11 +54,11 @@ code-annotations==1.5.0
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.2.0
     # via -r requirements/test.txt
-coverage[toml]==7.2.7
+coverage[toml]==7.3.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==41.0.2
+cryptography==41.0.3
     # via secretstorage
 ddt==1.6.0
     # via -r requirements/test.txt
@@ -67,6 +67,7 @@ django==3.2.20
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/test.txt
     #   django-crum
+    #   django-waffle
     #   edx-django-utils
     #   edx-toggles
     #   openedx-events
@@ -75,7 +76,7 @@ django-crum==0.7.9
     #   -r requirements/test.txt
     #   edx-django-utils
     #   edx-toggles
-django-waffle==3.0.0
+django-waffle==4.0.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -89,17 +90,17 @@ docutils==0.19
     #   readme-renderer
     #   restructuredtext-lint
     #   sphinx
-edx-django-utils==5.6.0
+edx-django-utils==5.7.0
     # via
     #   -r requirements/test.txt
     #   edx-toggles
-edx-opaque-keys[django]==2.3.0
+edx-opaque-keys[django]==2.4.0
     # via
     #   -r requirements/test.txt
     #   openedx-events
-edx-toggles==5.0.0
+edx-toggles==5.1.0
     # via -r requirements/test.txt
-exceptiongroup==1.1.2
+exceptiongroup==1.1.3
     # via
     #   -r requirements/test.txt
     #   pytest
@@ -119,7 +120,7 @@ importlib-metadata==6.8.0
     #   keyring
     #   sphinx
     #   twine
-importlib-resources==6.0.0
+importlib-resources==6.0.1
     # via keyring
 iniconfig==2.0.0
     # via
@@ -146,9 +147,9 @@ markupsafe==2.1.3
     #   jinja2
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.0.0
+more-itertools==10.1.0
     # via jaraco-classes
-newrelic==8.8.1
+newrelic==8.10.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -181,7 +182,7 @@ pycparser==2.21
     #   cffi
 pydata-sphinx-theme==0.13.3
     # via sphinx-book-theme
-pygments==2.15.1
+pygments==2.16.1
     # via
     #   accessible-pygments
     #   doc8
@@ -236,7 +237,7 @@ restructuredtext-lint==1.4.0
     # via doc8
 rfc3986==2.0.0
     # via twine
-rich==13.4.2
+rich==13.5.2
     # via twine
 secretstorage==3.3.3
     # via keyring
