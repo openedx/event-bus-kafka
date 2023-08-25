@@ -14,6 +14,8 @@ Change Log
 Unreleased
 **********
 
+* Changed ordering of certain context assignments in producer code.
+
 [5.3.1] - 2023-08-10
 ********************
 Fixed

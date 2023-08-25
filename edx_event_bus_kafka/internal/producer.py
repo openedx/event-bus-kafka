@@ -284,13 +284,17 @@ class KafkaEventProducer(EventBusProducer):
         context = ProducingContext(signal=signal, initial_topic=topic, event_key_field=event_key_field,
                                    event_data=event_data, event_metadata=event_metadata)
         try:
-            context.event_data_as_json = json.dumps(get_signal_serializer(signal).to_dict(event_data))
-            context.event_metadata_as_json = event_metadata.to_json()
+            # Please keep these context assignments in order from least-likely-to-error to most-likely-to-error so that
+            # we have as much context as possible in error logging.
             full_topic = get_full_topic(topic)
             context.full_topic = full_topic
 
+            context.event_data_as_json = json.dumps(get_signal_serializer(signal).to_dict(event_data))
+            context.event_metadata_as_json = event_metadata.to_json()
+
             event_key = extract_event_key(event_data, event_key_field)
             context.event_key = event_key
+
             headers = _get_headers_from_metadata(event_metadata=event_metadata)
 
             key_serializer, value_serializer = get_serializers(signal, event_key_field)
