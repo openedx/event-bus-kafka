@@ -38,6 +38,10 @@ except ImportError:  # pragma: no cover
     confluent_kafka = None
 
 
+class EventProductionException(Exception):
+    """ An exception we can check for when errors occur in event production code. """
+
+
 def record_producing_error(error, context):
     """
     Record an error in producing an event to both the monitoring system and the regular logs
@@ -49,8 +53,8 @@ def record_producing_error(error, context):
     try:
         # record_exception() is a wrapper around a New Relic method that can only be called within an except block,
         # so first re-raise the error
-        raise Exception(error)
-    except BaseException:
+        raise EventProductionException(error)
+    except EventProductionException:
         record_exception()
         logger.exception(f"Error delivering message to Kafka event bus. {error=!s} {context!r}")
 

@@ -14,7 +14,12 @@ Change Log
 Unreleased
 **********
 
+[5.4.0] - 2023-08-28
+********************
+Changed
+=======
 * Changed ordering of certain context assignments in producer code.
+* Adds custom exceptions for producing and consuming errors.
 
 [5.3.1] - 2023-08-10
 ********************
