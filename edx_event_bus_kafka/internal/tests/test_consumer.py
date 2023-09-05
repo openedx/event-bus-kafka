@@ -573,7 +573,7 @@ class TestEmitSignals(TestCase):
         """
         with pytest.raises(ReceiverError) as exc_info:
             self.event_consumer._check_receiver_results([  # pylint: disable=protected-access
-                (lambda x:x, Exception("for lambda")),
+                (lambda x: x, Exception("for lambda")),
                 # This would actually raise an error inside send_robust(), but it will serve well enough for testing...
                 ("not even a function", Exception("just plain bad")),
             ], self.signal)
