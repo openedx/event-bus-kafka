@@ -304,8 +304,9 @@ class KafkaEventConsumer(EventBusConsumer):
                     msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                     if msg is not None:
                         with function_trace('_consume_indefinitely_consume_single_message'):
-                            # Before processing, make sure our application state is similar to
-                            # that of a new Django request. (Mimic setup/teardown.)
+                            # Before processing, try to make sure our application state is cleaned
+                            # up as would happen at the start of a Django request/response cycle.
+                            # See https://github.com/openedx/openedx-events/issues/236 for details.
                             _prepare_for_new_work_cycle()
 
                             signal = self.determine_signal(msg)
