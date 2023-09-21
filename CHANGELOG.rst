@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[5.5.0] - 2023-09-21
+********************
+Changed
+=======
+* Reset edx-django-utils RequestCache before handling each event
+
 [5.4.0] - 2023-08-28
 ********************
 Changed
