@@ -8,7 +8,7 @@ asgiref==3.7.2
     # via
     #   -r requirements/quality.txt
     #   django
-astroid==2.15.6
+astroid==2.15.7
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -17,7 +17,7 @@ attrs==23.1.0
     # via
     #   -r requirements/quality.txt
     #   openedx-events
-avro==1.11.2
+avro==1.11.3
     # via
     #   -r requirements/quality.txt
     #   confluent-kafka
@@ -64,7 +64,7 @@ coverage[toml]==7.3.1
     # via
     #   -r requirements/quality.txt
     #   pytest-cov
-cryptography==41.0.3
+cryptography==41.0.4
     # via
     #   -r requirements/quality.txt
     #   secretstorage
@@ -108,11 +108,11 @@ edx-django-utils==5.7.0
     # via
     #   -r requirements/quality.txt
     #   edx-toggles
-edx-i18n-tools==1.1.0
+edx-i18n-tools==1.2.0
     # via -r requirements/dev.in
 edx-lint==5.3.4
     # via -r requirements/quality.txt
-edx-opaque-keys[django]==2.5.0
+edx-opaque-keys[django]==2.5.1
     # via
     #   -r requirements/quality.txt
     #   openedx-events
@@ -127,7 +127,7 @@ fastavro==1.8.3
     #   -r requirements/quality.txt
     #   confluent-kafka
     #   openedx-events
-filelock==3.12.3
+filelock==3.12.4
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -143,7 +143,7 @@ importlib-metadata==6.8.0
     #   build
     #   keyring
     #   twine
-importlib-resources==6.0.1
+importlib-resources==6.1.0
     # via
     #   -r requirements/quality.txt
     #   keyring
@@ -197,7 +197,7 @@ more-itertools==10.1.0
     # via
     #   -r requirements/quality.txt
     #   jaraco-classes
-newrelic==9.0.0
+newrelic==9.1.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
@@ -264,7 +264,7 @@ pygments==2.16.1
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==2.17.5
+pylint==2.17.6
     # via
     #   -r requirements/quality.txt
     #   edx-lint
@@ -336,7 +336,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements/quality.txt
     #   twine
-rich==13.5.2
+rich==13.5.3
     # via
     #   -r requirements/quality.txt
     #   twine
@@ -393,17 +393,15 @@ tox-battery==0.6.2
     # via -r requirements/dev.in
 twine==4.0.2
     # via -r requirements/quality.txt
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via
-    #   -r requirements/ci.txt
     #   -r requirements/quality.txt
     #   asgiref
     #   astroid
     #   edx-opaque-keys
-    #   filelock
     #   pylint
     #   rich
-urllib3==2.0.4
+urllib3==2.0.5
     # via
     #   -r requirements/quality.txt
     #   requests
@@ -420,7 +418,7 @@ wrapt==1.15.0
     # via
     #   -r requirements/quality.txt
     #   astroid
-zipp==3.16.2
+zipp==3.17.0
     # via
     #   -r requirements/pip-tools.txt
     #   -r requirements/quality.txt
