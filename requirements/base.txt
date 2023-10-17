@@ -53,7 +53,7 @@ openedx-events==9.0.0
     # via -r requirements/base.in
 pbr==5.11.1
     # via stevedore
-psutil==5.9.5
+psutil==5.9.6
     # via edx-django-utils
 pycparser==2.21
     # via cffi
