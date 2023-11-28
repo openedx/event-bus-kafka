@@ -28,7 +28,7 @@ beautifulsoup4==4.12.2
     # via pydata-sphinx-theme
 build==1.0.3
     # via -r requirements/doc.in
-certifi==2023.7.22
+certifi==2023.11.17
     # via
     #   -r requirements/test.txt
     #   requests
@@ -59,7 +59,7 @@ coverage[toml]==7.3.2
     #   -r requirements/test.txt
     #   coverage
     #   pytest-cov
-cryptography==41.0.5
+cryptography==41.0.7
     # via secretstorage
 ddt==1.7.0
     # via -r requirements/test.txt
@@ -91,7 +91,7 @@ docutils==0.19
     #   readme-renderer
     #   restructuredtext-lint
     #   sphinx
-edx-django-utils==5.8.0
+edx-django-utils==5.9.0
     # via
     #   -r requirements/test.txt
     #   edx-toggles
@@ -102,7 +102,7 @@ edx-opaque-keys[django]==2.5.1
     #   openedx-events
 edx-toggles==5.1.0
     # via -r requirements/test.txt
-exceptiongroup==1.1.3
+exceptiongroup==1.2.0
     # via
     #   -r requirements/test.txt
     #   pytest
@@ -111,7 +111,7 @@ fastavro==1.9.0
     #   -r requirements/test.txt
     #   confluent-kafka
     #   openedx-events
-idna==3.4
+idna==3.6
     # via
     #   -r requirements/test.txt
     #   requests
@@ -152,13 +152,13 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.1.0
     # via jaraco-classes
-newrelic==9.1.2
+newrelic==9.2.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
 nh3==0.2.14
     # via readme-renderer
-openedx-events==9.0.1
+openedx-events==9.2.0
     # via -r requirements/test.txt
 packaging==23.2
     # via
@@ -185,9 +185,9 @@ pycparser==2.21
     # via
     #   -r requirements/test.txt
     #   cffi
-pydata-sphinx-theme==0.14.3
+pydata-sphinx-theme==0.14.4
     # via sphinx-book-theme
-pygments==2.16.1
+pygments==2.17.2
     # via
     #   accessible-pygments
     #   doc8
@@ -242,7 +242,7 @@ restructuredtext-lint==1.4.0
     # via doc8
 rfc3986==2.0.0
     # via twine
-rich==13.6.0
+rich==13.7.0
     # via twine
 secretstorage==3.3.3
     # via keyring
