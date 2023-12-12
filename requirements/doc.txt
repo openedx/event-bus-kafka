@@ -77,7 +77,7 @@ django-crum==0.7.9
     #   -r requirements/test.txt
     #   edx-django-utils
     #   edx-toggles
-django-waffle==4.0.0
+django-waffle==4.1.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -106,7 +106,7 @@ exceptiongroup==1.2.0
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.9.0
+fastavro==1.9.1
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -117,7 +117,7 @@ idna==3.6
     #   requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==6.8.0
+importlib-metadata==7.0.0
     # via
     #   build
     #   keyring
@@ -152,11 +152,11 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.1.0
     # via jaraco-classes
-newrelic==9.2.0
+newrelic==9.3.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-nh3==0.2.14
+nh3==0.2.15
     # via readme-renderer
 openedx-events==9.2.0
     # via -r requirements/test.txt
@@ -294,7 +294,7 @@ tomli==2.0.1
     #   pytest
 twine==4.0.2
     # via -r requirements/doc.in
-typing-extensions==4.8.0
+typing-extensions==4.9.0
     # via
     #   -r requirements/test.txt
     #   asgiref

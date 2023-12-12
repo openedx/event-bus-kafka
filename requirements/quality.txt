@@ -76,7 +76,7 @@ django-crum==0.7.9
     #   -r requirements/test.txt
     #   edx-django-utils
     #   edx-toggles
-django-waffle==4.0.0
+django-waffle==4.1.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -100,7 +100,7 @@ exceptiongroup==1.2.0
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.9.0
+fastavro==1.9.1
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -109,7 +109,7 @@ idna==3.6
     # via
     #   -r requirements/test.txt
     #   requests
-importlib-metadata==6.8.0
+importlib-metadata==7.0.0
     # via
     #   keyring
     #   twine
@@ -119,7 +119,7 @@ iniconfig==2.0.0
     # via
     #   -r requirements/test.txt
     #   pytest
-isort==5.12.0
+isort==5.13.1
     # via
     #   -r requirements/quality.in
     #   pylint
@@ -147,11 +147,11 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.1.0
     # via jaraco-classes
-newrelic==9.2.0
+newrelic==9.3.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-nh3==0.2.14
+nh3==0.2.15
     # via readme-renderer
 openedx-events==9.2.0
     # via -r requirements/test.txt
@@ -165,10 +165,8 @@ pbr==6.0.0
     #   stevedore
 pkginfo==1.9.6
     # via twine
-platformdirs==3.11.0
-    # via
-    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
-    #   pylint
+platformdirs==4.1.0
+    # via pylint
 pluggy==1.3.0
     # via
     #   -r requirements/test.txt
@@ -189,7 +187,7 @@ pygments==2.17.2
     # via
     #   readme-renderer
     #   rich
-pylint==3.0.2
+pylint==3.0.3
     # via
     #   edx-lint
     #   pylint-celery
@@ -276,7 +274,7 @@ tomlkit==0.12.3
     # via pylint
 twine==4.0.2
     # via -r requirements/quality.in
-typing-extensions==4.8.0
+typing-extensions==4.9.0
     # via
     #   -r requirements/test.txt
     #   asgiref
