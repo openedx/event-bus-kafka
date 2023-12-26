@@ -54,7 +54,7 @@ confluent-kafka[avro,schema-registry]==2.3.0
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
-coverage[toml]==7.3.3
+coverage[toml]==7.3.4
     # via
     #   -r requirements/test.txt
     #   coverage
@@ -106,7 +106,7 @@ exceptiongroup==1.2.0
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.9.1
+fastavro==1.9.2
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -117,7 +117,7 @@ idna==3.6
     #   requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==7.0.0
+importlib-metadata==7.0.1
     # via
     #   build
     #   keyring
