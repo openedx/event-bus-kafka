@@ -390,3 +390,11 @@ def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
     """Reset caches when settings change during unit tests."""
     get_serializers.cache_clear()
     get_signal_serializer.cache_clear()
+
+
+def test_doc_style(arg1):
+    """this should fail
+
+    - arg1
+    """
+    pass
