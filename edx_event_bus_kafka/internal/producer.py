@@ -394,6 +394,7 @@ def _reset_caches(sender, **kwargs):  # pylint: disable=unused-argument
 
 def test_doc_style(arg1):
     """this should fail
+    line 2
 
     - arg1
     """
