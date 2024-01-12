@@ -397,4 +397,4 @@ def test_doc_style(arg1):
 
     - arg1
     """
-    pass
+    print(f"{arg1=}")
