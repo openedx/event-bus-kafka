@@ -18,7 +18,7 @@ Unreleased
 ********************
 Changed
 =======
-* Added configurable client.id to base settings
+* Added configurable client.id to base configuration
 
 [5.5.0] - 2023-09-21
 ********************
