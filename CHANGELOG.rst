@@ -18,7 +18,8 @@ Unreleased
 ********************
 Changed
 =======
-* Added configurable client.id to base configuration
+* Added configurable client.id to base configuration. Derives from new setting EVENT_BUS_SERVICE_NAME
+
 
 [5.5.0] - 2023-09-21
 ********************
