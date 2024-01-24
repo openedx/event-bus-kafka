@@ -110,6 +110,15 @@ def load_common_settings() -> Optional[dict]:
             'sasl.password': secret,
         })
 
+    # .. setting_name: EVENT_BUS_KAFKA_CLIENT_ID
+    # .. setting_default: None
+    # .. setting_description: Identifier for the producing/consuming application. Useful for debugging. If not set
+    # .. Kafka will use 'rdkafka' as the identifier
+    client_id = getattr(settings, 'EVENT_BUS_KAFKA_CLIENT_ID')
+    if client_id:
+        base_settings.update({
+            'client.id': client_id
+        })
     return base_settings
 
 

@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[5.6.0] - 2024-01-24
+********************
+Changed
+=======
+* Added configurable client.id to base settings
+
 [5.5.0] - 2023-09-21
 ********************
 Changed
