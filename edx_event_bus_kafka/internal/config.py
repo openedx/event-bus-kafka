@@ -114,7 +114,7 @@ def load_common_settings() -> Optional[dict]:
     # .. setting_default: None
     # .. setting_description: Identifier for the producing/consuming application. Useful for debugging. If not set
     # .. Kafka will use 'rdkafka' as the identifier
-    client_id = getattr(settings, 'EVENT_BUS_KAFKA_CLIENT_ID')
+    client_id = getattr(settings, 'EVENT_BUS_KAFKA_APP_NAME')
     if client_id:
         base_settings.update({
             'client.id': client_id
