@@ -3,7 +3,7 @@ Configuration loading and validation.
 
 This module is for internal use only.
 """
-
+import logging
 import warnings
 from functools import lru_cache
 from typing import Optional
@@ -114,8 +114,9 @@ def load_common_settings() -> Optional[dict]:
     # .. setting_default: None
     # .. setting_description: Identifier for the producing/consuming application. Useful for debugging. If not set
     # .. Kafka will use 'rdkafka' as the identifier
-    client_id = getattr(settings, 'EVENT_BUS_KAFKA_APP_NAME')
+    client_id = getattr(settings, 'EVENT_BUS_KAFKA_APP_NAME', None)
     if client_id:
+        print(f"{client_id=}")
         base_settings.update({
             'client.id': client_id
         })
