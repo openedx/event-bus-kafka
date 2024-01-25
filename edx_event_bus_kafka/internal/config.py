@@ -10,6 +10,7 @@ from typing import Optional
 from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
+from openedx_events.data import get_service_name
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -109,11 +110,7 @@ def load_common_settings() -> Optional[dict]:
             'sasl.password': secret,
         })
 
-    # .. setting_name: EVENT_BUS_KAFKA_CLIENT_ID
-    # .. setting_default: None
-    # .. setting_description: Identifier for the producing/consuming application. Useful for debugging. If not set
-    # .. Kafka will use 'rdkafka' as the identifier
-    client_id = getattr(settings, 'EVENT_BUS_APP_NAME', None)
+    client_id = get_service_name()
     if client_id:
         base_settings.update({
             'client.id': client_id
