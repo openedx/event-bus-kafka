@@ -218,7 +218,7 @@ nh3==0.2.15
     # via
     #   -r requirements/quality.txt
     #   readme-renderer
-openedx-events==9.2.0
+openedx-events==9.3.0
     # via -r requirements/quality.txt
 packaging==23.2
     # via

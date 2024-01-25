@@ -2,7 +2,7 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# openedx-events 8.5.0 adds serialization methods to EventsMetadata
-openedx-events>=8.5.0                   # Events API
+# openedx-events 9.3.0 adds get_service_name method
+openedx-events>=9.3.0                   # Events API
 edx_django_utils
 edx_toggles
