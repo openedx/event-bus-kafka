@@ -50,7 +50,7 @@ class TestCommonSettings(TestCase):
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
-                EVENT_BUS_SERVICE_NAME='my_service',
+                EVENTS_SERVICE_NAME='my_service',
         ):
             assert config.load_common_settings() == {
                 'bootstrap.servers': 'localhost:54321',
