@@ -14,12 +14,11 @@ Change Log
 Unreleased
 **********
 
-[5.6.0] - 2024-01-24
+[5.6.0] - 2024-01-25
 ********************
 Changed
 =======
-* Added configurable client.id to base configuration. Derives from new setting EVENT_BUS_SERVICE_NAME
-
+* Added  client.id to base configuration.
 
 [5.5.0] - 2023-09-21
 ********************
