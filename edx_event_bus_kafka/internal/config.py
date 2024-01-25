@@ -10,7 +10,6 @@ from typing import Optional
 from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
-
 from openedx_events.data import get_service_name
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
