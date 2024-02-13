@@ -94,7 +94,7 @@ distlib==0.3.8
     # via
     #   -r requirements/ci.txt
     #   virtualenv
-django==3.2.23
+django==3.2.24
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/quality.txt
@@ -122,6 +122,7 @@ edx-django-utils==5.10.1
     # via
     #   -r requirements/quality.txt
     #   edx-toggles
+    #   openedx-events
 edx-i18n-tools==1.3.0
     # via -r requirements/dev.in
 edx-lint==5.3.6
@@ -170,7 +171,7 @@ isort==5.13.2
     # via
     #   -r requirements/quality.txt
     #   pylint
-jaraco-classes==3.3.0
+jaraco-classes==3.3.1
     # via
     #   -r requirements/quality.txt
     #   keyring
@@ -218,7 +219,7 @@ nh3==0.2.15
     # via
     #   -r requirements/quality.txt
     #   readme-renderer
-openedx-events==9.4.0
+openedx-events==9.5.1
     # via -r requirements/quality.txt
 packaging==23.2
     # via
@@ -320,7 +321,7 @@ pytest-cov==4.1.0
     # via -r requirements/quality.txt
 pytest-django==4.8.0
     # via -r requirements/quality.txt
-python-slugify==8.0.3
+python-slugify==8.0.4
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -400,7 +401,7 @@ tomlkit==0.12.3
     #   pylint
 tox==4.12.1
     # via -r requirements/ci.txt
-twine==4.0.2
+twine==5.0.0
     # via -r requirements/quality.txt
 typing-extensions==4.9.0
     # via
