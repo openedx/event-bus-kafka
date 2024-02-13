@@ -62,6 +62,7 @@ edx-django-utils==5.10.1
     # via
     #   -r requirements/base.txt
     #   edx-toggles
+    #   openedx-events
 edx-opaque-keys[django]==2.5.1
     # via
     #   -r requirements/base.txt
@@ -92,7 +93,7 @@ newrelic==9.6.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==9.4.0
+openedx-events==9.5.1
     # via -r requirements/base.txt
 packaging==23.2
     # via pytest
@@ -126,7 +127,7 @@ pytest-cov==4.1.0
     # via -r requirements/test.in
 pytest-django==4.8.0
     # via -r requirements/test.in
-python-slugify==8.0.3
+python-slugify==8.0.4
     # via
     #   -r requirements/base.txt
     #   code-annotations
