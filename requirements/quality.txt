@@ -48,15 +48,12 @@ code-annotations==1.6.0
     #   edx-lint
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.3.0
-    # via
-    #   -r requirements/test.txt
-    #   confluent-kafka
+    # via -r requirements/test.txt
 coverage[toml]==7.4.1
     # via
     #   -r requirements/test.txt
-    #   coverage
     #   pytest-cov
-cryptography==42.0.2
+cryptography==42.0.3
     # via secretstorage
 ddt==1.7.1
     # via -r requirements/test.txt
@@ -93,7 +90,6 @@ edx-lint==5.3.6
 edx-opaque-keys[django]==2.5.1
     # via
     #   -r requirements/test.txt
-    #   edx-opaque-keys
     #   openedx-events
 edx-toggles==5.1.1
     # via -r requirements/test.txt
@@ -101,7 +97,7 @@ exceptiongroup==1.2.0
     # via
     #   -r requirements/test.txt
     #   pytest
-fastavro==1.9.3
+fastavro==1.9.4
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
@@ -154,7 +150,7 @@ newrelic==9.6.0
     #   edx-django-utils
 nh3==0.2.15
     # via readme-renderer
-openedx-events==9.5.1
+openedx-events==9.5.2
     # via -r requirements/test.txt
 packaging==23.2
     # via
@@ -210,7 +206,7 @@ pynacl==1.5.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-pytest==8.0.0
+pytest==8.0.1
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -283,7 +279,7 @@ typing-extensions==4.9.0
     #   edx-opaque-keys
     #   pylint
     #   rich
-urllib3==2.2.0
+urllib3==2.2.1
     # via
     #   -r requirements/test.txt
     #   requests

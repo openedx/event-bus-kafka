@@ -35,9 +35,7 @@ code-annotations==1.6.0
 confluent-kafka[avro,schema-registry]==2.3.0
     # via -r requirements/test.in
 coverage[toml]==7.4.1
-    # via
-    #   coverage
-    #   pytest-cov
+    # via pytest-cov
 ddt==1.7.1
     # via -r requirements/test.in
     # via
@@ -66,13 +64,12 @@ edx-django-utils==5.10.1
 edx-opaque-keys[django]==2.5.1
     # via
     #   -r requirements/base.txt
-    #   edx-opaque-keys
     #   openedx-events
 edx-toggles==5.1.1
     # via -r requirements/base.txt
 exceptiongroup==1.2.0
     # via pytest
-fastavro==1.9.3
+fastavro==1.9.4
     # via
     #   -r requirements/base.txt
     #   confluent-kafka
@@ -93,7 +90,7 @@ newrelic==9.6.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==9.5.1
+openedx-events==9.5.2
     # via -r requirements/base.txt
 packaging==23.2
     # via pytest
@@ -119,7 +116,7 @@ pynacl==1.5.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-pytest==8.0.0
+pytest==8.0.1
     # via
     #   pytest-cov
     #   pytest-django
@@ -164,5 +161,5 @@ typing-extensions==4.9.0
     #   -r requirements/base.txt
     #   asgiref
     #   edx-opaque-keys
-urllib3==2.2.0
+urllib3==2.2.1
     # via requests
