@@ -52,13 +52,13 @@ code-annotations==1.6.0
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.3.0
     # via -r requirements/test.txt
-coverage[toml]==7.4.1
+coverage[toml]==7.4.3
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==42.0.3
+cryptography==42.0.5
     # via secretstorage
-ddt==1.7.1
+ddt==1.7.2
     # via -r requirements/test.txt
 django==3.2.24
     # via
@@ -120,7 +120,7 @@ importlib-metadata==7.0.1
     #   keyring
     #   sphinx
     #   twine
-importlib-resources==6.1.1
+importlib-resources==6.1.2
     # via keyring
 iniconfig==2.0.0
     # via
@@ -149,7 +149,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.2.0
     # via jaraco-classes
-newrelic==9.6.0
+newrelic==9.7.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
@@ -202,7 +202,7 @@ pynacl==1.5.0
     #   edx-django-utils
 pyproject-hooks==1.0.0
     # via build
-pytest==8.0.1
+pytest==8.0.2
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -224,7 +224,7 @@ pyyaml==6.0.1
     # via
     #   -r requirements/test.txt
     #   code-annotations
-readme-renderer==42.0
+readme-renderer==43.0
     # via twine
 requests==2.31.0
     # via
@@ -270,7 +270,7 @@ sqlparse==0.4.4
     # via
     #   -r requirements/test.txt
     #   django
-stevedore==5.1.0
+stevedore==5.2.0
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -291,7 +291,7 @@ tomli==2.0.1
     #   pytest
 twine==5.0.0
     # via -r requirements/doc.in
-typing-extensions==4.9.0
+typing-extensions==4.10.0
     # via
     #   -r requirements/test.txt
     #   asgiref
