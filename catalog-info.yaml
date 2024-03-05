@@ -14,5 +14,5 @@ metadata:
     openedx.org/arch-interest-groups: ""
 spec:
   owner: group:2u-arch-bom
-  type: 'other'
+  type: 'library'
   lifecycle: 'production'
