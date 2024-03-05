@@ -16,3 +16,5 @@ spec:
   owner: group:2u-arch-bom
   type: 'library'
   lifecycle: 'production'
+  dependsOn:
+  - 'openedx-events'
