@@ -315,7 +315,7 @@ class KafkaEventConsumer(EventBusConsumer):
                             consecutive_errors = 0
 
                     self._add_message_monitoring(run_context=run_context, message=msg)
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception as e:
                     consecutive_errors += 1
                     self.record_event_consuming_error(run_context, e, msg)
                     # Kill the infinite loop if the error is fatal for the consumer
@@ -515,7 +515,7 @@ class KafkaEventConsumer(EventBusConsumer):
                 f'offset={msg.offset()}, message_id={message_id}, key={msg.key()}, '
                 f'event_timestamp_ms={timestamp_info}'
             )
-        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
+        except Exception as e:  # pragma: no cover
             # Use this to fix any bugs in what should be benign logging code
             set_custom_attribute('kafka_logging_error', repr(e))
 
@@ -603,7 +603,7 @@ class KafkaEventConsumer(EventBusConsumer):
                 # .. custom_attribute_description: Boolean describing if the error is retriable.
                 set_custom_attribute('kafka_error_retriable', kafka_error.retriable())
 
-        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
+        except Exception as e:  # pragma: no cover
             # Use this to fix any bugs in what should be benign monitoring code
             set_custom_attribute('kafka_monitoring_error', repr(e))
 
