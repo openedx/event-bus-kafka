@@ -231,6 +231,7 @@ class TestEmitSignals(TestCase):
                 call("kafka_partition", 2),
                 call("kafka_offset", 12345),
                 call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
+                call("kafka_received_message", True),
             ] * len(mock_emit_side_effects),
             any_order=True,
         )
@@ -431,7 +432,13 @@ class TestEmitSignals(TestCase):
             expected_custom_attribute_calls += [
                 call("kafka_message_id", "1111-1111"),
                 call("kafka_event_type", "org.openedx.learning.auth.session.login.completed.v1"),
+                call("kafka_received_message", True),
             ]
+        else:
+            expected_custom_attribute_calls += [
+                call("kafka_received_message", False),
+            ]
+
         if has_kafka_error:
             expected_custom_attribute_calls += [
                 call('kafka_error_fatal', is_fatal),

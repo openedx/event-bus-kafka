@@ -575,6 +575,10 @@ class KafkaEventConsumer(EventBusConsumer):
             set_custom_attribute('kafka_topic', run_context['full_topic'])
 
             if kafka_message:
+                # .. custom_attribute_name: kafka_received_message
+                # .. custom_attribute_description: True if we are processing a message with this span, False otherwise.
+                set_custom_attribute('kafka_received_message', True)
+
                 # .. custom_attribute_name: kafka_partition
                 # .. custom_attribute_description: The partition of the message.
                 set_custom_attribute('kafka_partition', kafka_message.partition())
@@ -594,6 +598,10 @@ class KafkaEventConsumer(EventBusConsumer):
                     # .. custom_attribute_description: The event type of the message. Note that the header in the logs
                     #   will use 'ce_type'.
                     set_custom_attribute('kafka_event_type', ",".join(event_types))
+            else:
+                # .. custom_attribute_name: kafka_received_message
+                # .. custom_attribute_description: True if we are processing a message with this span.
+                set_custom_attribute('kafka_received_message', False)
 
             if kafka_error:
                 # .. custom_attribute_name: kafka_error_fatal
