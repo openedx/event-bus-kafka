@@ -299,11 +299,11 @@ class KafkaEventConsumer(EventBusConsumer):
                 if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
                     raise Exception(f"Too many consecutive errors, exiting ({consecutive_errors} in a row)")
 
-                msg = None
-                try:
-                    msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
-                    if msg is not None:
-                        with function_trace('_consume_indefinitely_consume_single_message'):
+                with function_trace('consumer.consume'):
+                    msg = None
+                    try:
+                        msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
+                        if msg is not None:
                             # Before processing, try to make sure our application state is cleaned
                             # up as would happen at the start of a Django request/response cycle.
                             # See https://github.com/openedx/openedx-events/issues/236 for details.
@@ -314,26 +314,26 @@ class KafkaEventConsumer(EventBusConsumer):
                             self.emit_signals_from_message(msg, signal)
                             consecutive_errors = 0
 
-                    self._add_message_monitoring(run_context=run_context, message=msg)
-                except Exception as e:
-                    consecutive_errors += 1
-                    self.record_event_consuming_error(run_context, e, msg)
-                    # Kill the infinite loop if the error is fatal for the consumer
-                    _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
-                    if kafka_error and kafka_error.fatal():
-                        raise e
-                    # Prevent fast error-looping when no event received from broker. Because
-                    # DeserializingConsumer raises rather than returning a Message when it has an
-                    # error() value, this may be triggered even when a Message *was* returned,
-                    # slowing down the queue. This is probably close enough, though.
-                    if msg is None:
-                        time.sleep(POLL_FAILURE_SLEEP)
-                if msg:
-                    # theoretically we could just call consumer.commit() without passing the specific message
-                    # to commit all this consumer's current offset across all partitions since we only process one
-                    # message at a time, but limit it to just the offset/partition of the specified message
-                    # to be super safe
-                    self.consumer.commit(message=msg)
+                        self._add_message_monitoring(run_context=run_context, message=msg)
+                    except Exception as e:
+                        consecutive_errors += 1
+                        self.record_event_consuming_error(run_context, e, msg)
+                        # Kill the infinite loop if the error is fatal for the consumer
+                        _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
+                        if kafka_error and kafka_error.fatal():
+                            raise e
+                        # Prevent fast error-looping when no event received from broker. Because
+                        # DeserializingConsumer raises rather than returning a Message when it has an
+                        # error() value, this may be triggered even when a Message *was* returned,
+                        # slowing down the queue. This is probably close enough, though.
+                        if msg is None:
+                            time.sleep(POLL_FAILURE_SLEEP)
+                    if msg:
+                        # theoretically we could just call consumer.commit() without passing the specific message
+                        # to commit all this consumer's current offset across all partitions since we only process one
+                        # message at a time, but limit it to just the offset/partition of the specified message
+                        # to be super safe
+                        self.consumer.commit(message=msg)
         finally:
             self.consumer.close()
 
@@ -575,6 +575,10 @@ class KafkaEventConsumer(EventBusConsumer):
             set_custom_attribute('kafka_topic', run_context['full_topic'])
 
             if kafka_message:
+                # .. custom_attribute_name: kafka_received_message
+                # .. custom_attribute_description: True if we are processing a message with this span, False otherwise.
+                set_custom_attribute('kafka_received_message', True)
+
                 # .. custom_attribute_name: kafka_partition
                 # .. custom_attribute_description: The partition of the message.
                 set_custom_attribute('kafka_partition', kafka_message.partition())
@@ -594,6 +598,10 @@ class KafkaEventConsumer(EventBusConsumer):
                     # .. custom_attribute_description: The event type of the message. Note that the header in the logs
                     #   will use 'ce_type'.
                     set_custom_attribute('kafka_event_type', ",".join(event_types))
+            else:
+                # .. custom_attribute_name: kafka_received_message
+                # .. custom_attribute_description: True if we are processing a message with this span.
+                set_custom_attribute('kafka_received_message', False)
 
             if kafka_error:
                 # .. custom_attribute_name: kafka_error_fatal

@@ -14,6 +14,18 @@ Change Log
 Unreleased
 **********
 
+[5.8.1] - 2024-08-02
+********************
+Changed
+=======
+* Monitoring: Add a custom attribute, ``kafka_received_message`` to track whether a message was processed or not.
+
+[5.8.0] - 2024-08-01
+********************
+Changed
+=======
+* Monitoring: Ensure that we have a root span for each iteration of the consume loop; renamed the trace name to be ``consumer.consume``.
+
 [5.7.0] - 2024-03-22
 ********************
 Changed
