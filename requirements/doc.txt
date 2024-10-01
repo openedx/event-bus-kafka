@@ -28,15 +28,16 @@ backports-tarfile==1.2.0
     # via jaraco-context
 beautifulsoup4==4.12.3
     # via pydata-sphinx-theme
-build==1.2.1
+build==1.2.2
     # via -r requirements/doc.in
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   -r requirements/test.txt
     #   requests
-cffi==1.17.0
+cffi==1.17.1
     # via
     #   -r requirements/test.txt
+    #   cryptography
     #   pynacl
 charset-normalizer==3.3.2
     # via
@@ -51,15 +52,17 @@ code-annotations==1.8.0
     # via
     #   -r requirements/test.txt
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==2.5.0
+confluent-kafka[avro,schema-registry]==2.5.3
     # via -r requirements/test.txt
 coverage[toml]==7.6.1
     # via
     #   -r requirements/test.txt
     #   pytest-cov
+cryptography==43.0.1
+    # via secretstorage
 ddt==1.7.2
     # via -r requirements/test.txt
-django==4.2.15
+django==4.2.16
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/test.txt
@@ -82,9 +85,9 @@ dnspython==2.6.1
     # via
     #   -r requirements/test.txt
     #   pymongo
-doc8==1.1.1
+doc8==1.1.2
     # via -r requirements/doc.in
-docutils==0.20.1
+docutils==0.21.2
     # via
     #   doc8
     #   pydata-sphinx-theme
@@ -100,25 +103,25 @@ edx-django-utils==5.15.0
     #   -r requirements/test.txt
     #   edx-toggles
     #   openedx-events
-edx-opaque-keys[django]==2.10.0
+edx-opaque-keys[django]==2.11.0
     # via
     #   -r requirements/test.txt
     #   edx-ccx-keys
     #   openedx-events
 edx-toggles==5.2.0
     # via -r requirements/test.txt
-fastavro==1.9.5
+fastavro==1.9.7
     # via
     #   -r requirements/test.txt
     #   confluent-kafka
     #   openedx-events
-idna==3.7
+idna==3.10
     # via
     #   -r requirements/test.txt
     #   requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==8.4.0
+importlib-metadata==8.5.0
     # via
     #   keyring
     #   twine
@@ -130,14 +133,18 @@ jaraco-classes==3.4.0
     # via keyring
 jaraco-context==6.0.1
     # via keyring
-jaraco-functools==4.0.2
+jaraco-functools==4.1.0
     # via keyring
+jeepney==0.8.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==3.1.4
     # via
     #   -r requirements/test.txt
     #   code-annotations
     #   sphinx
-keyring==25.3.0
+keyring==25.4.1
     # via twine
 markdown-it-py==3.0.0
     # via rich
@@ -147,17 +154,17 @@ markupsafe==2.1.5
     #   jinja2
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.4.0
+more-itertools==10.5.0
     # via
     #   jaraco-classes
     #   jaraco-functools
-newrelic==9.13.0
+newrelic==10.0.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
 nh3==0.2.18
     # via readme-renderer
-openedx-events==9.12.0
+openedx-events==9.14.1
     # via -r requirements/test.txt
 packaging==24.1
     # via
@@ -166,7 +173,7 @@ packaging==24.1
     #   pydata-sphinx-theme
     #   pytest
     #   sphinx
-pbr==6.0.0
+pbr==6.1.0
     # via
     #   -r requirements/test.txt
     #   stevedore
@@ -194,7 +201,7 @@ pygments==2.18.0
     #   readme-renderer
     #   rich
     #   sphinx
-pymongo==4.8.0
+pymongo==4.10.0
     # via
     #   -r requirements/test.txt
     #   edx-opaque-keys
@@ -202,16 +209,16 @@ pynacl==1.5.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-pyproject-hooks==1.1.0
+pyproject-hooks==1.2.0
     # via build
-pytest==8.3.2
+pytest==8.3.3
     # via
     #   -r requirements/test.txt
     #   pytest-cov
     #   pytest-django
 pytest-cov==5.0.0
     # via -r requirements/test.txt
-pytest-django==4.8.0
+pytest-django==4.9.0
     # via -r requirements/test.txt
 python-slugify==8.0.4
     # via
@@ -221,7 +228,7 @@ pyyaml==6.0.2
     # via
     #   -r requirements/test.txt
     #   code-annotations
-readme-renderer==43.0
+readme-renderer==44.0
     # via twine
 requests==2.32.3
     # via
@@ -236,8 +243,10 @@ restructuredtext-lint==1.4.0
     # via doc8
 rfc3986==2.0.0
     # via twine
-rich==13.7.1
+rich==13.8.1
     # via twine
+secretstorage==3.3.3
+    # via keyring
 six==1.16.0
     # via
     #   -r requirements/test.txt
@@ -287,10 +296,10 @@ typing-extensions==4.12.2
     #   -r requirements/test.txt
     #   edx-opaque-keys
     #   pydata-sphinx-theme
-urllib3==2.2.2
+urllib3==2.2.3
     # via
     #   -r requirements/test.txt
     #   requests
     #   twine
-zipp==3.20.0
+zipp==3.20.2
     # via importlib-metadata
