@@ -14,6 +14,16 @@ Change Log
 Unreleased
 **********
 
+[6.0.0] - 2024-08-24
+********************
+Added
+=======
+* Added support for python3.12
+
+Removed
+=======
+* Removed the support for python3.8
+
 [5.8.1] - 2024-08-02
 ********************
 Changed
