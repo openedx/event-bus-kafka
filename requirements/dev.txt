@@ -330,7 +330,7 @@ pytest==8.3.3
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
 pytest-django==4.9.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
@@ -361,7 +361,7 @@ rfc3986==2.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   twine
-rich==13.9.3
+rich==13.9.4
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   twine

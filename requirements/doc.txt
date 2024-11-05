@@ -215,7 +215,7 @@ pytest==8.3.3
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 pytest-django==4.9.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
@@ -242,7 +242,7 @@ restructuredtext-lint==1.4.0
     # via doc8
 rfc3986==2.0.0
     # via twine
-rich==13.9.3
+rich==13.9.4
     # via twine
 secretstorage==3.3.3
     # via keyring
