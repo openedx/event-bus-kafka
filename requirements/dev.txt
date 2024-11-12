@@ -233,7 +233,7 @@ nh3==0.2.18
     #   readme-renderer
 openedx-events==9.15.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
-packaging==24.1
+packaging==24.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/ci.txt
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/pip-tools.txt
@@ -330,7 +330,7 @@ pytest==8.3.3
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
 pytest-django==4.9.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
@@ -361,7 +361,7 @@ rfc3986==2.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   twine
-rich==13.9.3
+rich==13.9.4
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   twine
@@ -413,11 +413,11 @@ virtualenv==20.27.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/ci.txt
     #   tox
-wheel==0.44.0
+wheel==0.45.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/pip-tools.txt
     #   pip-tools
-zipp==3.20.2
+zipp==3.21.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   importlib-metadata

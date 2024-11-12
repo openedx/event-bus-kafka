@@ -163,7 +163,7 @@ nh3==0.2.18
     # via readme-renderer
 openedx-events==9.15.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-packaging==24.1
+packaging==24.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest
@@ -222,7 +222,7 @@ pytest==8.3.3
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 pytest-django==4.9.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
@@ -246,7 +246,7 @@ requests-toolbelt==1.0.0
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.9.3
+rich==13.9.4
     # via twine
 secretstorage==3.3.3
     # via keyring
@@ -284,5 +284,5 @@ urllib3==2.2.3
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   requests
     #   twine
-zipp==3.20.2
+zipp==3.21.0
     # via importlib-metadata
