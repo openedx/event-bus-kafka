@@ -27,14 +27,14 @@ click==8.1.7
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   code-annotations
     #   edx-django-utils
-code-annotations==1.8.0
+code-annotations==2.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   -r requirements/test.in
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==2.6.0
+confluent-kafka[avro,schema-registry]==2.6.1
     # via -r requirements/test.in
-coverage[toml]==7.6.4
+coverage[toml]==7.6.8
     # via pytest-cov
 ddt==1.7.2
     # via -r requirements/test.in
@@ -51,7 +51,7 @@ django-crum==0.7.9
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
     #   edx-toggles
-django-waffle==4.1.0
+django-waffle==4.2.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
@@ -60,11 +60,11 @@ dnspython==2.7.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   pymongo
-edx-ccx-keys==1.3.0
+edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   openedx-events
-edx-django-utils==7.0.0
+edx-django-utils==7.0.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-toggles
@@ -93,13 +93,13 @@ markupsafe==3.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   jinja2
-newrelic==10.2.0
+newrelic==10.3.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
 openedx-events==9.15.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
-packaging==24.1
+packaging==24.2
     # via pytest
 pbr==6.1.0
     # via
@@ -123,11 +123,11 @@ pynacl==1.5.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
-pytest==8.3.3
+pytest==8.3.4
     # via
     #   pytest-cov
     #   pytest-django
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via -r requirements/test.in
 pytest-django==4.9.0
     # via -r requirements/test.in
@@ -145,11 +145,11 @@ six==1.16.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-ccx-keys
-sqlparse==0.5.1
+sqlparse==0.5.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   django
-stevedore==5.3.0
+stevedore==5.4.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   code-annotations
