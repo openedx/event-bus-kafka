@@ -54,7 +54,7 @@ code-annotations==2.0.0
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.6.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-coverage[toml]==7.6.8
+coverage[toml]==7.6.9
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest-cov
@@ -62,7 +62,7 @@ cryptography==44.0.0
     # via secretstorage
 ddt==1.7.2
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-django==4.2.16
+django==4.2.17
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
@@ -98,7 +98,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   openedx-events
-edx-django-utils==7.0.1
+edx-django-utils==7.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-toggles
@@ -245,7 +245,7 @@ rich==13.9.4
     # via twine
 secretstorage==3.3.3
     # via keyring
-six==1.16.0
+six==1.17.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-ccx-keys

@@ -34,7 +34,7 @@ code-annotations==2.0.0
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.6.1
     # via -r requirements/test.in
-coverage[toml]==7.6.8
+coverage[toml]==7.6.9
     # via pytest-cov
 ddt==1.7.2
     # via -r requirements/test.in
@@ -64,7 +64,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   openedx-events
-edx-django-utils==7.0.1
+edx-django-utils==7.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-toggles
@@ -141,7 +141,7 @@ pyyaml==6.0.2
     #   code-annotations
 requests==2.32.3
     # via confluent-kafka
-six==1.16.0
+six==1.17.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-ccx-keys
