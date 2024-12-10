@@ -50,6 +50,7 @@ class TestCommonSettings(TestCase):
                 EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
                 EVENT_BUS_KAFKA_API_KEY='some_other_key',
                 EVENT_BUS_KAFKA_API_SECRET='some_other_secret',
+                EVENTS_SERVICE_NAME='my_service',
         ):
             assert config.load_common_settings() == {
                 'bootstrap.servers': 'localhost:54321',
@@ -57,6 +58,7 @@ class TestCommonSettings(TestCase):
                 'security.protocol': 'SASL_SSL',
                 'sasl.username': 'some_other_key',
                 'sasl.password': 'some_other_secret',
+                'client.id': 'my_service',
             }
 
 

@@ -14,6 +14,47 @@ Change Log
 Unreleased
 **********
 
+[6.0.0] - 2024-08-24
+********************
+Added
+=======
+* Added support for python3.12
+
+Removed
+=======
+* Removed the support for python3.8
+
+[5.8.1] - 2024-08-02
+********************
+Changed
+=======
+* Monitoring: Add a custom attribute, ``kafka_received_message`` to track whether a message was processed or not.
+
+[5.8.0] - 2024-08-01
+********************
+Changed
+=======
+* Monitoring: Ensure that we have a root span for each iteration of the consume loop; renamed the trace name to be ``consumer.consume``.
+
+[5.7.0] - 2024-03-22
+********************
+Changed
+=======
+* Dropped Support for Django 3.2, Django 4.0 and Django 4.1
+* Added Support for Python 3.12
+
+[5.6.0] - 2024-01-25
+********************
+Changed
+=======
+* Added client.id to base configuration.
+
+[5.5.0] - 2023-09-21
+********************
+Changed
+=======
+* Reset edx-django-utils RequestCache before handling each event
+
 [5.4.0] - 2023-08-28
 ********************
 Changed

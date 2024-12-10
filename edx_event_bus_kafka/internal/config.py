@@ -3,7 +3,6 @@ Configuration loading and validation.
 
 This module is for internal use only.
 """
-
 import warnings
 from functools import lru_cache
 from typing import Optional
@@ -11,6 +10,7 @@ from typing import Optional
 from django.conf import settings
 from django.dispatch import receiver
 from django.test.signals import setting_changed
+from openedx_events.data import get_service_name
 
 # See https://github.com/openedx/event-bus-kafka/blob/main/docs/decisions/0005-optional-import-of-confluent-kafka.rst
 try:
@@ -110,6 +110,11 @@ def load_common_settings() -> Optional[dict]:
             'sasl.password': secret,
         })
 
+    client_id = get_service_name()
+    if client_id:
+        base_settings.update({
+            'client.id': client_id
+        })
     return base_settings
 
 

@@ -64,5 +64,5 @@ class Command(BaseCommand):
                 event_metadata=EventsMetadata(event_type=event_type),
             )
             producer.prepare_for_shutdown()  # otherwise command may exit before delivery is complete
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             logger.exception("Error producing Kafka event")

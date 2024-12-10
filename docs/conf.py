@@ -495,6 +495,16 @@ epub_exclude_files = ['search.html']
 #
 # epub_use_index = True
 
+# -- Read the Docs Specific Configuration
+# Define the canonical URL if you are using a custom domain on Read the Docs
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+
+# Tell Jinja2 templates the build is running on Read the Docs
+if os.environ.get("READTHEDOCS", "") == "True":
+    if "html_context" not in globals():
+        html_context = {}
+    html_context["READTHEDOCS"] = True
+
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {

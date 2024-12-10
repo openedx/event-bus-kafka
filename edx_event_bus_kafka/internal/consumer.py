@@ -10,6 +10,7 @@ from django.conf import settings
 from django.db import connection
 from django.dispatch import receiver
 from django.test.signals import setting_changed
+from edx_django_utils.cache import RequestCache
 from edx_django_utils.monitoring import function_trace, record_exception, set_custom_attribute
 from edx_toggles.toggles import SettingToggle
 from openedx_events.event_bus import EventBusConsumer
@@ -104,6 +105,31 @@ def _reconnect_to_db_if_needed():
     requires_reconnect = has_connection and not connection.is_usable()
     if requires_reconnect:
         connection.connect()
+
+
+def _clear_request_cache():
+    """
+    Clear the RequestCache so that each event consumption starts fresh.
+
+    Signal handlers may be written with the assumption that they are called in the context
+    of a web request, so we clear the request cache just in case.
+    """
+    RequestCache.clear_all_namespaces()
+
+
+def _prepare_for_new_work_cycle():
+    """
+    Ensure that the application state is appropriate for performing a new unit of work.
+
+    This mimics some setup/teardown that is normally performed by Django in its
+    request/response based architecture and that is needed for ensuring a clean and
+    usable state in this worker-based application.
+    """
+    # Ensure that the database connection is active and usable.
+    _reconnect_to_db_if_needed()
+
+    # Clear the request cache, in case anything in the signal handlers rely on it.
+    _clear_request_cache()
 
 
 class KafkaEventConsumer(EventBusConsumer):
@@ -273,38 +299,41 @@ class KafkaEventConsumer(EventBusConsumer):
                 if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
                     raise Exception(f"Too many consecutive errors, exiting ({consecutive_errors} in a row)")
 
-                msg = None
-                try:
-                    msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
-                    if msg is not None:
-                        with function_trace('_consume_indefinitely_consume_single_message'):
-                            # Before processing, make sure our db connection is still active
-                            _reconnect_to_db_if_needed()
+                with function_trace('consumer.consume'):
+                    msg = None
+                    try:
+                        msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
+                        if msg is not None:
+                            # Before processing, try to make sure our application state is cleaned
+                            # up as would happen at the start of a Django request/response cycle.
+                            # See https://github.com/openedx/openedx-events/issues/236 for details.
+                            _prepare_for_new_work_cycle()
+
                             signal = self.determine_signal(msg)
                             msg.set_value(self._deserialize_message_value(msg, signal))
                             self.emit_signals_from_message(msg, signal)
                             consecutive_errors = 0
 
-                    self._add_message_monitoring(run_context=run_context, message=msg)
-                except Exception as e:  # pylint: disable=broad-except
-                    consecutive_errors += 1
-                    self.record_event_consuming_error(run_context, e, msg)
-                    # Kill the infinite loop if the error is fatal for the consumer
-                    _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
-                    if kafka_error and kafka_error.fatal():
-                        raise e
-                    # Prevent fast error-looping when no event received from broker. Because
-                    # DeserializingConsumer raises rather than returning a Message when it has an
-                    # error() value, this may be triggered even when a Message *was* returned,
-                    # slowing down the queue. This is probably close enough, though.
-                    if msg is None:
-                        time.sleep(POLL_FAILURE_SLEEP)
-                if msg:
-                    # theoretically we could just call consumer.commit() without passing the specific message
-                    # to commit all this consumer's current offset across all partitions since we only process one
-                    # message at a time, but limit it to just the offset/partition of the specified message
-                    # to be super safe
-                    self.consumer.commit(message=msg)
+                        self._add_message_monitoring(run_context=run_context, message=msg)
+                    except Exception as e:
+                        consecutive_errors += 1
+                        self.record_event_consuming_error(run_context, e, msg)
+                        # Kill the infinite loop if the error is fatal for the consumer
+                        _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
+                        if kafka_error and kafka_error.fatal():
+                            raise e
+                        # Prevent fast error-looping when no event received from broker. Because
+                        # DeserializingConsumer raises rather than returning a Message when it has an
+                        # error() value, this may be triggered even when a Message *was* returned,
+                        # slowing down the queue. This is probably close enough, though.
+                        if msg is None:
+                            time.sleep(POLL_FAILURE_SLEEP)
+                    if msg:
+                        # theoretically we could just call consumer.commit() without passing the specific message
+                        # to commit all this consumer's current offset across all partitions since we only process one
+                        # message at a time, but limit it to just the offset/partition of the specified message
+                        # to be super safe
+                        self.consumer.commit(message=msg)
         finally:
             self.consumer.close()
 
@@ -486,7 +515,7 @@ class KafkaEventConsumer(EventBusConsumer):
                 f'offset={msg.offset()}, message_id={message_id}, key={msg.key()}, '
                 f'event_timestamp_ms={timestamp_info}'
             )
-        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
+        except Exception as e:  # pragma: no cover
             # Use this to fix any bugs in what should be benign logging code
             set_custom_attribute('kafka_logging_error', repr(e))
 
@@ -546,6 +575,10 @@ class KafkaEventConsumer(EventBusConsumer):
             set_custom_attribute('kafka_topic', run_context['full_topic'])
 
             if kafka_message:
+                # .. custom_attribute_name: kafka_received_message
+                # .. custom_attribute_description: True if we are processing a message with this span, False otherwise.
+                set_custom_attribute('kafka_received_message', True)
+
                 # .. custom_attribute_name: kafka_partition
                 # .. custom_attribute_description: The partition of the message.
                 set_custom_attribute('kafka_partition', kafka_message.partition())
@@ -565,6 +598,10 @@ class KafkaEventConsumer(EventBusConsumer):
                     # .. custom_attribute_description: The event type of the message. Note that the header in the logs
                     #   will use 'ce_type'.
                     set_custom_attribute('kafka_event_type', ",".join(event_types))
+            else:
+                # .. custom_attribute_name: kafka_received_message
+                # .. custom_attribute_description: True if we are processing a message with this span.
+                set_custom_attribute('kafka_received_message', False)
 
             if kafka_error:
                 # .. custom_attribute_name: kafka_error_fatal
@@ -574,7 +611,7 @@ class KafkaEventConsumer(EventBusConsumer):
                 # .. custom_attribute_description: Boolean describing if the error is retriable.
                 set_custom_attribute('kafka_error_retriable', kafka_error.retriable())
 
-        except Exception as e:  # pragma: no cover  pylint: disable=broad-except
+        except Exception as e:  # pragma: no cover
             # Use this to fix any bugs in what should be benign monitoring code
             set_custom_attribute('kafka_monitoring_error', repr(e))
 
