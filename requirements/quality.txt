@@ -8,11 +8,11 @@ asgiref==3.8.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   django
-astroid==3.3.5
+astroid==3.3.6
     # via
     #   pylint
     #   pylint-celery
-attrs==24.2.0
+attrs==24.3.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   openedx-events
@@ -22,7 +22,7 @@ avro==1.12.0
     #   confluent-kafka
 backports-tarfile==1.2.0
     # via jaraco-context
-certifi==2024.8.30
+certifi==2024.12.14
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   requests
@@ -44,14 +44,14 @@ click==8.1.7
     #   edx-lint
 click-log==0.4.0
     # via edx-lint
-code-annotations==2.0.0
+code-annotations==2.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-lint
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.6.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-coverage[toml]==7.6.8
+coverage[toml]==7.6.9
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest-cov
@@ -61,7 +61,7 @@ ddt==1.7.2
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 dill==0.3.9
     # via pylint
-django==4.2.16
+django==4.2.17
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
@@ -90,7 +90,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   openedx-events
-edx-django-utils==7.0.1
+edx-django-utils==7.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-toggles
@@ -153,7 +153,7 @@ more-itertools==10.5.0
     # via
     #   jaraco-classes
     #   jaraco-functools
-newrelic==10.3.1
+newrelic==10.4.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-django-utils
@@ -249,14 +249,14 @@ rich==13.9.4
     # via twine
 secretstorage==3.3.3
     # via keyring
-six==1.16.0
+six==1.17.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-ccx-keys
     #   edx-lint
 snowballstemmer==2.2.0
     # via pydocstyle
-sqlparse==0.5.2
+sqlparse==0.5.3
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   django
