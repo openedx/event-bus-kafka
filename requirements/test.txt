@@ -8,13 +8,13 @@ asgiref==3.8.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   django
-attrs==24.2.0
+attrs==24.3.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   openedx-events
 avro==1.12.0
     # via confluent-kafka
-certifi==2024.8.30
+certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via
@@ -27,14 +27,14 @@ click==8.1.7
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   code-annotations
     #   edx-django-utils
-code-annotations==2.0.0
+code-annotations==2.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   -r requirements/test.in
     #   edx-toggles
 confluent-kafka[avro,schema-registry]==2.6.1
     # via -r requirements/test.in
-coverage[toml]==7.6.8
+coverage[toml]==7.6.9
     # via pytest-cov
 ddt==1.7.2
     # via -r requirements/test.in
@@ -64,7 +64,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   openedx-events
-edx-django-utils==7.0.1
+edx-django-utils==7.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-toggles
@@ -93,7 +93,7 @@ markupsafe==3.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   jinja2
-newrelic==10.3.1
+newrelic==10.4.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
@@ -141,11 +141,11 @@ pyyaml==6.0.2
     #   code-annotations
 requests==2.32.3
     # via confluent-kafka
-six==1.16.0
+six==1.17.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-ccx-keys
-sqlparse==0.5.2
+sqlparse==0.5.3
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   django
