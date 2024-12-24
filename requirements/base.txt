@@ -6,17 +6,17 @@
 #
 asgiref==3.8.1
     # via django
-attrs==24.2.0
+attrs==24.3.0
     # via openedx-events
 cffi==1.17.1
     # via pynacl
-click==8.1.7
+click==8.1.8
     # via
     #   code-annotations
     #   edx-django-utils
-code-annotations==2.0.0
+code-annotations==2.1.0
     # via edx-toggles
-django==4.2.16
+django==4.2.17
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
@@ -37,7 +37,7 @@ dnspython==2.7.0
     # via pymongo
 edx-ccx-keys==2.0.2
     # via openedx-events
-edx-django-utils==7.0.1
+edx-django-utils==7.1.0
     # via
     #   -r requirements/base.in
     #   edx-toggles
@@ -48,19 +48,19 @@ edx-opaque-keys[django]==2.11.0
     #   openedx-events
 edx-toggles==5.2.0
     # via -r requirements/base.in
-fastavro==1.9.7
+fastavro==1.10.0
     # via openedx-events
-jinja2==3.1.4
+jinja2==3.1.5
     # via code-annotations
 markupsafe==3.0.2
     # via jinja2
-newrelic==10.3.1
+newrelic==10.4.0
     # via edx-django-utils
 openedx-events==9.15.0
     # via -r requirements/base.in
 pbr==6.1.0
     # via stevedore
-psutil==6.1.0
+psutil==6.1.1
     # via edx-django-utils
 pycparser==2.22
     # via cffi
@@ -72,9 +72,9 @@ python-slugify==8.0.4
     # via code-annotations
 pyyaml==6.0.2
     # via code-annotations
-six==1.16.0
+six==1.17.0
     # via edx-ccx-keys
-sqlparse==0.5.2
+sqlparse==0.5.3
     # via django
 stevedore==5.4.0
     # via
