@@ -10,16 +10,18 @@ asgiref==3.8.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   django
-attrs==24.3.0
+attrs==25.1.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   confluent-kafka
     #   openedx-events
+authlib==1.5.1
+    # via confluent-kafka
 avro==1.12.0
     # via confluent-kafka
-cachetools==5.5.0
+cachetools==5.5.2
     # via confluent-kafka
-certifi==2024.12.14
+certifi==2025.1.31
     # via
     #   httpcore
     #   httpx
@@ -27,6 +29,7 @@ certifi==2024.12.14
 cffi==1.17.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
+    #   cryptography
     #   pynacl
 charset-normalizer==3.4.1
     # via requests
@@ -35,15 +38,17 @@ click==8.1.8
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   code-annotations
     #   edx-django-utils
-code-annotations==2.1.0
+code-annotations==2.2.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   -r requirements/test.in
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==2.7.0
+confluent-kafka[avro,schema-registry]==2.8.2
     # via -r requirements/test.in
-coverage[toml]==7.6.10
+coverage[toml]==7.6.12
     # via pytest-cov
+cryptography==44.0.2
+    # via authlib
 ddt==1.7.2
     # via -r requirements/test.in
     # via
@@ -72,7 +77,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   openedx-events
-edx-django-utils==7.1.0
+edx-django-utils==7.2.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-toggles
@@ -82,7 +87,7 @@ edx-opaque-keys[django]==2.11.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-ccx-keys
     #   openedx-events
-edx-toggles==5.2.0
+edx-toggles==5.3.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
 fastavro==1.10.0
     # via
@@ -93,7 +98,7 @@ h11==0.14.0
     # via httpcore
 httpcore==1.0.7
     # via httpx
-httpx==0.27.2
+httpx==0.28.1
     # via confluent-kafka
 idna==3.10
     # via
@@ -110,21 +115,21 @@ markupsafe==3.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   jinja2
-newrelic==10.4.0
+newrelic==10.6.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
-openedx-events==9.15.0
+openedx-events==9.18.2
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
 packaging==24.2
     # via pytest
-pbr==6.1.0
+pbr==6.1.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   stevedore
 pluggy==1.5.0
     # via pytest
-psutil==6.1.1
+psutil==7.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
@@ -132,7 +137,7 @@ pycparser==2.22
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   cffi
-pymongo==4.10.1
+pymongo==4.11.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-opaque-keys
@@ -140,13 +145,13 @@ pynacl==1.5.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
-pytest==8.3.4
+pytest==8.3.5
     # via
     #   pytest-cov
     #   pytest-django
 pytest-cov==6.0.0
     # via -r requirements/test.in
-pytest-django==4.9.0
+pytest-django==4.10.0
     # via -r requirements/test.in
 python-slugify==8.0.4
     # via
@@ -163,14 +168,12 @@ six==1.17.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-ccx-keys
 sniffio==1.3.1
-    # via
-    #   anyio
-    #   httpx
+    # via anyio
 sqlparse==0.5.3
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   django
-stevedore==5.4.0
+stevedore==5.4.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   code-annotations
@@ -185,5 +188,10 @@ typing-extensions==4.12.2
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   anyio
     #   edx-opaque-keys
-urllib3==2.3.0
-    # via requests
+urllib3==2.2.3
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   requests
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
