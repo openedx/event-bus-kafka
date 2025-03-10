@@ -3,6 +3,7 @@ Tests for event_consumer module.
 """
 
 import copy
+import re
 from datetime import datetime
 from unittest.mock import Mock, call, patch
 from uuid import uuid1
@@ -169,6 +170,30 @@ class TestEmitSignals(TestCase):
         reset_offsets(self.event_consumer.consumer, [])
         self.event_consumer.consumer.offsets_for_times.assert_not_called()
 
+    def assert_version_custom_attributes(self, mock_set_custom_attribute):
+        """
+        Asserts that the version-related custom attributes ('django_version' and 'python_version')
+        are set and follow the 'x.y.z' version format.
+
+        :param mock_set_custom_attribute: Mock object of the function that sets custom attributes.
+        :raises AssertionError: If any version attribute is missing or has an invalid format.
+        """
+        version_keys = ["django_version", "python_version"]
+        version_pattern = re.compile(r"\d+\.\d+\.\d+")
+
+        found_version_keys = set()
+
+        for args, _ in mock_set_custom_attribute.call_args_list:
+            key, value = args
+            if key in version_keys:
+                found_version_keys.add(key)
+                if not version_pattern.fullmatch(value):
+                    raise AssertionError(f"Invalid {key} format: {value}")
+
+        missing_keys = set(version_keys) - found_version_keys
+        if missing_keys:
+            raise AssertionError(f"Missing expected version attribute(s): {missing_keys}")
+
     @override_settings(
         EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
@@ -235,6 +260,8 @@ class TestEmitSignals(TestCase):
             ] * len(mock_emit_side_effects),
             any_order=True,
         )
+
+        self.assert_version_custom_attributes(mock_set_custom_attribute)
 
         # Check that each message got committed (including the errored ones)
         assert len(mock_consumer.commit.call_args_list) == len(mock_emit_side_effects)
