@@ -3,6 +3,7 @@ Tests for event_consumer module.
 """
 
 import copy
+import re
 from datetime import datetime
 from unittest.mock import Mock, call, patch
 from uuid import uuid1
@@ -234,6 +235,28 @@ class TestEmitSignals(TestCase):
                 call("kafka_received_message", True),
             ] * len(mock_emit_side_effects),
             any_order=True,
+        )
+
+        # List of custom version attribute keys for easy expansion.
+        version_keys = ["django_version", "python_version"]
+
+        def _version_format_check(v):
+            # function to check if the version is in the format x.y.z
+            return bool(re.fullmatch(r"\d+\.\d+\.\d+", v))
+
+        found_version_keys = set()
+
+        # Loop through each call and check for version attributes.
+        for args, _ in mock_set_custom_attribute.call_args_list:
+            key, value = args
+            if key in version_keys:
+                found_version_keys.add(key)
+                # Immediately assert the value's format.
+                assert _version_format_check(value), f"Invalid {key} format: {value}"
+
+        # Ensure that all expected version attributes were set.
+        assert set(version_keys).issubset(found_version_keys), (
+            f"Missing expected version attribute(s): {set(version_keys) - found_version_keys}"
         )
 
         # Check that each message got committed (including the errored ones)
