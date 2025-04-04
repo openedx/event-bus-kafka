@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[6.0.1] - 2025-04-05
+********************
+Added
+=======
+* Added support to test custom_attributes in kafka workers
+
 [6.0.0] - 2024-08-24
 ********************
 Added
