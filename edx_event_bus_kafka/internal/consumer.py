@@ -2,10 +2,12 @@
 Core consumer and event-loop code.
 """
 import logging
+import platform
 import time
 from datetime import datetime
 from functools import lru_cache
 
+import django
 from django.conf import settings
 from django.db import connection
 from django.dispatch import receiver
@@ -585,6 +587,12 @@ class KafkaEventConsumer(EventBusConsumer):
                 # .. custom_attribute_name: kafka_offset
                 # .. custom_attribute_description: The offset of the message.
                 set_custom_attribute('kafka_offset', kafka_message.offset())
+                # .. custom_attribute_name: django_version
+                # .. custom_attribute_description: The django version in use (e.g. '4.2.20')
+                set_custom_attribute('django_version', django.__version__)
+                # .. custom_attribute_name: python_version
+                # .. custom_attribute_description: The python version in use (e.g. '3.12.8')
+                set_custom_attribute('python_version', platform.python_version())
                 headers = kafka_message.headers() or []  # treat None as []
                 message_ids = get_message_header_values(headers, HEADER_ID)
                 if len(message_ids) > 0:
