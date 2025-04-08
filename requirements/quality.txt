@@ -21,7 +21,7 @@ attrs==25.3.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
     #   openedx-events
-authlib==1.5.1
+authlib==1.5.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
@@ -253,9 +253,9 @@ pytest==8.3.5
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==6.0.0
+pytest-cov==6.1.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-pytest-django==4.10.0
+pytest-django==4.11.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 python-slugify==8.0.4
     # via
@@ -311,7 +311,7 @@ tomlkit==0.13.2
     # via pylint
 twine==6.1.0
     # via -r requirements/quality.in
-typing-extensions==4.13.0
+typing-extensions==4.13.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   anyio
