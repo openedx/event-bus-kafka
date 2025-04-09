@@ -173,13 +173,13 @@ class TestEmitSignals(TestCase):
     def assert_version_custom_attributes(self, mock_set_custom_attribute):
         """
         Asserts that the version-related custom attributes ('django_version' and 'python_version')
-        are set and follow the 'x.y.z' version format.
+        are set and follow the 'x.y.z' or optionally 'x.y` version format.
 
         :param mock_set_custom_attribute: Mock object of the function that sets custom attributes.
         :raises AssertionError: If any version attribute is missing or has an invalid format.
         """
         version_keys = ["django_version", "python_version"]
-        version_pattern = re.compile(r"\d+\.\d+\.\d+")
+        version_pattern = re.compile(r"\d+\.\d+(\.\d+)?")
 
         found_version_keys = set()
 
