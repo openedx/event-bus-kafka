@@ -22,7 +22,7 @@ attrs==25.3.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   confluent-kafka
     #   openedx-events
-authlib==1.5.1
+authlib==1.5.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   confluent-kafka
@@ -77,7 +77,7 @@ click-log==0.4.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-lint
-code-annotations==2.2.0
+code-annotations==2.3.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-lint
@@ -141,7 +141,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   openedx-events
-edx-django-utils==7.2.0
+edx-django-utils==7.4.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-toggles
@@ -171,7 +171,7 @@ h11==0.14.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   httpcore
-httpcore==1.0.7
+httpcore==1.0.8
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   httpx
@@ -227,11 +227,11 @@ keyring==25.6.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   twine
-lxml[html-clean,html_clean]==5.3.1
+lxml[html-clean,html_clean]==5.3.2
     # via
     #   edx-i18n-tools
     #   lxml-html-clean
-lxml-html-clean==0.4.1
+lxml-html-clean==0.4.2
     # via lxml
 markdown-it-py==3.0.0
     # via
@@ -254,7 +254,7 @@ more-itertools==10.6.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   jaraco-classes
     #   jaraco-functools
-newrelic==10.8.1
+newrelic==10.9.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-django-utils
@@ -262,7 +262,7 @@ nh3==0.2.21
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   readme-renderer
-openedx-events==9.20.0
+openedx-events==10.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
 packaging==24.2
     # via
@@ -336,7 +336,7 @@ pylint-plugin-utils==0.8.2
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.11.3
+pymongo==4.12.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-opaque-keys
@@ -358,9 +358,9 @@ pytest==8.3.5
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==6.0.0
+pytest-cov==6.1.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
-pytest-django==4.10.0
+pytest-django==4.11.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
 python-slugify==8.0.4
     # via
@@ -433,7 +433,7 @@ tox==4.25.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/ci.txt
 twine==6.1.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
-typing-extensions==4.13.0
+typing-extensions==4.13.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   anyio

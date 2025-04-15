@@ -21,7 +21,7 @@ attrs==25.3.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
     #   openedx-events
-authlib==1.5.1
+authlib==1.5.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
@@ -59,7 +59,7 @@ click==8.1.8
     #   edx-lint
 click-log==0.4.0
     # via edx-lint
-code-annotations==2.2.0
+code-annotations==2.3.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-lint
@@ -108,7 +108,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   openedx-events
-edx-django-utils==7.2.0
+edx-django-utils==7.4.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-toggles
@@ -131,7 +131,7 @@ h11==0.14.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpcore
-httpcore==1.0.7
+httpcore==1.0.8
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpx
@@ -187,13 +187,13 @@ more-itertools==10.6.0
     # via
     #   jaraco-classes
     #   jaraco-functools
-newrelic==10.8.1
+newrelic==10.9.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-django-utils
 nh3==0.2.21
     # via readme-renderer
-openedx-events==9.20.0
+openedx-events==10.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 packaging==24.2
     # via
@@ -240,7 +240,7 @@ pylint-plugin-utils==0.8.2
     # via
     #   pylint-celery
     #   pylint-django
-pymongo==4.11.3
+pymongo==4.12.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-opaque-keys
@@ -253,9 +253,9 @@ pytest==8.3.5
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest-cov
     #   pytest-django
-pytest-cov==6.0.0
+pytest-cov==6.1.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-pytest-django==4.10.0
+pytest-django==4.11.1
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 python-slugify==8.0.4
     # via
@@ -311,7 +311,7 @@ tomlkit==0.13.2
     # via pylint
 twine==6.1.0
     # via -r requirements/quality.in
-typing-extensions==4.13.0
+typing-extensions==4.13.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   anyio
