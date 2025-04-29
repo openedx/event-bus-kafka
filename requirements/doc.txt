@@ -35,7 +35,7 @@ babel==2.17.0
     #   sphinx
 backports-tarfile==1.2.0
     # via jaraco-context
-beautifulsoup4==4.13.3
+beautifulsoup4==4.13.4
     # via pydata-sphinx-theme
 build==1.2.2.post1
     # via -r requirements/doc.in
@@ -43,7 +43,7 @@ cachetools==5.5.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
-certifi==2025.1.31
+certifi==2025.4.26
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpcore
@@ -67,7 +67,7 @@ code-annotations==2.3.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==2.9.0
+confluent-kafka[avro,schema-registry]==2.10.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 coverage[toml]==7.8.0
     # via
@@ -121,7 +121,7 @@ edx-django-utils==7.4.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-toggles
     #   openedx-events
-edx-opaque-keys[django]==2.12.0
+edx-opaque-keys[django]==3.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-ccx-keys
@@ -133,11 +133,11 @@ fastavro==1.10.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
     #   openedx-events
-h11==0.14.0
+h11==0.16.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpcore
-httpcore==1.0.8
+httpcore==1.0.9
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpx
@@ -155,7 +155,7 @@ idna==3.10
     #   requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==8.6.1
+importlib-metadata==8.7.0
     # via keyring
 iniconfig==2.1.0
     # via
@@ -186,11 +186,11 @@ markupsafe==3.0.2
     #   jinja2
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.6.0
+more-itertools==10.7.0
     # via
     #   jaraco-classes
     #   jaraco-functools
-newrelic==10.9.0
+newrelic==10.10.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-django-utils
@@ -198,7 +198,7 @@ nh3==0.2.21
     # via readme-renderer
 openedx-events==10.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-packaging==24.2
+packaging==25.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   build
@@ -291,7 +291,7 @@ sniffio==1.3.1
     #   anyio
 snowballstemmer==2.2.0
     # via sphinx
-soupsieve==2.6
+soupsieve==2.7
     # via beautifulsoup4
 sphinx==8.2.3
     # via

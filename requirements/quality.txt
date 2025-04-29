@@ -35,7 +35,7 @@ cachetools==5.5.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
-certifi==2025.1.31
+certifi==2025.4.26
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpcore
@@ -64,7 +64,7 @@ code-annotations==2.3.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-lint
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==2.9.0
+confluent-kafka[avro,schema-registry]==2.10.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
 coverage[toml]==7.8.0
     # via
@@ -77,7 +77,7 @@ cryptography==44.0.2
     #   secretstorage
 ddt==1.7.2
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-dill==0.3.9
+dill==0.4.0
     # via pylint
 django==4.2.20
     # via
@@ -115,7 +115,7 @@ edx-django-utils==7.4.0
     #   openedx-events
 edx-lint==5.6.0
     # via -r requirements/quality.in
-edx-opaque-keys[django]==2.12.0
+edx-opaque-keys[django]==3.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-ccx-keys
@@ -127,11 +127,11 @@ fastavro==1.10.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   confluent-kafka
     #   openedx-events
-h11==0.14.0
+h11==0.16.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpcore
-httpcore==1.0.8
+httpcore==1.0.9
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   httpx
@@ -147,7 +147,7 @@ idna==3.10
     #   anyio
     #   httpx
     #   requests
-importlib-metadata==8.6.1
+importlib-metadata==8.7.0
     # via keyring
 iniconfig==2.1.0
     # via
@@ -183,11 +183,11 @@ mccabe==0.7.0
     # via pylint
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.6.0
+more-itertools==10.7.0
     # via
     #   jaraco-classes
     #   jaraco-functools
-newrelic==10.9.0
+newrelic==10.10.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   edx-django-utils
@@ -195,7 +195,7 @@ nh3==0.2.21
     # via readme-renderer
 openedx-events==10.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
-packaging==24.2
+packaging==25.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/test.txt
     #   pytest

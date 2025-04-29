@@ -21,7 +21,7 @@ avro==1.12.0
     # via confluent-kafka
 cachetools==5.5.2
     # via confluent-kafka
-certifi==2025.1.31
+certifi==2025.4.26
     # via
     #   httpcore
     #   httpx
@@ -43,7 +43,7 @@ code-annotations==2.3.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   -r requirements/test.in
     #   edx-toggles
-confluent-kafka[avro,schema-registry]==2.9.0
+confluent-kafka[avro,schema-registry]==2.10.0
     # via -r requirements/test.in
 coverage[toml]==7.8.0
     # via pytest-cov
@@ -82,7 +82,7 @@ edx-django-utils==7.4.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-toggles
     #   openedx-events
-edx-opaque-keys[django]==2.12.0
+edx-opaque-keys[django]==3.0.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-ccx-keys
@@ -94,9 +94,9 @@ fastavro==1.10.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   confluent-kafka
     #   openedx-events
-h11==0.14.0
+h11==0.16.0
     # via httpcore
-httpcore==1.0.8
+httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via confluent-kafka
@@ -115,13 +115,13 @@ markupsafe==3.0.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   jinja2
-newrelic==10.9.0
+newrelic==10.10.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
     #   edx-django-utils
 openedx-events==10.0.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/base.txt
-packaging==24.2
+packaging==25.0
     # via pytest
 pbr==6.1.1
     # via
