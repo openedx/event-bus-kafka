@@ -60,7 +60,7 @@ chardet==5.2.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/ci.txt
     #   diff-cover
     #   tox
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   requests
@@ -92,7 +92,7 @@ coverage[toml]==7.8.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   pytest-cov
-cryptography==44.0.2
+cryptography==44.0.3
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   authlib
@@ -146,7 +146,7 @@ edx-django-utils==7.4.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-toggles
     #   openedx-events
-edx-i18n-tools==1.8.0
+edx-i18n-tools==1.9.0
     # via -r requirements/dev.in
 edx-lint==5.6.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
@@ -254,7 +254,7 @@ more-itertools==10.7.0
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   jaraco-classes
     #   jaraco-functools
-newrelic==10.10.0
+newrelic==10.11.0
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-django-utils
@@ -262,7 +262,7 @@ nh3==0.2.21
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   readme-renderer
-openedx-events==10.0.0
+openedx-events==10.1.0
     # via -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
 packaging==25.0
     # via
@@ -316,7 +316,7 @@ pygments==2.19.1
     #   diff-cover
     #   readme-renderer
     #   rich
-pylint==3.3.6
+pylint==3.3.7
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-lint
@@ -336,7 +336,7 @@ pylint-plugin-utils==0.8.2
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.12.0
+pymongo==4.12.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   edx-opaque-keys
@@ -444,7 +444,7 @@ urllib3==2.2.3
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/quality.txt
     #   requests
     #   twine
-virtualenv==20.30.0
+virtualenv==20.31.1
     # via
     #   -r /home/runner/work/event-bus-kafka/event-bus-kafka/requirements/ci.txt
     #   tox
