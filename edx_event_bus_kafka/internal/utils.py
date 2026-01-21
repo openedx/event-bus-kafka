@@ -11,6 +11,8 @@ from uuid import UUID
 import openedx_events.data as oed
 from edx_toggles.toggles import SettingToggle
 
+from .config import get_schema_registry_client
+
 logger = logging.getLogger(__name__)
 
 # .. toggle_name: EVENT_BUS_KAFKA_AUDIT_LOGGING_ENABLED
@@ -155,11 +157,15 @@ def _get_headers_from_metadata(event_metadata: oed.EventsMetadata):
     Returns:
         A dictionary of headers where the keys are strings and values are binary
     """
+    # Determine content type based on whether Schema Registry is configured
+    schema_registry_client = get_schema_registry_client()
+    content_type = b'application/avro' if schema_registry_client else b'application/json'
+
     values = {
         # Always 1.0. See "Fields" in OEP-41
         HEADER_SPEC_VERSION.message_header_key: b'1.0',
-        HEADER_CONTENT_TYPE.message_header_key: b'application/avro',
-        HEADER_DATA_CONTENT_TYPE.message_header_key: b'application/avro',
+        HEADER_CONTENT_TYPE.message_header_key: content_type,
+        HEADER_DATA_CONTENT_TYPE.message_header_key: content_type,
     }
     for header in MessageHeader.instances:
         if not header.event_metadata_field:

@@ -40,16 +40,19 @@ def get_schema_registry_client():
 
     # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL
     # .. setting_default: None
-    # .. setting_description: URL of the Avro schema registry, required for managing the evolution
+    # .. setting_description: URL of the Avro schema registry, optional for managing the evolution
     #   of event bus data and ensuring that consumers are able to decode the events that
-    #   are produced. This URL is required for both producers and consumers and must point
-    #   to an instance of Confluent Schema Registry:
+    #   are produced. If provided, must point to an instance of Confluent Schema Registry:
     #   https://docs.confluent.io/platform/current/schema-registry/index.html
     #   If needed, auth information must be added to ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY``
     #   and ``EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_SECRET``.
+    #   If not provided, JSON serialization will be used instead of Avro.
     url = getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL', None)
     if url is None:
-        warnings.warn("Cannot configure event-bus-kafka: Missing setting EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL")
+        warnings.warn(
+            "EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL not configured. "
+            "Using JSON serialization instead of Avro. "
+        )
         return None
 
     # .. setting_name: EVENT_BUS_KAFKA_SCHEMA_REGISTRY_API_KEY

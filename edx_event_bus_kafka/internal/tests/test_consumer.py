@@ -3,6 +3,7 @@ Tests for event_consumer module.
 """
 
 import copy
+import json
 import re
 from datetime import datetime
 from unittest.mock import Mock, call, patch
@@ -711,9 +712,150 @@ class TestEmitSignals(TestCase):
 
         assert not self.mock_receiver.called
 
-    def test_no_deserializer_if_no_registry_client(self):
-        with pytest.raises(Exception) as excinfo:
-            get_deserializer(self.signal, None)
-        assert excinfo.value.args == (
-            "Cannot create Kafka deserializer -- missing library or settings",
-        )
+    def test_json_deserializer_without_schema_registry(self):
+        """Without Schema Registry, should use JSON deserialization instead of Avro."""
+        deserializer = get_deserializer(self.signal, None)
+
+        # Should return a JSON deserializer function instead of raising an exception
+        assert callable(deserializer)
+
+        test_data = {
+            "user": {
+                "id": 123,
+                "is_active": True,
+                "pii": {"username": "foobob", "email": "bob@foo.example", "name": "Bob Foo"},
+            }
+        }
+        json_bytes = json.dumps(test_data).encode("utf-8")
+
+        result = deserializer(json_bytes)
+
+        self.assertEqual(result["user"].id, 123)
+        self.assertEqual(result["user"].is_active, True)
+        self.assertEqual(result["user"].pii.username, "foobob")
+        self.assertEqual(result["user"].pii.email, "bob@foo.example")
+        self.assertEqual(result["user"].pii.name, "Bob Foo")
+
+    def test_json_deserializer_handles_none(self):
+        """Test that JSON deserializer returns None when data is None."""
+        deserializer = get_deserializer(self.signal, None)
+
+        result = deserializer(None)
+
+        self.assertIsNone(result)
+
+    def test_json_deserializer_handles_string_input(self):
+        """Test that JSON deserializer can handle string input (not just bytes)."""
+        deserializer = get_deserializer(self.signal, None)
+        test_data = {
+            "user": {
+                "id": 456,
+                "is_active": False,
+                "pii": {"username": "testuser", "email": "test@example.com", "name": "Test User"},
+            }
+        }
+        json_string = json.dumps(test_data)
+
+        result = deserializer(json_string)
+
+        self.assertEqual(result["user"].id, 456)
+        self.assertEqual(result["user"].is_active, False)
+
+    def test_json_deserializer_invalid_json(self):
+        """Test that JSON deserializer raises exception for invalid JSON."""
+        deserializer = get_deserializer(self.signal, None)
+
+        invalid_json = b"{'this': 'is not valid json'}"
+
+        with pytest.raises(Exception, match="Failed to deserialize JSON event data"):
+            deserializer(invalid_json)
+
+    def test_json_deserializer_invalid_utf8(self):
+        """Test that JSON deserializer raises exception for invalid UTF-8."""
+        deserializer = get_deserializer(self.signal, None)
+
+        invalid_utf8 = b"\xff\xfe"
+
+        with pytest.raises(Exception, match="Failed to deserialize JSON event data"):
+            deserializer(invalid_utf8)
+
+    def test_json_deserializer_incompatible_structure(self):
+        """Test that JSON deserializer raises exception when JSON structure doesn't match signal."""
+        deserializer = get_deserializer(self.signal, None)
+
+        incompatible_data = {"wrong_field": "wrong_value"}
+        json_bytes = json.dumps(incompatible_data).encode("utf-8")
+
+        with pytest.raises(Exception, match="Failed to reconstruct event data from JSON dictionary"):
+            deserializer(json_bytes)
+
+    # @patch('edx_event_bus_kafka.internal.consumer.logger')
+    # def test_content_type_validation_json_consumer_avro_message(self, mock_logger):
+    #     """Test that a warning is logged when JSON consumer receives Avro message."""
+    #     # Use the event_consumer from setUp which has no schema registry client (JSON mode)
+    #     self.event_consumer.schema_registry_client = None
+
+    #     # Create a mock message with Avro content type
+    #     msg = Mock()
+    #     msg.headers.return_value = [
+    #         ('content-type', b'application/avro'),
+    #         ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
+    #     ]
+    #     msg.topic.return_value = 'test-topic'
+    #     msg.offset.return_value = 12345
+    #     msg.partition.return_value = 0
+
+    #     self.event_consumer._validate_message_content_type(msg)
+
+    #     # Verify warning was logged
+    #     mock_logger.warning.assert_called_once()
+    #     warning_message = mock_logger.warning.call_args[0][0]
+    #     assert 'Content type mismatch' in warning_message
+    #     assert 'application/avro' in warning_message
+    #     assert 'application/json' in warning_message
+
+    # @patch('edx_event_bus_kafka.internal.consumer.logger')
+    # def test_content_type_validation_avro_consumer_json_message(self, mock_logger):
+    #     """Test that a warning is logged when Avro consumer receives JSON message."""
+    #     # Mock schema registry client to simulate Avro mode
+    #     mock_client = Mock()
+    #     self.event_consumer.schema_registry_client = mock_client
+
+    #     # Create a mock message with JSON content type
+    #     msg = Mock()
+    #     msg.headers.return_value = [
+    #         ('content-type', b'application/json'),
+    #         ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
+    #     ]
+    #     msg.topic.return_value = 'test-topic'
+    #     msg.offset.return_value = 67890
+    #     msg.partition.return_value = 1
+
+    #     self.event_consumer._validate_message_content_type(msg)
+
+    #     # Verify warning was logged
+    #     mock_logger.warning.assert_called_once()
+    #     warning_message = mock_logger.warning.call_args[0][0]
+    #     assert 'Content type mismatch' in warning_message
+    #     assert 'application/json' in warning_message
+    #     assert 'application/avro' in warning_message
+
+    # @patch('edx_event_bus_kafka.internal.consumer.logger')
+    # def test_content_type_validation_no_warning_on_match(self, mock_logger):
+    #     """Test that no warning is logged when content types match."""
+    #     self.event_consumer.schema_registry_client = None  # Expects JSON
+
+    #     # Create a mock message with matching JSON content type
+    #     msg = Mock()
+    #     msg.headers.return_value = [
+    #         ('content-type', b'application/json'),
+    #         ('ce_type', b'org.openedx.learning.auth.session.login.completed.v1'),
+    #     ]
+    #     msg.topic.return_value = 'test-topic'
+    #     msg.offset.return_value = 11111
+    #     msg.partition.return_value = 2
+
+    #     self.event_consumer._validate_message_content_type(msg)
+
+    #     # Verify no warning was logged
+    #     mock_logger.warning.assert_not_called()

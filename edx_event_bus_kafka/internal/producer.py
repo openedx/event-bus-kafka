@@ -161,7 +161,8 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
     """
     Get the full key and value serializers for a signal and a key field path.
 
-    This is cached in order to save work re-transforming AvroSignalSerializers into AvroSerializers.
+    This is cached in order to save work re-transforming AvroSignalSerializers into AvroSerializers
+    or creating JSON serializers.
 
     Arguments:
         signal: The OpenEdxPublicSignal to make a serializer for.
@@ -169,14 +170,70 @@ def get_serializers(signal: OpenEdxPublicSignal, event_key_field: str):
           (period-delimited string naming the field names to descend).
 
     Returns:
-        2-tuple of AvroSerializers, for event key and value
+        2-tuple of Serializers (either AvroSerializers or JSON serializers), for event key and value
     """
     client = get_schema_registry_client()
-    if client is None:
-        raise Exception('Cannot create Kafka serializers -- missing library or settings')
-
     signal_serializer = get_signal_serializer(signal)
 
+    if client is None:
+
+        logger.info('Schema Registry not configured, using JSON serialization for events')
+
+        def json_key_serializer(event_data, ctx=None) -> bytes:  # pylint: disable=unused-argument
+            """
+            Serialize event key to JSON bytes.
+
+            Used when Schema Registry is not configured as an alternative to Avro serialization.
+            Primitive types (str, int, float, bool) are serialized directly. Complex types are
+            converted to dictionaries first using the signal serializer.
+
+            Arguments:
+                event_data: The event key data to serialize (primitive or complex object)
+                ctx: Serialization context (unused for JSON)
+
+            Returns:
+                bytes: UTF-8 encoded JSON representation of the key
+
+            Raises:
+                Exception: If the key cannot be serialized to JSON
+            """
+            try:
+                if isinstance(event_data, (str, int, float, bool)):
+                    # Primitive types can be serialized directly
+                    return json.dumps(event_data).encode('utf-8')
+                # For complex types, convert to dict first
+                key_data = signal_serializer.to_dict(event_data) if hasattr(event_data, '__dict__') else event_data
+                return json.dumps(key_data, sort_keys=True).encode('utf-8')
+            except (TypeError, ValueError) as e:
+                raise Exception(f"Failed to serialize event key to JSON: {e}") from e
+
+        def json_value_serializer(event_data, ctx=None) -> bytes:  # pylint: disable=unused-argument
+            """
+            Serialize event value to JSON bytes.
+
+            Used when Schema Registry is not configured as an alternative to Avro serialization.
+            The event data is converted to a dictionary using the signal serializer, then
+            serialized to JSON with sorted keys for consistency.
+
+            Arguments:
+                event_data: The event value data to serialize
+                ctx: Serialization context (unused for JSON)
+
+            Returns:
+                bytes: UTF-8 encoded JSON representation of the event value
+
+            Raises:
+                Exception: If the value cannot be serialized to JSON
+            """
+            try:
+                value_dict = signal_serializer.to_dict(event_data)
+                return json.dumps(value_dict, sort_keys=True).encode('utf-8')
+            except (TypeError, ValueError) as e:
+                raise Exception(f"Failed to serialize event value to JSON: {e}") from e
+
+        return json_key_serializer, json_value_serializer
+
+    # Use Avro serialization when Schema Registry is configured
     def inner_to_dict(event_data, ctx=None):  # pylint: disable=unused-argument
         """Tells Avro how to turn objects into dictionaries."""
         return signal_serializer.to_dict(event_data)
