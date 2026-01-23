@@ -1,5 +1,5 @@
 edX Event Bus - Kafka TEST
-#####################
+##########################
 
 Kafka implementation for Open edX event bus.
 
