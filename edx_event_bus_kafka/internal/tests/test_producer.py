@@ -154,6 +154,41 @@ class TestEventProducer(TestCase):
 
         self.assertEqual(value_bytes_1, value_bytes_2)
 
+    def test_json_key_serializer_error_handling(self):
+        """Test that JSON key serializer handles serialization errors properly."""
+        with patch('edx_event_bus_kafka.internal.producer.get_signal_serializer') as mock_get_serializer:
+            mock_serializer = Mock()
+            mock_serializer.to_dict.return_value = object()  # Non-serializable object
+            mock_get_serializer.return_value = mock_serializer
+
+            ep.get_serializers.cache_clear()
+
+            key_ser, _ = ep.get_serializers(self.signal, "user.id")
+
+            complex_key = Mock()
+            complex_key.__dict__ = {"test": "value"}
+
+            with pytest.raises(Exception, match="Failed to serialize event key to JSON"):
+                key_ser(complex_key)
+
+            ep.get_serializers.cache_clear()
+
+    def test_json_value_serializer_error_handling(self):
+        """Test that JSON value serializer handles serialization errors properly."""
+        with patch('edx_event_bus_kafka.internal.producer.get_signal_serializer') as mock_get_serializer:
+            mock_serializer = Mock()
+            mock_serializer.to_dict.side_effect = TypeError("Cannot serialize this type")
+            mock_get_serializer.return_value = mock_serializer
+
+            ep.get_serializers.cache_clear()
+
+            _, value_ser = ep.get_serializers(self.signal, "user.id")
+
+            with pytest.raises(Exception, match="Failed to serialize event value to JSON"):
+                value_ser(self.event_data)
+
+            ep.get_serializers.cache_clear()
+
     def test_create_producer_unconfigured(self):
         """With missing essential settings, just warn and return None."""
         with warnings.catch_warnings(record=True) as caught_warnings:
