@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[6.2.0] - 2026-01-26
+********************
+Added
+=======
+* Added support for JSON serialization as an alternative to Avro serialization when Schema Registry is not configured
+
 [6.1.0] - 2025-04-09
 ********************
 Added
