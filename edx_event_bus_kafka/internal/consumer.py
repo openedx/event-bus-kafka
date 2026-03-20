@@ -2,6 +2,7 @@
 Core consumer and event-loop code.
 """
 import logging
+import os
 import platform
 import time
 from datetime import datetime
@@ -278,10 +279,26 @@ class KafkaEventConsumer(EventBusConsumer):
 
         try:
             full_topic = get_full_topic(self.topic)
+            
+            # Build comprehensive diagnostic context for error reporting
             run_context = {
+                'service': getattr(settings, 'EVENTS_SERVICE_NAME', 'unknown'),
+                'environment': getattr(settings, 'EVENT_BUS_TOPIC_PREFIX', 'unknown'),
+                
                 'full_topic': full_topic,
                 'consumer_group': self.group_id,
+                'kafka_bootstrap_servers': getattr(settings, 'EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS', 'unknown'),
+                'schema_registry_url': getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL', 'unknown'),
+                
+                'consumer_poll_timeout_sec': CONSUMER_POLL_TIMEOUT,
+                'consecutive_errors_limit': CONSECUTIVE_ERRORS_LIMIT or 'unlimited',
+                
+                'pod_name': os.environ.get('HOSTNAME', os.environ.get('POD_NAME', 'unknown')),
+                'hostname': platform.node(),
+                
+                'consumer_started_at': datetime.now().isoformat(),
             }
+            
             self.consumer.subscribe([full_topic])
             logger.info(f"Running consumer for {run_context!r}")
 
@@ -291,6 +308,11 @@ class KafkaEventConsumer(EventBusConsumer):
             # being able to talk to the broker and get a message (or a normal poll timeout) is
             # not sufficient to show that progress can be made.
             consecutive_errors = 0
+            
+            # Track runtime statistics for debugging
+            messages_processed = 0
+            messages_failed = 0
+            loop_start_time = datetime.now()
 
             while True:
                 # Allow unit tests to break out of loop
@@ -299,6 +321,10 @@ class KafkaEventConsumer(EventBusConsumer):
 
                 # Detect probably-broken consumer and exit with error.
                 if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
+                    # Add runtime stats to context before exiting
+                    run_context['messages_processed'] = messages_processed
+                    run_context['messages_failed'] = messages_failed
+                    run_context['uptime_seconds'] = (datetime.now() - loop_start_time).total_seconds()
                     raise Exception(f"Too many consecutive errors, exiting ({consecutive_errors} in a row)")
 
                 with function_trace('consumer.consume'):
@@ -315,11 +341,21 @@ class KafkaEventConsumer(EventBusConsumer):
                             msg.set_value(self._deserialize_message_value(msg, signal))
                             self.emit_signals_from_message(msg, signal)
                             consecutive_errors = 0
+                            messages_processed += 1
 
                         self._add_message_monitoring(run_context=run_context, message=msg)
                     except Exception as e:
                         consecutive_errors += 1
-                        self.record_event_consuming_error(run_context, e, msg)
+                        messages_failed += 1
+                        
+                        # Add runtime stats to error context
+                        error_context = run_context.copy()
+                        error_context['messages_processed'] = messages_processed
+                        error_context['messages_failed'] = messages_failed
+                        error_context['consecutive_errors'] = consecutive_errors
+                        error_context['uptime_seconds'] = (datetime.now() - loop_start_time).total_seconds()
+                        
+                        self.record_event_consuming_error(error_context, e, msg)
                         # Kill the infinite loop if the error is fatal for the consumer
                         _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
                         if kafka_error and kafka_error.fatal():
