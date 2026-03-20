@@ -14,6 +14,12 @@ Change Log
 Unreleased
 **********
 
+[6.2.0] - 2026-03-20
+********************
+Changed
+=======
+* Enhanced Kafka consumer error logging with comprehensive diagnostic context including service identification, pod name, Kafka configuration, runtime statistics (messages_processed, messages_failed, consecutive_errors, uptime_seconds), and operational metadata for improved production debugging in Datadog/Splunk.
+
 [6.1.0] - 2025-04-09
 ********************
 Added
