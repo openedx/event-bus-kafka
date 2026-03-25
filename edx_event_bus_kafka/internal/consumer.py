@@ -404,6 +404,12 @@ class KafkaEventConsumer(EventBusConsumer):
             signal (OpenEdxPublicSignal): Signal - must match the event_type of the message header.
         """
         self._log_message_received(msg)
+
+        if msg.error() is not None:
+            raise UnusableMessageError(
+                f"Polled message had error object: {msg.error()!r}"
+            )
+
         # This should also never happen since the signal should be determined from the message
         # but it's here to prevent misuse of the method
         msg_event_type = self._get_event_type_from_message(msg)
