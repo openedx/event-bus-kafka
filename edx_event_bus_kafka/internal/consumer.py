@@ -254,7 +254,7 @@ class KafkaEventConsumer(EventBusConsumer):
             time.sleep(30)
             continue
 
-    def _consume_indefinitely(self):
+    def _consume_indefinitely(self):  # pylint: disable=too-many-statements
         """
         Consume events from a topic in an infinite loop.
         """
