@@ -332,6 +332,13 @@ class KafkaEventConsumer(EventBusConsumer):
                     try:
                         msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                         if msg is not None:
+                            if msg.error() is not None:
+                                error_code = msg.error().code()
+                                error_str = msg.error().str()
+                                logger.warning(
+                                    f"Received Kafka control/error message: {error_str} (code: {error_code})"
+                                )
+                                continue
                             # Before processing, try to make sure our application state is cleaned
                             # up as would happen at the start of a Django request/response cycle.
                             # See https://github.com/openedx/openedx-events/issues/236 for details.
@@ -397,12 +404,6 @@ class KafkaEventConsumer(EventBusConsumer):
             signal (OpenEdxPublicSignal): Signal - must match the event_type of the message header.
         """
         self._log_message_received(msg)
-
-        if msg.error() is not None:
-            raise UnusableMessageError(
-                f"Polled message had error object: {msg.error()!r}"
-            )
-
         # This should also never happen since the signal should be determined from the message
         # but it's here to prevent misuse of the method
         msg_event_type = self._get_event_type_from_message(msg)
