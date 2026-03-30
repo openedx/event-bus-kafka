@@ -288,7 +288,6 @@ class KafkaEventConsumer(EventBusConsumer):
 
                 'consumer_started_at': datetime.now().isoformat(),
             }
-
             self.consumer.subscribe([full_topic])
             logger.info(f"Running consumer for {run_context!r}")
 
@@ -303,7 +302,6 @@ class KafkaEventConsumer(EventBusConsumer):
             messages_processed = 0
             messages_failed = 0
             loop_start_time = datetime.now()
-
             while True:
                 # Allow unit tests to break out of loop
                 if self._shut_down_loop:

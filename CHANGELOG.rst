@@ -16,9 +16,10 @@ Unreleased
 
 [6.2.0] - 2026-03-20
 ********************
-Changed
-=======
-* Enhanced Kafka consumer error logging with comprehensive diagnostic context including service identification, pod name, Kafka configuration, runtime statistics (messages_processed, messages_failed, consecutive_errors, uptime_seconds), and operational metadata for improved production debugging in Datadog/Splunk.
+Added
+=====
+* Added EVENT_BUS_KAFKA_CONSUMER_CONFIG setting to allow custom Kafka consumer configuration overrides for testing and production tuning.
+* Added test coverage for Kafka control message handling in the consumer loop.
 
 [6.1.0] - 2025-04-09
 ********************

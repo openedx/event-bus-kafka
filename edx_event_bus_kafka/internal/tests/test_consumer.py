@@ -502,10 +502,10 @@ class TestEmitSignals(TestCase):
         EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
         EVENT_BUS_TOPIC_PREFIX='local',
     )
-    def test_control_message_in_consume_loop(self, mock_logger, mock_set_custom_attribute):
+    def test_control_message_in_consume_loop(self, mock_logger, _mock_set_custom_attribute):
         """
         Test that Kafka control/error messages are handled gracefully in the consume loop.
-        
+
         Control messages have msg.error() set and should be logged as warnings and skipped,
         not processed as CloudEvent messages.
         """
@@ -517,9 +517,9 @@ class TestEmitSignals(TestCase):
             key=None,
             headers=None,
         )
-        
+
         poll_call_count = [0]
-        
+
         def poll_side_effect(*args, **kwargs):
             poll_call_count[0] += 1
             if poll_call_count[0] == 1:
@@ -530,17 +530,17 @@ class TestEmitSignals(TestCase):
 
         mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
         self.event_consumer.consumer = mock_consumer
-        
+
         self.event_consumer.consume_indefinitely()
-        
+
         mock_logger.warning.assert_called_once()
         warning_call_args = mock_logger.warning.call_args.args[0]
         assert "Received Kafka control/error message" in warning_call_args
         assert "-191" in warning_call_args
         assert "maximum poll interval" in warning_call_args.lower()
-        
+
         mock_consumer.commit.assert_not_called()
-        
+
         mock_logger.exception.assert_not_called()
 
     @override_settings(
