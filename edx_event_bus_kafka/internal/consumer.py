@@ -2,7 +2,6 @@
 Core consumer and event-loop code.
 """
 import logging
-import os
 import platform
 import time
 from datetime import datetime
@@ -280,21 +279,12 @@ class KafkaEventConsumer(EventBusConsumer):
         try:
             full_topic = get_full_topic(self.topic)
 
-            # Build comprehensive diagnostic context for error reporting
             run_context = {
-                'service': getattr(settings, 'EVENTS_SERVICE_NAME', 'unknown'),
-                'environment': getattr(settings, 'EVENT_BUS_TOPIC_PREFIX', 'unknown'),
-
                 'full_topic': full_topic,
                 'consumer_group': self.group_id,
-                'kafka_bootstrap_servers': getattr(settings, 'EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS', 'unknown'),
-                'schema_registry_url': getattr(settings, 'EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL', 'unknown'),
 
                 'consumer_poll_timeout_sec': CONSUMER_POLL_TIMEOUT,
                 'consecutive_errors_limit': CONSECUTIVE_ERRORS_LIMIT or 'unlimited',
-
-                'pod_name': os.environ.get('HOSTNAME', os.environ.get('POD_NAME', 'unknown')),
-                'hostname': platform.node(),
 
                 'consumer_started_at': datetime.now().isoformat(),
             }
