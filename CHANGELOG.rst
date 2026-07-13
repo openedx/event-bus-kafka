@@ -14,6 +14,13 @@ Change Log
 Unreleased
 **********
 
+[6.2.0] - 2026-03-20
+********************
+Added
+=====
+* Added EVENT_BUS_KAFKA_CONSUMER_CONFIG setting to allow custom Kafka consumer configuration overrides for testing and production tuning.
+* Added test coverage for Kafka control message handling in the consumer loop.
+
 [6.1.0] - 2025-04-09
 ********************
 Added

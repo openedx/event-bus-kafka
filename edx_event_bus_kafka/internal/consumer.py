@@ -253,7 +253,7 @@ class KafkaEventConsumer(EventBusConsumer):
             time.sleep(30)
             continue
 
-    def _consume_indefinitely(self):
+    def _consume_indefinitely(self):  # pylint: disable=too-many-statements
         """
         Consume events from a topic in an infinite loop.
         """
@@ -278,9 +278,15 @@ class KafkaEventConsumer(EventBusConsumer):
 
         try:
             full_topic = get_full_topic(self.topic)
+
             run_context = {
                 'full_topic': full_topic,
                 'consumer_group': self.group_id,
+
+                'consumer_poll_timeout_sec': CONSUMER_POLL_TIMEOUT,
+                'consecutive_errors_limit': CONSECUTIVE_ERRORS_LIMIT or 'unlimited',
+
+                'consumer_started_at': datetime.now().isoformat(),
             }
             self.consumer.subscribe([full_topic])
             logger.info(f"Running consumer for {run_context!r}")
@@ -292,6 +298,10 @@ class KafkaEventConsumer(EventBusConsumer):
             # not sufficient to show that progress can be made.
             consecutive_errors = 0
 
+            # Track runtime statistics for debugging
+            messages_processed = 0
+            messages_failed = 0
+            loop_start_time = datetime.now()
             while True:
                 # Allow unit tests to break out of loop
                 if self._shut_down_loop:
@@ -299,6 +309,10 @@ class KafkaEventConsumer(EventBusConsumer):
 
                 # Detect probably-broken consumer and exit with error.
                 if CONSECUTIVE_ERRORS_LIMIT and consecutive_errors >= CONSECUTIVE_ERRORS_LIMIT:
+                    # Add runtime stats to context before exiting
+                    run_context['messages_processed'] = messages_processed
+                    run_context['messages_failed'] = messages_failed
+                    run_context['uptime_seconds'] = (datetime.now() - loop_start_time).total_seconds()
                     raise Exception(f"Too many consecutive errors, exiting ({consecutive_errors} in a row)")
 
                 with function_trace('consumer.consume'):
@@ -306,6 +320,13 @@ class KafkaEventConsumer(EventBusConsumer):
                     try:
                         msg = self.consumer.poll(timeout=CONSUMER_POLL_TIMEOUT)
                         if msg is not None:
+                            if msg.error() is not None:
+                                error_code = msg.error().code()
+                                error_str = msg.error().str()
+                                logger.warning(
+                                    f"Received Kafka control/error message: {error_str} (code: {error_code})"
+                                )
+                                continue
                             # Before processing, try to make sure our application state is cleaned
                             # up as would happen at the start of a Django request/response cycle.
                             # See https://github.com/openedx/openedx-events/issues/236 for details.
@@ -315,11 +336,21 @@ class KafkaEventConsumer(EventBusConsumer):
                             msg.set_value(self._deserialize_message_value(msg, signal))
                             self.emit_signals_from_message(msg, signal)
                             consecutive_errors = 0
+                            messages_processed += 1
 
                         self._add_message_monitoring(run_context=run_context, message=msg)
                     except Exception as e:
                         consecutive_errors += 1
-                        self.record_event_consuming_error(run_context, e, msg)
+                        messages_failed += 1
+
+                        # Add runtime stats to error context
+                        error_context = run_context.copy()
+                        error_context['messages_processed'] = messages_processed
+                        error_context['messages_failed'] = messages_failed
+                        error_context['consecutive_errors'] = consecutive_errors
+                        error_context['uptime_seconds'] = (datetime.now() - loop_start_time).total_seconds()
+
+                        self.record_event_consuming_error(error_context, e, msg)
                         # Kill the infinite loop if the error is fatal for the consumer
                         _, kafka_error = self._get_kafka_message_and_error(message=msg, error=e)
                         if kafka_error and kafka_error.fatal():
