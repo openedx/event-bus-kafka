@@ -112,10 +112,13 @@ TEST_UUID = uuid1()
 class TestUtils(TestCase):
     """ Tests for header conversion utils """
 
-    def test_headers_from_event_metadata(self):
+    @patch('edx_event_bus_kafka.internal.utils.get_schema_registry_client')
+    def test_headers_from_event_metadata(self, mock_get_schema_registry_client):
         """
         Check we can generate message headers from an EventsMetadata object
         """
+        mock_get_schema_registry_client.return_value = Mock()
+
         with override_settings(SERVICE_VARIANT='test'):
             metadata = EventsMetadata(event_type="org.openedx.learning.auth.session.login.completed.v1",
                                       id=TEST_UUID,

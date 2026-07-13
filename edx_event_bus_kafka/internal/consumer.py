@@ -1,6 +1,7 @@
 """
 Core consumer and event-loop code.
 """
+import json
 import logging
 import platform
 import time
@@ -436,7 +437,7 @@ class KafkaEventConsumer(EventBusConsumer):
 
     def _deserialize_message_value(self, msg, signal: OpenEdxPublicSignal):
         """
-        Deserialize an Avro message value
+        Deserialize a message value (Avro or JSON depending on configuration).
 
         The signal is expected to match the ce_type header on the message
 
@@ -666,22 +667,59 @@ def get_deserializer(signal: OpenEdxPublicSignal, schema_registry_client):
     """
     Get the value deserializer for a signal.
 
-    This is cached in order to save work re-transforming classes into Avro schemas.
+    This is cached in order to save work re-transforming classes into Avro schemas
+    or creating JSON deserializers.
     We do not deserialize the key because we don't need it for anything yet.
     Also see https://github.com/openedx/openedx-events/issues/86 for some challenges on determining key schema.
 
     Arguments:
         signal: The OpenEdxPublicSignal to make a deserializer for.
-        schema_registry_client: The SchemaRegistryClient instance for the consumer
+        schema_registry_client: The SchemaRegistryClient instance for the consumer (or None for JSON mode)
 
     Returns:
-        AvroSignalDeserializer for event value
+        AvroDeserializer or a JSON deserializer function for event value
     """
-    if schema_registry_client is None:
-        raise Exception('Cannot create Kafka deserializer -- missing library or settings')
-
     signal_deserializer = AvroSignalDeserializer(signal)
 
+    if schema_registry_client is None:
+
+        logger.info('Schema Registry not configured, using JSON deserialization for events')
+
+        def json_deserializer(data, ctx=None) -> dict:  # pylint: disable=unused-argument
+            """
+            Deserialize JSON bytes to event data.
+
+            Used when Schema Registry is not configured as an alternative to Avro deserialization.
+            Decodes UTF-8 bytes to JSON, then reconstructs the event data using the signal's
+            data classes.
+
+            Arguments:
+                data: JSON bytes or string to deserialize, or None
+                ctx: Serialization context (unused for JSON)
+
+            Returns:
+                dict: Event data reconstructed into signal's data classes, or None if input is None
+
+            Raises:
+                Exception: If JSON is invalid, cannot be decoded as UTF-8, or cannot be
+                          converted to the signal's data classes
+            """
+            if data is None:
+                return None
+            try:
+                # Decode bytes to string, then parse JSON
+                json_str = data.decode('utf-8') if isinstance(data, bytes) else data
+                event_data_dict = json.loads(json_str)
+                # Convert dict back to signal's data classes
+                return signal_deserializer.from_dict(event_data_dict)
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                raise Exception(f"Failed to deserialize JSON event data: {e}") from e
+            except Exception as e:
+                raise Exception(f"Failed to reconstruct event data from JSON dictionary: {e}") from e
+
+        return json_deserializer
+
+    # Use Avro deserialization when Schema Registry is configured
     def inner_from_dict(event_data_dict, ctx=None):  # pylint: disable=unused-argument
         return signal_deserializer.from_dict(event_data_dict)
 

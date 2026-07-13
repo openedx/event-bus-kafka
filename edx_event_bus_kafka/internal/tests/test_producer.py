@@ -4,6 +4,7 @@ Test the event producer code.
 
 import datetime
 import gc
+import json
 import time
 import warnings
 from unittest import TestCase
@@ -85,9 +86,108 @@ class TestEventProducer(TestCase):
             assert value_ser._subject_name_func ==\
                    topic_record_subject_name_strategy  # pylint: disable=protected-access,comparison-with-callable
 
-    def test_serializers_unconfigured(self):
-        with pytest.raises(Exception, match="missing library or settings"):
-            ep.get_serializers(self.signal, 'user.id')
+    def test_json_serializers_without_schema_registry(self):
+        """Without Schema Registry, should use JSON serialization instead of Avro."""
+        key_ser, value_ser = ep.get_serializers(self.signal, "user.id")
+
+        self.assertTrue(callable(key_ser))
+        self.assertTrue(callable(value_ser))
+
+        key_bytes = key_ser(123)
+        self.assertEqual(key_bytes, b"123")
+
+        value_bytes = value_ser(self.event_data)
+        self.assertIn(b'"username": "foobob"', value_bytes)
+
+    def test_json_key_serializer_primitive_types(self):
+        """Test JSON key serializer with various primitive types."""
+        key_ser, _ = ep.get_serializers(self.signal, "user.id")
+
+        # Test integer
+        self.assertEqual(key_ser(123), b"123")
+
+        # Test string
+        self.assertEqual(key_ser("test-key"), b'"test-key"')
+
+        # Test float
+        self.assertEqual(key_ser(123.45), b"123.45")
+
+        # Test boolean
+        self.assertEqual(key_ser(True), b"true")
+        self.assertEqual(key_ser(False), b"false")
+
+    def test_json_key_serializer_complex_object(self):
+        """Test JSON key serializer with complex objects (nested data)."""
+        key_ser, _ = ep.get_serializers(self.signal, "user")
+
+        # Serialize a complex key (the entire user object)
+        user_key = self.event_data["user"]
+        key_bytes = key_ser(user_key)
+
+        key_data = json.loads(key_bytes)
+
+        self.assertEqual(key_data["id"], 123)
+        self.assertEqual(key_data["is_active"], True)
+        self.assertEqual(key_data["pii"]["username"], "foobob")
+        self.assertEqual(key_data["pii"]["email"], "bob@foo.example")
+
+    def test_json_value_serializer_comprehensive(self):
+        """Test JSON value serializer with complete event data."""
+        _, value_ser = ep.get_serializers(self.signal, "user.id")
+
+        value_bytes = value_ser(self.event_data)
+
+        value_data = json.loads(value_bytes)
+
+        self.assertEqual(value_data["user"]["id"], 123)
+        self.assertEqual(value_data["user"]["is_active"], True)
+        self.assertEqual(value_data["user"]["pii"]["username"], "foobob")
+        self.assertEqual(value_data["user"]["pii"]["email"], "bob@foo.example")
+        self.assertEqual(value_data["user"]["pii"]["name"], "Bob Foo")
+
+    def test_json_serializer_consistent_output(self):
+        """Test that JSON serializers produce consistent output (sorted keys)."""
+        _, value_ser = ep.get_serializers(self.signal, "user.id")
+
+        value_bytes_1 = value_ser(self.event_data)
+        value_bytes_2 = value_ser(self.event_data)
+
+        self.assertEqual(value_bytes_1, value_bytes_2)
+
+    def test_json_key_serializer_error_handling(self):
+        """Test that JSON key serializer handles serialization errors properly."""
+        with patch('edx_event_bus_kafka.internal.producer.get_signal_serializer') as mock_get_serializer:
+            mock_serializer = Mock()
+            mock_serializer.to_dict.return_value = object()  # Non-serializable object
+            mock_get_serializer.return_value = mock_serializer
+
+            ep.get_serializers.cache_clear()
+
+            key_ser, _ = ep.get_serializers(self.signal, "user.id")
+
+            complex_key = Mock()
+            complex_key.__dict__ = {"test": "value"}
+
+            with pytest.raises(Exception, match="Failed to serialize event key to JSON"):
+                key_ser(complex_key)
+
+            ep.get_serializers.cache_clear()
+
+    def test_json_value_serializer_error_handling(self):
+        """Test that JSON value serializer handles serialization errors properly."""
+        with patch('edx_event_bus_kafka.internal.producer.get_signal_serializer') as mock_get_serializer:
+            mock_serializer = Mock()
+            mock_serializer.to_dict.side_effect = TypeError("Cannot serialize this type")
+            mock_get_serializer.return_value = mock_serializer
+
+            ep.get_serializers.cache_clear()
+
+            _, value_ser = ep.get_serializers(self.signal, "user.id")
+
+            with pytest.raises(Exception, match="Failed to serialize event value to JSON"):
+                value_ser(self.event_data)
+
+            ep.get_serializers.cache_clear()
 
     def test_create_producer_unconfigured(self):
         """With missing essential settings, just warn and return None."""
