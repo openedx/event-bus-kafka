@@ -2,7 +2,6 @@
 -c constraints.txt
 
 Django                                  # Web application framework
-# openedx-events 9.3.0 adds get_service_name method
-openedx-events>=9.3.0                   # Events API
+git+https://github.com/openedx/openedx-events.git@bmtcril/type_hints               # Events API
 edx_django_utils
 edx_toggles
