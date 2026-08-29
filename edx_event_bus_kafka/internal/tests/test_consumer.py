@@ -495,6 +495,54 @@ class TestEmitSignals(TestCase):
             "KafkaError{code=ERR_123?,val=123,str=\"done broke\"}",
         )
 
+    @patch('edx_event_bus_kafka.internal.consumer.set_custom_attribute', autospec=True)
+    @patch('edx_event_bus_kafka.internal.consumer.logger', autospec=True)
+    @override_settings(
+        EVENT_BUS_KAFKA_SCHEMA_REGISTRY_URL='http://localhost:12345',
+        EVENT_BUS_KAFKA_BOOTSTRAP_SERVERS='localhost:54321',
+        EVENT_BUS_TOPIC_PREFIX='local',
+    )
+    def test_control_message_in_consume_loop(self, mock_logger, _mock_set_custom_attribute):
+        """
+        Test that Kafka control/error messages are handled gracefully in the consume loop.
+
+        Control messages have msg.error() set and should be logged as warnings and skipped,
+        not processed as CloudEvent messages.
+        """
+        control_msg = FakeMessage(
+            partition=0,
+            offset=None,
+            error=KafkaError(-191, reason="Application maximum poll interval (10000ms) exceeded by 347ms"),
+            value=b'Application maximum poll interval (10000ms) exceeded by 347ms',
+            key=None,
+            headers=None,
+        )
+
+        poll_call_count = [0]
+
+        def poll_side_effect(*args, **kwargs):
+            poll_call_count[0] += 1
+            if poll_call_count[0] == 1:
+                return control_msg
+            else:
+                self.event_consumer._shut_down()  # pylint: disable=protected-access
+                return None
+
+        mock_consumer = Mock(**{'poll.side_effect': poll_side_effect}, autospec=True)
+        self.event_consumer.consumer = mock_consumer
+
+        self.event_consumer.consume_indefinitely()
+
+        mock_logger.warning.assert_called_once()
+        warning_call_args = mock_logger.warning.call_args.args[0]
+        assert "Received Kafka control/error message" in warning_call_args
+        assert "-191" in warning_call_args
+        assert "maximum poll interval" in warning_call_args.lower()
+
+        mock_consumer.commit.assert_not_called()
+
+        mock_logger.exception.assert_not_called()
+
     @override_settings(
         EVENT_BUS_TOPIC_PREFIX='local',
     )
