@@ -37,7 +37,7 @@ INSTALLED_APPS = (
 )
 
 LOCALE_PATHS = [
-    root('edx_event_bus_kafka', 'conf', 'locale'),
+    root('src', 'edx_event_bus_kafka', 'conf', 'locale'),
 ]
 
 ROOT_URLCONF = 'edx_event_bus_kafka.urls'

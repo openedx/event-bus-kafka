@@ -1,6 +1,4 @@
 include CHANGELOG.rst
 include LICENSE.txt
 include README.rst
-include requirements/base.in
-include requirements/constraints.txt
-recursive-include edx_event_bus_kafka *.html *.png *.gif *.js *.css *.jpg *.jpeg *.svg *.py
+recursive-include src/edx_event_bus_kafka *.html *.png *.gif *.js *.css *.jpg *.jpeg *.svg *.py

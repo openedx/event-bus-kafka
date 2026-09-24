@@ -57,9 +57,5 @@ docs/modules.rst
 docs/edx_event_bus_kafka.rst
 docs/edx_event_bus_kafka.*.rst
 
-# Private requirements
-requirements/private.in
-requirements/private.txt
-
 # IDE
 .idea

@@ -65,22 +65,18 @@ One Time Setup
   git clone git@github.com:openedx/event-bus-kafka.git
   cd event-bus-kafka
 
-  # Set up a virtualenv using virtualenvwrapper with the same name as the repo and activate it
-  mkvirtualenv -p python3.8 event-bus-kafka
+  # Install uv: https://docs.astral.sh/uv/getting-started/installation/
 
 
 Every time you develop something in this repo
 =============================================
 .. code-block::
 
-  # Activate the virtualenv
-  workon event-bus-kafka
-
   # Grab the latest code
   git checkout main
   git pull
 
-  # Install/update the dev requirements
+  # Install/update the dev requirements into this repo's own uv-managed .venv
   make requirements
 
   # Run the tests and quality checks (to verify the status before you make any changes)

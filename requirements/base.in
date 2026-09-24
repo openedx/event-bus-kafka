@@ -1,8 +1,0 @@
-# Core requirements for using this application
--c constraints.txt
-
-Django                                  # Web application framework
-# openedx-events 9.3.0 adds get_service_name method
-openedx-events>=9.3.0                   # Events API
-edx_django_utils
-edx_toggles
