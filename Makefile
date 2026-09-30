@@ -26,14 +26,7 @@ coverage: clean ## generate and view HTML coverage report
 	$(BROWSER)htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	uv sync --group doc
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) SPHINXOPTS=-W doc8 --ignore-path docs/_build README.rst docs
-	rm -f docs/edx_event_bus_kafka.rst
-	rm -f docs/modules.rst
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) SPHINXOPTS=-W make -e -C docs clean
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) SPHINXOPTS=-W make -e -C docs html
-	python -m build --wheel
-	twine check dist/*
+	tox -e docs
 	$(BROWSER)docs/_build/html/index.html
 
 upgrade: ## update the uv lockfile with the latest packages satisfying pyproject.toml
@@ -41,17 +34,10 @@ upgrade: ## update the uv lockfile with the latest packages satisfying pyproject
 	uv lock --upgrade
 
 quality: ## check coding style with pycodestyle and pylint
-	uv sync --group quality
-	touch tests/__init__.py
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) pylint src/edx_event_bus_kafka tests test_utils manage.py
-	rm tests/__init__.py
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) pycodestyle src/edx_event_bus_kafka tests manage.py
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) pydocstyle src/edx_event_bus_kafka tests manage.py
-	DJANGO_SETTINGS_MODULE=test_settings PYTHONPATH=$(CURDIR) isort --check-only --diff tests test_utils src/edx_event_bus_kafka manage.py test_settings.py
-	$(MAKE) selfcheck
+	tox -e quality
 
 pii_check: ## check for PII annotations on all Django models
-	DJANGO_SETTINGS_MODULE=test_settings code_annotations django_find_annotations --config_file .pii_annotations.yml --lint --report --coverage
+	tox -e pii_check
 
 requirements: ## install development environment requirements
 	uv sync --group dev
