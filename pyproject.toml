@@ -140,14 +140,14 @@ uv_constraints = [
     # this repo's test suite imports SubTestData0/create_simple_signal from it directly
     # in src/edx_event_bus_kafka/internal/tests/test_producer.py. Pin below that version
     # until the test suite is updated to stop relying on an upstream package's internal
-    # test utilities (tracked as a follow-up, see PR description).
+    # test utilities: https://github.com/openedx/event-bus-kafka/issues/351
     "openedx-events<11.1.1",
     # confluent-kafka>=2.15.0 bundles a newer librdkafka that assigns a name
     # (INVALID_SHARE_SESSION_EPOCH, from KIP-932 share groups) to error code 123,
     # which src/edx_event_bus_kafka/internal/tests/test_consumer.py::test_check_event_error
     # relies on being unrecognized to exercise its "unknown error code" formatting path.
     # Pin until that test is made robust to librdkafka's error-code table changing over
-    # time (tracked as a follow-up, see PR description).
+    # time: https://github.com/openedx/event-bus-kafka/issues/352
     "confluent-kafka<2.15.0",
 ]
 
