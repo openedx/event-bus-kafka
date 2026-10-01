@@ -29,26 +29,9 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	tox -e docs
 	$(BROWSER)docs/_build/html/index.html
 
-# Define PIP_COMPILE_OPTS=-v to get more information during make upgrade.
-PIP_COMPILE = pip-compile --upgrade $(PIP_COMPILE_OPTS)
-
-upgrade: export CUSTOM_COMPILE_COMMAND=make upgrade
-upgrade: ## update the requirements/*.txt files with the latest packages satisfying requirements/*.in
-	pip install -qr requirements/pip-tools.txt
-	# Make sure to compile files after any other files they include!
-	$(PIP_COMPILE) --allow-unsafe -o requirements/pip.txt requirements/pip.in
-	$(PIP_COMPILE) -o requirements/pip-tools.txt requirements/pip-tools.in
-	pip install -qr requirements/pip.txt
-	pip install -qr requirements/pip-tools.txt
-	$(PIP_COMPILE) -o requirements/base.txt requirements/base.in
-	$(PIP_COMPILE) -o requirements/test.txt requirements/test.in
-	$(PIP_COMPILE) -o requirements/doc.txt requirements/doc.in
-	$(PIP_COMPILE) -o requirements/quality.txt requirements/quality.in
-	$(PIP_COMPILE) -o requirements/ci.txt requirements/ci.in
-	$(PIP_COMPILE) -o requirements/dev.txt requirements/dev.in
-	# Let tox control the Django version for tests
-	sed '/^[dD]jango==/d' requirements/test.txt > requirements/test.tmp
-	mv requirements/test.tmp requirements/test.txt
+upgrade: ## update the uv lockfile with the latest packages satisfying pyproject.toml
+	uv run --with edx-lint edx_lint write_uv_constraints pyproject.toml
+	uv lock --upgrade
 
 quality: ## check coding style with pycodestyle and pylint
 	tox -e quality
@@ -57,8 +40,7 @@ pii_check: ## check for PII annotations on all Django models
 	tox -e pii_check
 
 requirements: ## install development environment requirements
-	pip install -qr requirements/pip-tools.txt
-	pip-sync requirements/dev.txt requirements/private.*
+	uv sync --group dev
 
 test: clean ## run tests in the current virtualenv
 	pytest
@@ -80,14 +62,14 @@ selfcheck: ## check that the Makefile is well-formed
 
 extract_translations: ## extract strings to be translated, outputting .mo files
 	rm -rf docs/_build
-	cd edx_event_bus_kafka && ../manage.py makemessages -l en -v1 -d django
-	cd edx_event_bus_kafka && ../manage.py makemessages -l en -v1 -d djangojs
+	cd src/edx_event_bus_kafka && ../../manage.py makemessages -l en -v1 -d django
+	cd src/edx_event_bus_kafka && ../../manage.py makemessages -l en -v1 -d djangojs
 
 compile_translations: ## compile translation files, outputting .po files for each supported language
-	cd edx_event_bus_kafka && ../manage.py compilemessages
+	cd src/edx_event_bus_kafka && ../../manage.py compilemessages
 
 detect_changed_source_translations:
-	cd edx_event_bus_kafka && i18n_tool changed
+	cd src/edx_event_bus_kafka && i18n_tool changed
 
 pull_translations: ## pull translations from Transifex
 	tx pull -a -f --mode reviewed
@@ -96,7 +78,7 @@ push_translations: ## push source translation files (.po) from Transifex
 	tx push -s
 
 dummy_translations: ## generate dummy translation (.po) files
-	cd edx_event_bus_kafka && i18n_tool dummy
+	cd src/edx_event_bus_kafka && i18n_tool dummy
 
 build_dummy_translations: extract_translations dummy_translations compile_translations ## generate and compile dummy translation files
 
